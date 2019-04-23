@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import GratkaScraper
 
 main :: IO ()
-main = someFunc
+main = scrapGratkaOffers "https://gratka.pl/nieruchomosci/mieszkania/krakow/krowodrza/wynajem?liczba-pokoi:min=3&liczba-pokoi:max=5&cena-calkowita:max=3000&sort=newest"
