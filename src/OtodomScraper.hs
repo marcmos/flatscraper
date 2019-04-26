@@ -10,7 +10,6 @@ import Text.HTML.Scalpel
 import Data.Text as T
 import Data.List (find)
 import Control.Monad (sequence_, (>=>))
-import Data.Maybe (Maybe(Just))
 
 offer :: Scraper Text Offer
 offer = do
@@ -19,12 +18,12 @@ offer = do
   url <- attr "href" "a"
   return $ Offer name price Nothing url
 
-scrapRent :: Scraper Text [Text]
-scrapRent = texts ("section" @: [hasClass "section-overview"] // "div" // "ul" // "li")
+rentScraper :: Scraper Text [Text]
+rentScraper = texts ("section" @: [hasClass "section-overview"] // "div" // "ul" // "li")
 
 extractRentPrice :: Text -> IO (Maybe Text)
 extractRentPrice url = do
-  scraped <- scrapeURL (unpack url) scrapRent
+  scraped <- scrapeURL (unpack url) rentScraper
   return $ scraped >>= Data.List.find ("Czynsz" `isInfixOf`)
 
 stripSpaces :: Text -> Text
