@@ -1,4 +1,4 @@
-module Offer (Offer (Offer)) where
+module Offer (Offer (Offer, url, rentPriceStr)) where
 
 import Data.Text as T
 
