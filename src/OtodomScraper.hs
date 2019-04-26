@@ -8,7 +8,8 @@ import Offer (Offer(..))
 import Text.HTML.Scalpel
 import Data.Text as T
 import Data.List (find)
-import Control.Monad (sequence_)
+import Control.Monad (sequence_, mapM, (>=>))
+import Data.Maybe (Maybe(Just), maybe)
 
 offer :: Scraper Text Offer
 offer = do
@@ -16,20 +17,15 @@ offer = do
   price <- stripSpaces <$> text ("li" @: [hasClass "offer-item-price"])
   url <- attr "href" "a"
   rentPrice <- extractRentPrice <$> attr "href" "a"
-  return $ Offer name price rentPrice url
+  return $ Offer name price Nothing url
 
+scrapRent :: Scraper Text [Text]
+scrapRent = texts ("section" @: [hasClass "section-overview"] // "div" // "ul" // "li")
 
-scrapRent :: Scraper Text Text
-scrapRent = do
-  rentPrice <- Data.List.find ("czynsz" `isInfixOf`) <$> texts ("section" @: [hasClass "section-overview"] // "div" // "ul" // "li")
-  case rentPrice of
-    Just price -> return $ price
-    Nothing -> ""
-
-extractRentPrice :: Text -> Maybe Text
+extractRentPrice :: Text -> IO (Maybe Text)
 extractRentPrice url = do
-  abc <- scrapeURL (unpack url) scrapRent
-  abc
+  scraped <- scrapeURL (unpack url) scrapRent
+  return $ scraped >>= Data.List.find ("Czynsz" `isInfixOf`)
 
 stripSpaces :: Text -> Text
 stripSpaces = T.unwords . T.words
@@ -46,9 +42,16 @@ dropShitwords = dropWords shitwords
 offers :: Scraper Text [Offer]
 offers = chroots ("article" @: [hasClass "offer-item"]) offer
 
+augmentByOfferRentPrice :: Offer -> IO Offer
+augmentByOfferRentPrice offer = do
+  price <- extractRentPrice $ Offer.url offer
+  return $ case price of
+    Just price -> offer {rentPriceStr = Just price}
+    Nothing    -> offer
+
 scrapOtodomOffers :: String -> IO ()
 scrapOtodomOffers url = do
   offers <- scrapeURL url offers
   case offers of
-    Just offer -> sequence_ $ print <$> offer
+    Just offer -> sequence_ ((augmentByOfferRentPrice >=> print) <$> offer)
     Nothing -> return ()
