@@ -1,9 +1,11 @@
-module Offer (Offer (Offer, title, url, rentPriceStr)) where
+module Offer
+  ( Offer(..)
+  ) where
 
-import Data.Text as T
+import Data.Text
 
-data Offer = Offer { title :: Text
-                   , priceStr :: Text
-                   , rentPriceStr :: Maybe Text
-                   , url :: Text
+data Offer = Offer { offerTitle :: Text
+                   , offerPriceStr :: Text
+                   , offerRentPriceStr :: Maybe Text
+                   , offerURL :: Text
                    } deriving (Show, Eq)
