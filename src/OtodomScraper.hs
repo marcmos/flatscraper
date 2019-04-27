@@ -5,51 +5,42 @@ module OtodomScraper
     , flatScrapOtodomOffers
     ) where
 
-import Offer (Offer(..))
 import Text.HTML.Scalpel
 import Data.Text as T
 import Data.List (find)
-import Control.Monad (sequence_, (>=>))
+import Control.Monad ()
 
-offer :: Scraper Text Offer
-offer = do
+import Offer
+import WordUtils
+
+offerScraper :: Scraper Text Offer
+offerScraper = do
   name <- stripSpaces . dropShitwords <$> text ("span" @: [hasClass "offer-item-title"])
   price <- stripSpaces <$> text ("li" @: [hasClass "offer-item-price"])
   url <- attr "href" "a"
   return $ Offer name price Nothing url
 
 rentScraper :: Scraper Text [Text]
-rentScraper = texts ("section" @: [hasClass "section-overview"] // "div" // "ul" // "li")
+rentScraper = texts ("section" @: [hasClass "section-overview"] //
+                     "div" // "ul" // "li")
 
 extractRentPrice :: Text -> IO (Maybe Text)
 extractRentPrice url = do
   scraped <- scrapeURL (unpack url) rentScraper
   return $ scraped >>= Data.List.find ("Czynsz" `isInfixOf`)
 
-stripSpaces :: Text -> Text
-stripSpaces = T.unwords . T.words
-
-shitwords :: [Text]
-shitwords = T.pack <$> ["mieszkanie", "kraków", "wynajmę"]
-
-dropWords :: Foldable t => t Text -> Text -> Text
-dropWords keywords x = T.unwords $ Prelude.filter (\x -> T.toLower x `notElem` keywords) $ T.words x
-
-dropShitwords :: Text -> Text
-dropShitwords = dropWords shitwords
-
-offers :: Scraper Text [Offer]
-offers = chroots ("article" @: [hasClass "offer-item"]) offer
+offersScraper :: Scraper Text [Offer]
+offersScraper = chroots ("article" @: [hasClass "offer-item"]) offerScraper
 
 augmentByOfferRentPrice :: Offer -> IO Offer
 augmentByOfferRentPrice offer = do
-  price <- extractRentPrice $ Offer.url offer
+  price <- extractRentPrice $ offerURL offer
   return $ case price of
-    Just price -> offer {rentPriceStr = Just price}
+    Just p -> offer {offerRentPriceStr = Just p}
     Nothing    -> offer
 
 flatScrapOtodomOffers :: String -> IO (Maybe [Offer])
-flatScrapOtodomOffers url = scrapeURL url offers
+flatScrapOtodomOffers url = scrapeURL url offersScraper
 
 scrapOtodomOffers :: String -> IO (Maybe [Offer])
 scrapOtodomOffers url = do
