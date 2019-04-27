@@ -33,9 +33,9 @@ dropWords keywords x = T.unwords $ Prelude.filter (\x -> T.toLower x `notElem` k
 dropShitwords :: Text -> Text
 dropShitwords = dropWords shitwords
 
-scrapGratkaOffers :: String -> IO ()
+scrapGratkaOffers :: String -> IO (Maybe [Offer])
 scrapGratkaOffers url = do
   offers <- scrapeURL url offers
-  case offers of
-    Just offer -> sequence_ $ print <$> offer
-    Nothing -> return ()
+  return $ case offers of
+    Just offer -> Just offer
+    Nothing -> Nothing
