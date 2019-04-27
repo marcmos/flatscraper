@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - scalpel >= 0.5
 - text
+- feed
 
 library:
   source-dirs: src

@@ -2,21 +2,21 @@
 
 module OtodomScraper
     ( scrapOtodomOffers
+    , flatScrapOtodomOffers
     ) where
 
 import Offer (Offer(..))
 import Text.HTML.Scalpel
 import Data.Text as T
 import Data.List (find)
-import Control.Monad (sequence_, mapM, (>=>))
-import Data.Maybe (Maybe(Just), maybe)
+import Control.Monad (sequence_, (>=>))
+import Data.Maybe (Maybe(Just))
 
 offer :: Scraper Text Offer
 offer = do
   name <- stripSpaces . dropShitwords <$> text ("span" @: [hasClass "offer-item-title"])
   price <- stripSpaces <$> text ("li" @: [hasClass "offer-item-price"])
   url <- attr "href" "a"
-  rentPrice <- extractRentPrice <$> attr "href" "a"
   return $ Offer name price Nothing url
 
 scrapRent :: Scraper Text [Text]
@@ -49,9 +49,12 @@ augmentByOfferRentPrice offer = do
     Just price -> offer {rentPriceStr = Just price}
     Nothing    -> offer
 
-scrapOtodomOffers :: String -> IO ()
+flatScrapOtodomOffers :: String -> IO (Maybe [Offer])
+flatScrapOtodomOffers url = scrapeURL url offers
+
+scrapOtodomOffers :: String -> IO (Maybe [Offer])
 scrapOtodomOffers url = do
-  offers <- scrapeURL url offers
-  case offers of
-    Just offer -> sequence_ ((augmentByOfferRentPrice >=> print) <$> offer)
-    Nothing -> return ()
+  x <- flatScrapOtodomOffers url
+  case x of
+    Just o -> Just <$> mapM augmentByOfferRentPrice o
+    Nothing -> return Nothing
