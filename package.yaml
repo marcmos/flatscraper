@@ -24,6 +24,10 @@ dependencies:
 - scalpel >= 0.5
 - text
 - feed
+- persistent
+- persistent-template
+- persistent-sqlite
+- time
 
 library:
   source-dirs: src

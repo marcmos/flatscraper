@@ -8,7 +8,7 @@ import Text.HTML.Scalpel
 import Data.Text as T
 import Data.List (find)
 
-import Offer (Offer(..))
+import Offer
 import WordUtils
 
 offerScraper :: Scraper Text Offer
@@ -18,7 +18,7 @@ offerScraper = do
   rentPrice <- Data.List.find ("czynsz" `isInfixOf`) <$> texts
     ("ul" @: [hasClass "teaser__params"] // "li")
   url <- attr "data-href" "article"
-  return $ Offer name price rentPrice url
+  return $ Offer name price rentPrice url Nothing
 
 offersScraper :: Scraper Text [Offer]
 offersScraper = chroots ("article" @: [hasClass "teaser"]) offerScraper
