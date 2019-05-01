@@ -11,7 +11,6 @@
 module ScrapePersistence ( syncLastVisitTimestamps
                          ) where
 
-import Control.Monad.IO.Class (liftIO)
 import Database.Persist
 import Database.Persist.Sql
 import Database.Persist.Sqlite
@@ -29,15 +28,13 @@ OfferVisit
     deriving Show
 |]
 
-syncLastVisitTimestamps :: LocalTime -> [Offer] -> IO [Offer]
+syncLastVisitTimestamps :: UTCTime -> [Offer] -> IO [Offer]
 syncLastVisitTimestamps timestamp offers = do
-    -- tz <- getCurrentTimeZone
-    tz <- return utc
-    x <- runSqlite "/tmp/szkola_lite.sqlite" $ do
+    x <- runSqlite "flatscraper.sqlite" $ do
            runMigration migrateAll
-           mapM (insertBy . (offerVisit tz)) urls
-    return $ Prelude.zipWith (zipper tz) x offers
+           mapM (insertBy . offerVisit) urls
+    return $ Prelude.zipWith zipper x offers
   where urls = offerURL <$> offers
-        offerVisit tz url = OfferVisit url ((localTimeToUTC tz) timestamp)
-        zipper tz (Left e) r = r {offerVisit = Just $ utcToLocalTime tz $ (offerVisitScrapeTimestamp . entityVal) e}
-        zipper _ (Right _) r = r {offerVisit = Just $ timestamp}
+        offerVisit url = OfferVisit url timestamp
+        zipper (Left e) r = r {offerVisit = Just $ (offerVisitScrapeTimestamp . entityVal) e}
+        zipper (Right _) r = r {offerVisit = Just $ timestamp}

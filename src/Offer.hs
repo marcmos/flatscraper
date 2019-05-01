@@ -3,11 +3,11 @@ module Offer
   ) where
 
 import Data.Text
-import Data.Time.LocalTime
+import Data.Time (UTCTime)
 
 data Offer = Offer { offerTitle :: Text
                    , offerPriceStr :: Text
                    , offerRentPriceStr :: Maybe Text
                    , offerURL :: Text
-                   , offerVisit :: Maybe LocalTime
+                   , offerVisit :: Maybe UTCTime
                    } deriving (Show, Eq)
