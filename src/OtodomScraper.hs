@@ -30,7 +30,9 @@ extractRentPrice url = do
   return $ scraped >>= Data.List.find ("Czynsz" `isInfixOf`)
 
 offersScraper :: Scraper Text [Offer]
-offersScraper = chroots ("article" @: [hasClass "offer-item"]) offerScraper
+offersScraper = chroots
+  ("article" @: [hasClass "offer-item", "data-featured-name" @= "listing_no_promo"])
+  offerScraper
 
 augmentByOfferRentPrice :: Offer -> IO Offer
 augmentByOfferRentPrice offer = do
