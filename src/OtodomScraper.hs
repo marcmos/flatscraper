@@ -18,7 +18,7 @@ offerScraper = do
   name <- stripSpaces . dropShitwords <$> text ("span" @: [hasClass "offer-item-title"])
   price <- stripSpaces <$> text ("li" @: [hasClass "offer-item-price"])
   url <- attr "href" "a"
-  return $ Offer name price Nothing url
+  return $ Offer name price Nothing url Nothing
 
 rentScraper :: Scraper Text [Text]
 rentScraper = texts ("section" @: [hasClass "section-overview"] //
