@@ -1,52 +1,39 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module OtodomScraper
-    ( scrapOtodomOffers
-    , flatScrapOtodomOffers
+    ( otodomScraper
     ) where
 
 import Text.HTML.Scalpel
 import Data.Text as T
 import Data.List (find)
+import Data.Time
 import Control.Monad ()
 
 import Offer
 import WordUtils
 
-offerScraper :: Scraper Text Offer
-offerScraper = do
+offerScraper :: UTCTime -> Scraper Text Offer
+offerScraper timestamp = do
   name <- stripSpaces . dropShitwords <$> text ("span" @: [hasClass "offer-item-title"])
   price <- stripSpaces <$> text ("li" @: [hasClass "offer-item-price"])
   url <- attr "href" "a"
-  return $ Offer name price Nothing url Nothing
+  return $ Offer name price Nothing url timestamp False
 
-rentScraper :: Scraper Text [Text]
-rentScraper = texts ("section" @: [hasClass "section-overview"] //
-                     "div" // "ul" // "li")
+detailsScraper :: Offer -> Scraper Text Offer
+detailsScraper offer@(Offer _ _ _ _ _ True) = return offer
+detailsScraper offer = do
+  offerAttrs <- texts ("section" @: [hasClass "section-overview"] //
+                       "div" // "ul" // "li")
+  rent <- return $ Data.List.find ("Czynsz" `isInfixOf`) offerAttrs
+  return $ case rent of
+    Just r  -> offer { offerRentPriceStr = Just r, offerDetailed = True }
+    Nothing -> offer
 
-extractRentPrice :: Text -> IO (Maybe Text)
-extractRentPrice url = do
-  scraped <- scrapeURL (unpack url) rentScraper
-  return $ scraped >>= Data.List.find ("Czynsz" `isInfixOf`)
-
-offersScraper :: Scraper Text [Offer]
-offersScraper = chroots
+offersScraper :: UTCTime -> Scraper Text [Offer]
+offersScraper timestamp = chroots
   ("article" @: [hasClass "offer-item", "data-featured-name" @= "listing_no_promo"])
-  offerScraper
+  (offerScraper timestamp)
 
-augmentByOfferRentPrice :: Offer -> IO Offer
-augmentByOfferRentPrice offer = do
-  price <- extractRentPrice $ offerURL offer
-  return $ case price of
-    Just p -> offer {offerRentPriceStr = Just p}
-    Nothing    -> offer
-
-flatScrapOtodomOffers :: String -> IO (Maybe [Offer])
-flatScrapOtodomOffers url = scrapeURL url offersScraper
-
-scrapOtodomOffers :: String -> IO (Maybe [Offer])
-scrapOtodomOffers url = do
-  x <- flatScrapOtodomOffers url
-  case x of
-    Just o -> Just <$> mapM augmentByOfferRentPrice o
-    Nothing -> return Nothing
+otodomScraper :: OfferScraper
+otodomScraper = OfferScraper offersScraper (Just detailsScraper)
