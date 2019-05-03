@@ -8,7 +8,8 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-module ScrapePersistence ( syncLastVisitTimestamps
+module ScrapePersistence ( loadPersistedDetails
+                         , persistOffers
                          ) where
 
 import Database.Persist
@@ -18,23 +19,38 @@ import Database.Persist.TH
 
 import Data.Time
 import Data.Text as T
-import Offer
+import Data.Maybe ()
+import Control.Monad (forM_)
+import Control.Monad.IO.Class
+import Offer (Offer(..))
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 OfferVisit
+    scrapeTimestamp UTCTime
     url Text
     UniqueUrl url
-    scrapeTimestamp UTCTime
+    ownerRentPrice Text
+    rentPrice Text Maybe
     deriving Show
 |]
 
-syncLastVisitTimestamps :: UTCTime -> [Offer] -> IO [Offer]
-syncLastVisitTimestamps timestamp offers = do
-    x <- runSqlite "flatscraper.sqlite" $ do
-           runMigration migrateAll
-           mapM (insertBy . offerVisit) urls
-    return $ Prelude.zipWith zipper x offers
-  where urls = offerURL <$> offers
-        offerVisit url = OfferVisit url timestamp
-        zipper (Left e) r = r {offerVisit = Just $ (offerVisitScrapeTimestamp . entityVal) e}
-        zipper (Right _) r = r {offerVisit = Just $ timestamp}
+loadPersistedDetails :: [Offer] -> IO [Offer]
+loadPersistedDetails offers = runSqlite "flatscraper.sqlite" $ do
+  runMigration migrateAll
+  mapM augment offers
+  where entityQ offer = selectFirst [OfferVisitUrl ==. offerURL offer] []
+        entityToRecord offer (Entity _ ent) = offer
+          { offerVisit = offerVisitScrapeTimestamp ent
+          , offerPriceStr = offerVisitOwnerRentPrice ent
+          , offerRentPriceStr = offerVisitRentPrice ent
+          , offerDetailed = True }
+        augment offer = maybe offer (entityToRecord offer) <$> entityQ offer
+
+persistOffers :: [Offer] -> IO ()
+persistOffers offers = do
+  timestamp <- liftIO getCurrentTime
+  runSqlite "flatscraper.sqlite" $ do
+    runMigration migrateAll
+    -- FIXME insertBy
+    forM_ offers $ \offer -> insertBy $ OfferVisit timestamp (offerURL offer) (offerPriceStr offer)
+      (offerRentPriceStr offer)
