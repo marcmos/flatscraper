@@ -16,7 +16,7 @@ import WordUtils
 offerScraper :: UTCTime -> Scraper Text Offer
 offerScraper timestamp = do
   name <- stripSpaces . dropShitwords <$> text ("span" @: [hasClass "offer-item-title"])
-  price <- stripSpaces <$> text ("li" @: [hasClass "offer-item-price"])
+  price <- parsePrice <$> text ("li" @: [hasClass "offer-item-price"])
   url <- attr "href" "a"
   return $ Offer name price Nothing url timestamp False
 
@@ -25,9 +25,9 @@ detailsScraper offer@(Offer _ _ _ _ _ True) = return offer
 detailsScraper offer = do
   offerAttrs <- texts ("section" @: [hasClass "section-overview"] //
                        "div" // "ul" // "li")
-  rent <- return $ Data.List.find ("Czynsz" `isInfixOf`) offerAttrs
+  rent <- return $ parsePrice <$> Data.List.find ("Czynsz" `isInfixOf`) offerAttrs
   return $ case rent of
-    Just r  -> offer { offerRentPriceStr = Just r, offerDetailed = True }
+    Just r  -> offer { offerRentPrice = Just r, offerDetailed = True }
     Nothing -> offer
 
 offersScraper :: UTCTime -> Scraper Text [Offer]

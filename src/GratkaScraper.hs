@@ -5,7 +5,7 @@ module GratkaScraper
     ) where
 
 import Text.HTML.Scalpel
-import Data.Text as T
+import Data.Text (Text, isInfixOf)
 import Data.List (find)
 import Data.Time
 
@@ -15,11 +15,11 @@ import WordUtils
 offerScraper :: UTCTime -> Scraper Text Offer
 offerScraper timestamp = do
   name <- stripSpaces . dropShitwords <$> text ("h2" @: [hasClass "teaser__title"])
-  price <- stripSpaces <$> text ("p" @: [hasClass "teaser__price"])
+  price <- text ("p" @: [hasClass "teaser__price"])
   rentPrice <- Data.List.find ("czynsz" `isInfixOf`) <$> texts
     ("ul" @: [hasClass "teaser__params"] // "li")
   url <- attr "data-href" "article"
-  return $ Offer name price rentPrice url timestamp True
+  return $ Offer name (parsePrice price) (parsePrice <$> rentPrice) url timestamp True
 
 offersScraper :: UTCTime -> Scraper Text [Offer]
 offersScraper timestamp = chroots ("article" @: [hasClass "teaser"]) (offerScraper timestamp)

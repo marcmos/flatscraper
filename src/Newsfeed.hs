@@ -5,8 +5,7 @@ module Newsfeed
   ) where
 
 import Data.Text as T (pack, unlines)
-import Data.Text.Lazy as TL
-import Data.Maybe (fromMaybe)
+import Data.Text.Lazy as TL (Text)
 import Text.RSS.Syntax
 import Text.RSS.Export
 import Data.Time
@@ -14,14 +13,21 @@ import Data.Time
 import Offer
 
 renderOfferFeedEntry :: Offer -> RSSItem
-renderOfferFeedEntry offer = (nullItem $ offerTitle offer)
+renderOfferFeedEntry offer = (nullItem title)
   { rssItemLink = Just $ offerURL offer
   , rssItemPubDate = Just . T.pack . formatTime defaultTimeLocale rfc822DateFormat . offerVisit $ offer
   , rssItemDescription = Just $ T.unlines
-    [ offerTitle offer <> "<br />"
-    , offerPriceStr offer <> "<br />"
-    , fromMaybe "" (offerRentPriceStr offer) ]
+    [ offerTitle offer ]
   }
+  where
+    price = offerPrice offer
+    title = (case offerRentPrice offer of
+          Just rentPrice ->
+            (T.pack . show) price <> "+" <>
+            (T.pack . show) rentPrice <> "=" <>
+            (T.pack . show) (price + rentPrice)
+          Nothing        -> T.pack . show $ offerPrice offer)
+          <> " " <> offerTitle offer
 
 -- FIXME nullRSS empty strings replaced later
 renderOfferFeed :: [Offer] -> Maybe Text
