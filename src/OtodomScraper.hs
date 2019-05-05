@@ -18,10 +18,10 @@ offerScraper timestamp = do
   name <- stripSpaces . dropShitwords <$> text ("span" @: [hasClass "offer-item-title"])
   price <- parsePrice <$> text ("li" @: [hasClass "offer-item-price"])
   url <- attr "href" "a"
-  return $ Offer name price Nothing url timestamp False
+  return $ Offer name price Nothing url timestamp False "otodom.pl"
 
 detailsScraper :: Offer -> Scraper Text Offer
-detailsScraper offer@(Offer _ _ _ _ _ True) = return offer
+detailsScraper offer@(Offer {offerDetailed = True}) = return offer
 detailsScraper offer = do
   offerAttrs <- texts ("section" @: [hasClass "section-overview"] //
                        "div" // "ul" // "li")

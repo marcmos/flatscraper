@@ -4,7 +4,7 @@ module Newsfeed
   ( renderOfferFeed
   ) where
 
-import Data.Text as T (pack, unlines)
+import Data.Text as T (pack)
 import Data.Text.Lazy as TL (Text)
 import Text.RSS.Syntax
 import Text.RSS.Export
@@ -16,8 +16,8 @@ renderOfferFeedEntry :: Offer -> RSSItem
 renderOfferFeedEntry offer = (nullItem title)
   { rssItemLink = Just $ offerURL offer
   , rssItemPubDate = Just . T.pack . formatTime defaultTimeLocale rfc822DateFormat . offerVisit $ offer
-  , rssItemDescription = Just $ T.unlines
-    [ offerTitle offer ]
+  , rssItemDescription = Just $ offerTitle offer
+  , rssItemAuthor = Just $ offerScraperName offer
   }
   where
     price = offerPrice offer
