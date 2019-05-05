@@ -9,7 +9,7 @@ import Data.Maybe (fromMaybe)
 import Data.Time
 import Control.Monad
 
-import Text.HTML.Scalpel
+import Text.HTML.Scalpel (Scraper, scrapeURL)
 import GratkaScraper (gratkaScraper)
 import OtodomScraper (otodomScraper)
 import Newsfeed (renderOfferFeed)
@@ -32,8 +32,8 @@ scrapeDetails' scraper offers = forM offers $ \offer ->
       T.putStrLn $ T.pack "Scraping " <> offerURL offer
       scrapeURL (unpack . offerURL $ offer) (scraper offer)
 
-fullScrap :: OfferScraper -> String -> IO [Offer]
-fullScrap offerScraper =
+scrape :: OfferScraper -> String -> IO [Offer]
+scrape offerScraper =
   scrapeList >=> loadPersistedDetails >=> scrapeDetails >=> \offers -> do
     persistOffers offers
     return offers
@@ -47,8 +47,8 @@ fullScrap offerScraper =
 
 saveNewsfeed :: IO ()
 saveNewsfeed = do
-  otodomOffers <- fullScrap otodomScraper otodomScrapeURL
-  gratkaOffers <- fullScrap gratkaScraper gratkaScrapeURL
+  otodomOffers <- scrape otodomScraper otodomScrapeURL
+  gratkaOffers <- scrape gratkaScraper gratkaScrapeURL
   case renderOfferFeed $ otodomOffers ++ gratkaOffers of
     Just x -> TL.writeFile "newsfeed.xml" x
     Nothing -> Prelude.putStrLn "Scrap failed"

@@ -12,6 +12,7 @@ data Offer = Offer
   , offerURL :: Text
   , offerVisit :: UTCTime
   , offerDetailed :: Bool
+  , offerScraperName :: Text
   } deriving (Show, Eq)
 
 data OfferScraper = OfferScraper
