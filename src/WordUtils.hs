@@ -1,9 +1,14 @@
 module WordUtils
   ( stripSpaces
   , dropShitwords
+  , parsePrice
   ) where
 
 import Data.Text as T
+import Data.Text.Read (decimal)
+import Data.List (filter)
+import Data.Char (isDigit)
+import Data.Either (fromRight)
 
 stripSpaces :: Text -> Text
 stripSpaces = T.unwords . T.words
@@ -16,3 +21,8 @@ dropWords keywords x = T.unwords $ Prelude.filter (\w -> T.toLower w `notElem` k
 
 dropShitwords :: Text -> Text
 dropShitwords = dropWords shitwords
+
+parsePrice :: Text -> Int
+parsePrice x =
+  fromRight 0 $ fst <$>
+  (decimal . T.takeWhile ((/=) ',') . T.concat . (Data.List.filter (T.any isDigit) <$> T.words)) x

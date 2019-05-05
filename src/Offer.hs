@@ -7,8 +7,8 @@ import Text.HTML.Scalpel
 
 data Offer = Offer
   { offerTitle :: Text
-  , offerPriceStr :: Text
-  , offerRentPriceStr :: Maybe Text
+  , offerPrice :: Int
+  , offerRentPrice :: Maybe Int
   , offerURL :: Text
   , offerVisit :: UTCTime
   , offerDetailed :: Bool
