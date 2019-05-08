@@ -9,6 +9,7 @@ import Data.Text.Lazy as TL (Text)
 import Text.RSS.Syntax
 import Text.RSS.Export
 import Data.Time
+import Data.Monoid ((<>))
 
 import Offer
 

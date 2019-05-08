@@ -7,6 +7,7 @@ import Data.Text.IO as T (putStrLn)
 import Data.Text.Lazy.IO as TL
 import Data.Maybe (fromMaybe)
 import Data.Time
+import Data.Monoid ((<>))
 import Control.Monad
 
 import Text.HTML.Scalpel (Scraper, scrapeURL)
