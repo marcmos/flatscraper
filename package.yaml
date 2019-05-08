@@ -11,13 +11,13 @@ extra-source-files:
 description:         Please see the README at <https://gitlab.memleak.pl/mmos/flatscraper#readme>
 
 dependencies:
-- base >= 4.7 && < 5
-- scalpel >= 0.5
-- text
+- base >= 4.10 && < 5
 - feed
 - persistent
 - persistent-template
 - persistent-sqlite
+- scalpel >= 0.5 && <0.6
+- text
 - time
 
 library:
