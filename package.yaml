@@ -7,7 +7,6 @@ copyright:           "2019 Marcin Moskal"
 
 extra-source-files:
 - README.md
-- ChangeLog.md
 
 description:         Please see the README at <https://gitlab.memleak.pl/mmos/flatscraper#readme>
 
@@ -30,18 +29,6 @@ executables:
   flatscraper-exe:
     main:                Main.hs
     source-dirs:         app
-    ghc-options:
-    - -Wall
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - flatscraper
-
-tests:
-  flatscraper-test:
-    main:                Spec.hs
-    source-dirs:         test
     ghc-options:
     - -Wall
     - -threaded
