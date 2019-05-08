@@ -1,6 +1,6 @@
 name:                flatscraper
 version:             0.1.0.0
-license:             BSD3
+license:             GPL-3
 author:              "Marcin Moskal"
 maintainer:          "mmos@memleak.pl"
 copyright:           "2019 Marcin Moskal"
