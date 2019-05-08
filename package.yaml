@@ -26,13 +26,11 @@ library:
     - -Wall
 
 executables:
-  flatscraper-exe:
+  flatscraper:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
     - -Wall
     - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
     dependencies:
     - flatscraper
