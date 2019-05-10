@@ -1,16 +1,13 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Main where
 
-import Data.Text as T (Text(), pack, unpack)
-import Data.Text.IO as T (putStrLn)
+import Data.Text as T (Text(), unpack)
 import Data.Text.Lazy.IO as TL
 import Data.Maybe (fromMaybe)
 import Data.Time
 import Data.Monoid ((<>))
 import Control.Monad
 
-import Text.HTML.Scalpel (Scraper, scrapeURL)
+import Text.HTML.Scalpel hiding (scrape)
 import GratkaScraper (gratkaScraper)
 import OtodomScraper (otodomScraper)
 import Newsfeed (renderOfferFeed)
@@ -24,14 +21,18 @@ otodomScrapeURL = "https://www.otodom.pl/wynajem/mieszkanie/krakow/?search%5Bfil
 gratkaScrapeURL :: String
 gratkaScrapeURL = "https://gratka.pl/nieruchomosci/mieszkania/krakow/wynajem?liczba-pokoi:min=3&liczba-pokoi:max=4&cena-calkowita:max=3000&sort=newest"
 
+runScrape :: URL -> Scraper Text a -> IO (Maybe a)
+runScrape url scraper = do
+  Prelude.putStrLn $ "Scraping " <> url
+  scrapeURLWithConfig config url scraper
+  where config = Config utf8Decoder Nothing
+
 scrapeDetails' :: (Offer -> Scraper T.Text Offer) -> [Offer] -> IO [Offer]
 scrapeDetails' scraper offers = forM offers $ \offer ->
-  fromMaybe offer <$> do
+  fromMaybe offer <$>
   if offerDetailed offer
     then return Nothing
-    else do
-      T.putStrLn $ T.pack "Scraping " <> offerURL offer
-      scrapeURL (unpack . offerURL $ offer) (scraper offer)
+    else runScrape (unpack . offerURL $ offer) (scraper offer)
 
 scrape :: OfferScraper -> String -> IO [Offer]
 scrape offerScraper =
@@ -43,7 +44,7 @@ scrape offerScraper =
     detailsScraper = offerDetailsScraper offerScraper
     scrapeList url = do
       timestamp <- getCurrentTime
-      fromMaybe [] <$> scrapeURL url (listScraper timestamp)
+      fromMaybe [] <$> runScrape url (listScraper timestamp)
     scrapeDetails offers = maybe (return offers) (`scrapeDetails'` offers) detailsScraper
 
 saveNewsfeed :: IO ()
