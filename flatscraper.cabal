@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: baf259e7a0df0b4fb466dcdaac4720140475e732186a82c7e93c58e37291e348
+-- hash: 19feebae808bf1a87fcc1e760aed0c274b12ff8b4bcea18705ba768201434286
 
 name:           flatscraper
-version:        0.1.0.0
+version:        0.2.0.0
 description:    Please see the README at <https://gitlab.memleak.pl/mmos/flatscraper#readme>
 author:         Marcin Moskal
 maintainer:     mmos@memleak.pl
