@@ -6,20 +6,17 @@ import Data.Maybe (fromMaybe)
 import Data.Time
 import Data.Monoid ((<>))
 import Control.Monad
+import Data.List (isInfixOf)
+import System.Environment (getArgs)
+import Control.Exception (handle, SomeException)
 
-import Text.HTML.Scalpel hiding (scrape)
+import Text.HTML.Scalpel hiding (scrape, scrapeURL)
 import GratkaScraper (gratkaScraper)
 import OtodomScraper (otodomScraper)
 import Newsfeed (renderOfferFeed)
 import ScrapePersistence
 
 import Offer
-
-otodomScrapeURL :: String
-otodomScrapeURL = "https://www.otodom.pl/wynajem/mieszkanie/krakow/?search%5Bfilter_float_price%3Ato%5D=3000&search%5Bfilter_enum_rooms_num%5D%5B0%5D=3&search%5Bfilter_enum_rooms_num%5D%5B1%5D=4&search%5Bdist%5D=0&search%5Bsubregion_id%5D=410&search%5Bcity_id%5D=38&search%5Border%5D=created_at_first%3Adesc"
-
-gratkaScrapeURL :: String
-gratkaScrapeURL = "https://gratka.pl/nieruchomosci/mieszkania/krakow/wynajem?liczba-pokoi:min=3&liczba-pokoi:max=4&cena-calkowita:max=3000&sort=newest"
 
 runScrape :: URL -> Scraper Text a -> IO (Maybe a)
 runScrape url scraper = do
@@ -47,13 +44,24 @@ scrape offerScraper =
       fromMaybe [] <$> runScrape url (listScraper timestamp)
     scrapeDetails offers = maybe (return offers) (`scrapeDetails'` offers) detailsScraper
 
-saveNewsfeed :: IO ()
-saveNewsfeed = do
-  otodomOffers <- scrape otodomScraper otodomScrapeURL
-  gratkaOffers <- scrape gratkaScraper gratkaScrapeURL
-  case renderOfferFeed $ otodomOffers ++ gratkaOffers of
-    Just x -> TL.writeFile "newsfeed.xml" x
-    Nothing -> Prelude.putStrLn "Scrap failed"
+safeScrape :: OfferScraper -> String -> IO [Offer]
+safeScrape scraper url =
+  handle (\e -> do let err = show (e :: SomeException)
+                   Prelude.putStrLn err
+                   return []) $ scrape scraper url
+
+scrapeURL :: String -> IO [Offer]
+scrapeURL url
+  | "gratka.pl" `isInfixOf` url = safeScrape gratkaScraper url
+  | "otodom.pl" `isInfixOf` url = safeScrape otodomScraper url
+  | otherwise                = do
+      Prelude.putStrLn $ "no scraper for URL " ++ url
+      return []
 
 main :: IO ()
-main = saveNewsfeed
+main = do
+  urls <- getArgs
+  offers <- concat <$> mapM scrapeURL urls
+  case renderOfferFeed offers of
+     Just x -> TL.writeFile "newsfeed.xml" x
+     Nothing -> Prelude.putStrLn "Scrap failed"
