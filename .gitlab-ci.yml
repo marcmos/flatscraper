@@ -1,0 +1,55 @@
+image: haskell:8
+
+# If you have dependencies that aren't included in the Dockerfile.
+# You might also consider making a new Docker image based on stack-build
+# and pushing it to GitLab's registry to save on build time.
+before_script:
+  - apt-get update -y
+  - apt-get install -y -qq libcurl4-openssl-dev
+
+# https://docs.gitlab.com/ee/ci/yaml/#stages
+# jobs of the same stage are executed in parallel
+stages:
+  - build
+  - docker
+
+# https://docs.gitlab.com/ee/ci/variables/#using-the-ci-variables-in-your-job-scripts
+variables:
+    STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"
+
+build:
+  stage: build
+  # https://docs.gitlab.com/ee/ci/yaml/#cache
+  cache:
+    key: "$CI_JOB_NAME"
+    paths:
+      - .stack-work/
+      - .stack-root/
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - ./out
+  script:
+    - stack -j 1 --no-terminal build
+    - mkdir out
+    - stack install --local-bin-path ./out
+
+
+docker:
+  stage: docker
+  image: docker
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://localhost:2375
+    DOCKER_DRIVER: overlay2
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:latest || true
+    - docker build --cache-from $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:latest .
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - master
+
+
