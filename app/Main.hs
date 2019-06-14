@@ -2,15 +2,18 @@
 
 module Main where
 
-import Data.Text as T (Text(), unpack)
+import Data.Text (Text())
+import qualified Data.Text as T (pack, unpack)
 import Data.Text.Encoding (encodeUtf8)
-import Data.Text.Lazy.IO as TL
+import qualified Data.Text.IO as T (hPutStrLn)
+import qualified Data.Text.Lazy.IO as T (putStr)
 import Data.Maybe (fromMaybe)
 import Data.Time
 import Data.Monoid ((<>))
 import Control.Monad
 import Data.List (isInfixOf)
 import System.Environment (getArgs)
+import System.IO (stderr, hPutStrLn)
 import Control.Exception (handle, SomeException)
 import Data.CaseInsensitive (mk)
 
@@ -39,15 +42,15 @@ runScrape :: URL -> Scraper Text a -> IO (Maybe a)
 runScrape url scraper = do
   mgr <- newManager $ tlsManagerSettings { managerModifyRequest = addLegitHeadersNoScam100 }
   let config = Config utf8Decoder (Just mgr)
-  Prelude.putStrLn $ "Scraping " <> url
+  hPutStrLn stderr $ "Scraping " <> url
   scrapeURLWithConfig config url scraper
 
-scrapeDetails' :: (Offer -> Scraper T.Text Offer) -> [Offer] -> IO [Offer]
+scrapeDetails' :: (Offer -> Scraper Text Offer) -> [Offer] -> IO [Offer]
 scrapeDetails' scraper offers = forM offers $ \offer ->
   fromMaybe offer <$>
   if offerDetailed offer
     then return Nothing
-    else runScrape (unpack . offerURL $ offer) (scraper offer)
+    else runScrape (T.unpack . offerURL $ offer) (scraper offer)
 
 scrape :: OfferScraper -> String -> IO [Offer]
 scrape offerScraper =
@@ -65,7 +68,7 @@ scrape offerScraper =
 safeScrape :: OfferScraper -> String -> IO [Offer]
 safeScrape scraper url =
   handle (\e -> do let err = show (e :: SomeException)
-                   Prelude.putStrLn err
+                   hPutStrLn stderr err
                    return []) $ scrape scraper url
 
 scrapeURL :: String -> IO [Offer]
@@ -74,7 +77,7 @@ scrapeURL url
   | "otodom.pl" `isInfixOf` url = safeScrape otodomScraper url
   | "olx.pl"    `isInfixOf` url = safeScrape olxScraper url
   | otherwise                = do
-      Prelude.putStrLn $ "no scraper for URL " ++ url
+      hPutStrLn stderr $ "no scraper for URL " <> url
       return []
 
 main :: IO ()
@@ -82,5 +85,5 @@ main = do
   urls <- getArgs
   offers <- concat <$> mapM scrapeURL urls
   case renderOfferFeed offers of
-     Just x -> TL.writeFile "newsfeed.xml" x
-     Nothing -> Prelude.putStrLn "Scrap failed"
+     Just x -> T.putStr x
+     Nothing -> T.hPutStrLn stderr "Scrap failed"
