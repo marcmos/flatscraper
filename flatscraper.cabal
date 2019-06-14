@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 19feebae808bf1a87fcc1e760aed0c274b12ff8b4bcea18705ba768201434286
+-- hash: 97fdf9b2176b4cb49b972ead27974b532e726eea7023df1f81ca0f5d9e02c3e4
 
 name:           flatscraper
 version:        0.2.0.0
@@ -23,6 +23,7 @@ library
       GratkaScraper
       Newsfeed
       Offer
+      OlxScraper
       OtodomScraper
       ScrapePersistence
       WordUtils
@@ -33,7 +34,11 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.10 && <5
+    , bytestring
+    , case-insensitive
     , feed
+    , http-client
+    , http-client-tls
     , persistent
     , persistent-sqlite
     , persistent-template
@@ -51,8 +56,12 @@ executable flatscraper
   ghc-options: -Wall -threaded
   build-depends:
       base >=4.10 && <5
+    , bytestring
+    , case-insensitive
     , feed
     , flatscraper
+    , http-client
+    , http-client-tls
     , persistent
     , persistent-sqlite
     , persistent-template
