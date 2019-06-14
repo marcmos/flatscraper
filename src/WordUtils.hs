@@ -14,7 +14,15 @@ stripSpaces :: Text -> Text
 stripSpaces = T.unwords . T.words
 
 shitwords :: [Text]
-shitwords = T.pack <$> ["mieszkanie", "kraków", "wynajmę"]
+shitwords = T.pack <$> [
+  "mieszkanie", "kraków", "piękne", "doskonałej", "lokalizacji", "nowe",
+  "komfortowa", "komfortowe", "śliczna", "śliczne", "wynajmę", "piękna",
+  "piękne", ",", "do", "wynajęcia", "wynajmie", "cicha", "okolica", "tania",
+  "tanie", "duża", "świetnym",  "wykończeniu", "kompletne", "wyposażenie",
+  "wynajme", "-", "dużym", "czyste", "czysta", "przytulna", "przytulne",
+  "wynajem", "super", "wynajecia", "nowoczesną", "nowoczesne", "wszędzie",
+  "blisko", "świetna", "ciche", "widokowe", "sypialnie"
+  ]
 
 dropWords :: Foldable t => t Text -> Text -> Text
 dropWords keywords x = T.unwords $ Prelude.filter (\w -> T.toLower w `notElem` keywords) $ T.words x
