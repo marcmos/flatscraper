@@ -28,14 +28,8 @@ detailsScraper offer = do
   rent <- return $ do
     attribute <- Data.List.find (\x -> "Czynsz" `isInfixOf` (fst x)) attributes
     return . parsePrice . snd $ attribute
-  privateOffer <- return $ elem ("Oferta od", "Osoby prywatnej") attributes
-  rooms <- return $ snd <$> Data.List.find (\x -> fst x == "Liczba pokoi") attributes
   return $ offer { offerDetailed = True
                  , offerRentPrice = rent
-                 , offerTitle =
-                   offerTitle offer <>
-                   maybe "" (", " <>) rooms <>
-                   if privateOffer then ", prywatna" else ""
                  }
 
 attrsScraper :: Scraper Text [(Text, Text)]
