@@ -1,6 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import Data.Text as T (Text(), unpack)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Text.Lazy.IO as TL
 import Data.Maybe (fromMaybe)
 import Data.Time
@@ -9,20 +12,35 @@ import Control.Monad
 import Data.List (isInfixOf)
 import System.Environment (getArgs)
 import Control.Exception (handle, SomeException)
+import Data.CaseInsensitive (mk)
 
 import Text.HTML.Scalpel hiding (scrape, scrapeURL)
+import Network.HTTP.Client
+import Network.HTTP.Client.TLS (tlsManagerSettings)
 import GratkaScraper (gratkaScraper)
 import OtodomScraper (otodomScraper)
+import OlxScraper (olxScraper)
 import Newsfeed (renderOfferFeed)
 import ScrapePersistence
 
 import Offer
 
+addLegitHeadersNoScam100 :: Request -> IO Request
+addLegitHeadersNoScam100 req = return $ req
+        { requestHeaders =
+                [ (mk $ encodeUtf8 "Accept", encodeUtf8 "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                , (mk $ encodeUtf8 "Accept-Language", encodeUtf8 "pl,en-US;q=0.7,en;q=0.3")
+                , (mk $ encodeUtf8 "Cache-Control", encodeUtf8 "no-cache")
+                , (mk $ encodeUtf8 "User-Agent", encodeUtf8 "Mozilla/5.0 (X11; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0")
+                ]
+        }
+
 runScrape :: URL -> Scraper Text a -> IO (Maybe a)
 runScrape url scraper = do
+  mgr <- newManager $ tlsManagerSettings { managerModifyRequest = addLegitHeadersNoScam100 }
+  let config = Config utf8Decoder (Just mgr)
   Prelude.putStrLn $ "Scraping " <> url
   scrapeURLWithConfig config url scraper
-  where config = Config utf8Decoder Nothing
 
 scrapeDetails' :: (Offer -> Scraper T.Text Offer) -> [Offer] -> IO [Offer]
 scrapeDetails' scraper offers = forM offers $ \offer ->
@@ -54,6 +72,7 @@ scrapeURL :: String -> IO [Offer]
 scrapeURL url
   | "gratka.pl" `isInfixOf` url = safeScrape gratkaScraper url
   | "otodom.pl" `isInfixOf` url = safeScrape otodomScraper url
+  | "olx.pl"    `isInfixOf` url = safeScrape olxScraper url
   | otherwise                = do
       Prelude.putStrLn $ "no scraper for URL " ++ url
       return []
