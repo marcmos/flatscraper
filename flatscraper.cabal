@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 97fdf9b2176b4cb49b972ead27974b532e726eea7023df1f81ca0f5d9e02c3e4
+-- hash: 3c1a885534f59df54f5317c734b50be2ca7c85a2e6d5a008d435bab4f7db8f5d
 
 name:           flatscraper
 version:        0.2.0.0
@@ -21,6 +21,7 @@ extra-source-files:
 library
   exposed-modules:
       GratkaScraper
+      GumtreeScraper
       Newsfeed
       Offer
       OlxScraper
