@@ -15,7 +15,8 @@ stages:
 
 # https://docs.gitlab.com/ee/ci/variables/#using-the-ci-variables-in-your-job-scripts
 variables:
-    STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"
+  STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"
+  GHCRTS: -M2g
 
 build:
   stage: build
