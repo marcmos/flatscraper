@@ -36,5 +36,7 @@ executables:
     ghc-options:
     - -Wall
     - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
     dependencies:
     - flatscraper
