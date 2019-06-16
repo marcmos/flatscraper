@@ -21,7 +21,6 @@ build:
   stage: build
   # https://docs.gitlab.com/ee/ci/yaml/#cache
   cache:
-    key: "$CI_JOB_NAME"
     paths:
       - .stack-work/
       - .stack-root/
