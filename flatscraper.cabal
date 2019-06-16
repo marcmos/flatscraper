@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3c1a885534f59df54f5317c734b50be2ca7c85a2e6d5a008d435bab4f7db8f5d
+-- hash: ea5cbeee90eef23658bb3ff8080c1e8cf73e3baf9fc8ae90fc49d396a48a8f7e
 
 name:           flatscraper
 version:        0.2.0.0
@@ -54,7 +54,7 @@ executable flatscraper
       Paths_flatscraper
   hs-source-dirs:
       app
-  ghc-options: -Wall -threaded
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.10 && <5
     , bytestring
