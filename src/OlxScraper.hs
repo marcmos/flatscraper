@@ -45,5 +45,5 @@ offersScraper timestamp = chroots
   (("table" @: ["id" @= "offers_table"]) // "td" @: [hasClass "offer"])
   (offerScraper timestamp)
 
-olxScraper :: OfferScraper
-olxScraper = OfferScraper offersScraper (Just detailsScraper)
+olxScraper :: Config Text -> OfferScraper
+olxScraper config = OfferScraper config offersScraper (Just detailsScraper)

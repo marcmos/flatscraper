@@ -16,5 +16,6 @@ data Offer = Offer
   } deriving (Show, Eq)
 
 data OfferScraper = OfferScraper
-  { offerListScraper :: UTCTime -> Scraper Text [Offer]
+  { offerScraperConfig :: Config Text
+  , offerListScraper :: UTCTime -> Scraper Text [Offer]
   , offerDetailsScraper :: Maybe (Offer -> Scraper Text Offer) }

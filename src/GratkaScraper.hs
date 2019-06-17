@@ -24,5 +24,5 @@ offerScraper timestamp = do
 offersScraper :: UTCTime -> Scraper Text [Offer]
 offersScraper timestamp = chroots ("article" @: [hasClass "teaser"]) (offerScraper timestamp)
 
-gratkaScraper :: OfferScraper
-gratkaScraper = OfferScraper offersScraper Nothing
+gratkaScraper :: Config Text -> OfferScraper
+gratkaScraper config = OfferScraper config offersScraper Nothing

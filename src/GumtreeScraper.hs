@@ -25,5 +25,5 @@ offersScraper timestamp = chroots
   ("div" @: [hasClass "view"] // "div" @: [hasClass "tileV1"])
   (offerScraper timestamp)
 
-gumtreeScraper :: OfferScraper
-gumtreeScraper = OfferScraper offersScraper Nothing
+gumtreeScraper :: Config Text -> OfferScraper
+gumtreeScraper config = OfferScraper config offersScraper Nothing
