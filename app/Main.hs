@@ -3,7 +3,7 @@
 module Main where
 
 import Data.Text (Text())
-import qualified Data.Text as T (pack, unpack)
+import qualified Data.Text as T (unpack)
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Data.Text.Lazy.IO as T (putStr)
@@ -39,32 +39,29 @@ addLegitHeadersNoScam100 req = return $ req
                 ]
         }
 
-runScrape :: URL -> Scraper Text a -> IO (Maybe a)
-runScrape url scraper = do
-  mgr <- newManager $ tlsManagerSettings { managerModifyRequest = addLegitHeadersNoScam100 }
-  let config = Config utf8Decoder (Just mgr)
+runScrape :: Config Text -> URL -> Scraper Text a -> IO (Maybe a)
+runScrape config url scraper = do
   hPutStrLn stderr $ "Scraping " <> url
   scrapeURLWithConfig config url scraper
 
-scrapeDetails' :: (Offer -> Scraper Text Offer) -> [Offer] -> IO [Offer]
-scrapeDetails' scraper offers = forM offers $ \offer ->
+scrapeDetails' :: Config Text -> (Offer -> Scraper Text Offer) -> [Offer] -> IO [Offer]
+scrapeDetails' config scraper offers = forM offers $ \offer ->
   fromMaybe offer <$>
   if offerDetailed offer
     then return Nothing
-    else runScrape (T.unpack . offerURL $ offer) (scraper offer)
+    else runScrape config (T.unpack . offerURL $ offer) (scraper offer)
 
 scrape :: OfferScraper -> String -> IO [Offer]
-scrape offerScraper =
+scrape (OfferScraper config listScraper detailsScraper) =
   scrapeList >=> loadPersistedDetails >=> scrapeDetails >=> \offers -> do
     persistOffers offers
     return offers
   where
-    listScraper = offerListScraper offerScraper
-    detailsScraper = offerDetailsScraper offerScraper
     scrapeList url = do
       timestamp <- getCurrentTime
-      fromMaybe [] <$> runScrape url (listScraper timestamp)
-    scrapeDetails offers = maybe (return offers) (`scrapeDetails'` offers) detailsScraper
+      fromMaybe [] <$> runScrape config url (listScraper timestamp)
+    scrapeDetails'' = scrapeDetails' config
+    scrapeDetails offers = maybe (return offers) (`scrapeDetails''` offers) detailsScraper
 
 safeScrape :: OfferScraper -> String -> IO [Offer]
 safeScrape scraper url =
@@ -72,20 +69,22 @@ safeScrape scraper url =
                    hPutStrLn stderr err
                    return []) $ scrape scraper url
 
-scrapeURL :: String -> IO [Offer]
-scrapeURL url
-  | "gratka.pl"  `isInfixOf` url = safeScrape gratkaScraper url
-  | "otodom.pl"  `isInfixOf` url = safeScrape otodomScraper url
-  | "olx.pl"     `isInfixOf` url = safeScrape olxScraper url
-  | "gumtree.pl" `isInfixOf` url = safeScrape gumtreeScraper url
+scrapeURL :: Config Text -> String -> IO [Offer]
+scrapeURL config url
+  | "gratka.pl"  `isInfixOf` url = safeScrape (gratkaScraper config) url
+  | "otodom.pl"  `isInfixOf` url = safeScrape (otodomScraper config) url
+  | "olx.pl"     `isInfixOf` url = safeScrape (olxScraper config) url
+  | "gumtree.pl" `isInfixOf` url = safeScrape (gumtreeScraper config) url
   | otherwise                = do
       hPutStrLn stderr $ "no scraper for URL " <> url
       return []
 
 main :: IO ()
 main = do
+  httpManager <- newManager $ tlsManagerSettings { managerModifyRequest = addLegitHeadersNoScam100 }
+  let config = Config utf8Decoder (Just httpManager)
   urls <- getArgs
-  offers <- concat <$> mapM scrapeURL urls
+  offers <- concat <$> mapM (scrapeURL config) urls
   case renderOfferFeed offers of
      Just x -> T.putStr x
      Nothing -> T.hPutStrLn stderr "Scrap failed"

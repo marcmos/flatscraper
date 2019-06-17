@@ -35,5 +35,5 @@ offersScraper timestamp = chroots
   ("article" @: [hasClass "offer-item", "data-featured-name" @= "listing_no_promo"])
   (offerScraper timestamp)
 
-otodomScraper :: OfferScraper
-otodomScraper = OfferScraper offersScraper (Just detailsScraper)
+otodomScraper :: Config Text -> OfferScraper
+otodomScraper config = OfferScraper config offersScraper (Just detailsScraper)
