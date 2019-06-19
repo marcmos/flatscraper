@@ -19,7 +19,7 @@ offerScraper timestamp = do
   name <- stripSpaces . dropShitwords <$> (text $ "a" // "strong")
   price <- parsePrice <$> text ("p" @: [hasClass "price"])
   url <- (attr "href" "a")
-  return $ Offer name price Nothing url timestamp False "olx.pl"
+  return $ basicOffer name price url timestamp "olx.pl"
 
 detailsScraper :: Offer -> Scraper Text Offer
 detailsScraper offer@(Offer {offerDetailed = True}) = return offer

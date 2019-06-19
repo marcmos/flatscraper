@@ -18,7 +18,7 @@ offerScraper timestamp = do
   name <- stripSpaces . dropShitwords <$> (text $ titleElement)
   url <- ("https://www.gumtree.pl" <>) <$> attr "href" (titleElement // "a")
   price <- parsePrice <$> text ("span" @: [hasClass "ad-price"])
-  return $ Offer name price Nothing url timestamp False "gumtree.pl"
+  return $ basicOffer name price url timestamp "gumtree.pl"
 
 offersScraper :: UTCTime -> Scraper Text [Offer]
 offersScraper timestamp = chroots
