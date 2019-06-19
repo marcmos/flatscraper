@@ -32,6 +32,9 @@ OfferVisit
     UniqueUrl url
     ownerRentPrice Int
     rentPrice Int Maybe
+    region Text Maybe
+    street Text Maybe
+    direct Bool Maybe
     deriving Show
 |]
 
@@ -44,6 +47,9 @@ loadPersistedDetails offers = runSqlite "flatscraper.sqlite" $ do
           { offerVisit = offerVisitScrapeTimestamp ent
           , offerPrice = offerVisitOwnerRentPrice ent
           , offerRentPrice = offerVisitRentPrice ent
+          , offerRegion = offerVisitRegion ent
+          , offerStreet = offerVisitStreet ent
+          , offerDirect = offerVisitDirect ent
           , offerDetailed = True }
         augment offer = maybe offer (entityToRecord offer) <$> entityQ offer
 
@@ -53,5 +59,6 @@ persistOffers offers = do
   runSqlite "flatscraper.sqlite" $ do
     runMigration migrateAll
     -- FIXME insertBy
-    forM_ offers $ \offer -> insertBy $ OfferVisit timestamp (offerURL offer) (offerPrice offer)
-      (offerRentPrice offer)
+    forM_ offers $ \offer -> insertBy $
+      OfferVisit timestamp (offerURL offer) (offerPrice offer) (offerRentPrice offer)
+      (offerRegion offer) (offerStreet offer) (offerDirect offer)

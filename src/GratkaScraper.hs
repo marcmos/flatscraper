@@ -19,7 +19,10 @@ offerScraper timestamp = do
   rentPrice <- Data.List.find ("czynsz" `isInfixOf`) <$> texts
     ("ul" @: [hasClass "teaser__params"] // "li")
   url <- attr "data-href" "article"
-  return $ Offer name (parsePrice price) (parsePrice <$> rentPrice) url timestamp True "gratka.pl"
+  return $ (basicOffer name (parsePrice price) url timestamp "gratka.pl")
+    { offerRentPrice = parsePrice <$> rentPrice
+    , offerDetailed = True
+    }
 
 offersScraper :: UTCTime -> Scraper Text [Offer]
 offersScraper timestamp = chroots ("article" @: [hasClass "teaser"]) (offerScraper timestamp)
