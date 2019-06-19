@@ -28,7 +28,7 @@ renderOfferFeedEntry offer = (nullItem title)
             (T.pack . show) rentPrice <> "=" <>
             (T.pack . show) (price + rentPrice)
           Nothing        -> T.pack . show $ offerPrice offer)
-          <> " " <> offerTitle offer
+          <> (if offerDirect offer == Just True then ", pryw." else "") <> " " <> offerTitle offer
 
 -- FIXME nullRSS empty strings replaced later
 renderOfferFeed :: [Offer] -> Maybe Text
