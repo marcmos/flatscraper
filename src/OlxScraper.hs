@@ -8,18 +8,17 @@ where
 import Text.HTML.Scalpel
 import Data.Text as T
 import Data.List (find)
-import Data.Time
 import Control.Monad ()
 
 import Offer
 import WordUtils
 
-offerScraper :: UTCTime -> Scraper Text Offer
-offerScraper timestamp = do
+offerScraper :: BasicOffer -> Scraper Text Offer
+offerScraper offer = do
   name <- stripSpaces . dropShitwords <$> (text $ "a" // "strong")
   price <- parsePrice <$> text ("p" @: [hasClass "price"])
   url <- (attr "href" "a")
-  return $ basicOffer name price url timestamp "olx.pl"
+  return $ offer name price url
 
 detailsScraper :: Offer -> Scraper Text Offer
 detailsScraper offer@(Offer {offerDetailed = True}) = return offer
@@ -40,10 +39,14 @@ attrsScraper = chroot ("div" @: [hasClass "descriptioncontent"]) $ do
     return (k, v)
   return offerAttrs
 
-offersScraper :: UTCTime -> Scraper Text [Offer]
-offersScraper timestamp = chroots
+offersScraper :: BasicOffer -> Scraper Text [Offer]
+offersScraper offer = chroots
   (("table" @: ["id" @= "offers_table"]) // "td" @: [hasClass "offer"])
-  (offerScraper timestamp)
+  (offerScraper offer)
 
 olxScraper :: Config Text -> OfferScraper
-olxScraper config = OfferScraper config offersScraper (Just detailsScraper)
+olxScraper config = OfferScraper
+  config
+  (basicOffer "olx.pl")
+  offersScraper
+  (Just detailsScraper)

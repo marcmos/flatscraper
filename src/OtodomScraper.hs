@@ -7,18 +7,17 @@ module OtodomScraper
 import Text.HTML.Scalpel
 import Data.Text as T
 import Data.List (find)
-import Data.Time
 import Control.Monad ()
 
 import Offer
 import WordUtils
 
-offerScraper :: UTCTime -> Scraper Text Offer
-offerScraper timestamp = do
+offerScraper :: BasicOffer -> Scraper Text Offer
+offerScraper offer = do
   name <- stripSpaces . dropShitwords <$> text ("span" @: [hasClass "offer-item-title"])
   price <- parsePrice <$> text ("li" @: [hasClass "offer-item-price"])
   url <- attr "href" "a"
-  return $ basicOffer name price url timestamp "otodom.pl"
+  return $ offer name price url
 
 detailsScraper :: Offer -> Scraper Text Offer
 detailsScraper offer@(Offer {offerDetailed = True}) = return offer
@@ -30,10 +29,14 @@ detailsScraper offer = do
     Just r  -> offer { offerRentPrice = Just r, offerDetailed = True }
     Nothing -> offer
 
-offersScraper :: UTCTime -> Scraper Text [Offer]
-offersScraper timestamp = chroots
+offersScraper :: BasicOffer -> Scraper Text [Offer]
+offersScraper offer = chroots
   ("article" @: [hasClass "offer-item", "data-featured-name" @= "listing_no_promo"])
-  (offerScraper timestamp)
+  (offerScraper offer)
 
 otodomScraper :: Config Text -> OfferScraper
-otodomScraper config = OfferScraper config offersScraper (Just detailsScraper)
+otodomScraper config = OfferScraper
+  config
+  (basicOffer "otodom.pl")
+  offersScraper
+  (Just detailsScraper)

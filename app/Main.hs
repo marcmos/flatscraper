@@ -52,14 +52,14 @@ scrapeDetails' config scraper offers = forM offers $ \offer ->
     else runScrape config (T.unpack . offerURL $ offer) (scraper offer)
 
 scrape :: OfferScraper -> String -> IO [Offer]
-scrape (OfferScraper config listScraper detailsScraper) =
+scrape (OfferScraper config template listScraper detailsScraper) =
   scrapeList >=> loadPersistedDetails >=> scrapeDetails >=> \offers -> do
     persistOffers offers
     return offers
   where
     scrapeList url = do
       timestamp <- getCurrentTime
-      fromMaybe [] <$> runScrape config url (listScraper timestamp)
+      fromMaybe [] <$> runScrape config url (listScraper $ template timestamp)
     scrapeDetails'' = scrapeDetails' config
     scrapeDetails offers = maybe (return offers) (`scrapeDetails''` offers) detailsScraper
 
