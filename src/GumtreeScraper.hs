@@ -14,7 +14,11 @@ detailedOfferScraper :: Offer -> Scraper Text Offer
 detailedOfferScraper offer = chroot ("div" @: [hasClass "vip-details"]) $ do
   offerAttrs <- texts ("div" @: [hasClass "attribute"] // "span" @: [hasClass "value"])
   direct <- return . Just $ (not . elem "Agencja") (stripSpaces <$> offerAttrs)
-  return offer { offerDirect = direct }
+  extras <- parseExtras <$> text ("div" @: [hasClass "description"])
+  return offer { offerOwnerOffer = direct
+               , offerExtras = extras
+               , offerDetailed = True
+               }
 
 listOfferScraper :: BasicOffer -> Scraper Text Offer
 listOfferScraper offer = do
