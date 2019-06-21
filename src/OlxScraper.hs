@@ -7,8 +7,9 @@ where
 
 import Text.HTML.Scalpel
 import Data.Text as T
-import Data.List (find)
+import Data.List (find, lookup)
 import Control.Monad ()
+import Data.Maybe (isJust)
 
 import Offer
 import WordUtils
@@ -27,8 +28,14 @@ detailsScraper offer = do
   rent <- return $ do
     attribute <- Data.List.find (\x -> "Czynsz" `isInfixOf` (fst x)) attributes
     return . parsePrice . snd $ attribute
+  private <- return $ (isJust $ Data.List.find (\x -> "Osoby prywatnej" `isInfixOf` (snd x)) attributes)
+  rooms <- return $ lookup "Liczba pokoi" attributes >>= parseRooms
+  extras <- parseExtras <$> text ("div" @: ["id" @= "textContent"])
   return $ offer { offerDetailed = True
                  , offerRentPrice = rent
+                 , offerOwnerOffer = Just private
+                 , offerRooms = rooms
+                 , offerExtras = extras
                  }
 
 attrsScraper :: Scraper Text [(Text, Text)]

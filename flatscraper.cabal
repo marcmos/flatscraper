@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ea5cbeee90eef23658bb3ff8080c1e8cf73e3baf9fc8ae90fc49d396a48a8f7e
+-- hash: 70a7da9061658f50dc15c50b6cf92b81b36689a4f9144adb86069be710810824
 
 name:           flatscraper
 version:        0.2.0.0
@@ -43,6 +43,8 @@ library
     , persistent
     , persistent-sqlite
     , persistent-template
+    , regex-tdfa
+    , regex-tdfa-text
     , scalpel >=0.6 && <0.7
     , text
     , time
@@ -66,6 +68,8 @@ executable flatscraper
     , persistent
     , persistent-sqlite
     , persistent-template
+    , regex-tdfa
+    , regex-tdfa-text
     , scalpel >=0.6 && <0.7
     , text
     , time

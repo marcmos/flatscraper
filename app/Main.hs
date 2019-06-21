@@ -85,6 +85,7 @@ main = do
   let config = Config utf8Decoder (Just httpManager)
   urls <- getArgs
   offers <- concat <$> mapM (scrapeURL config) urls
+  hPutStrLn stderr (show offers)
   case renderOfferFeed offers of
      Just x -> T.putStr x
      Nothing -> T.hPutStrLn stderr "Scrap failed"

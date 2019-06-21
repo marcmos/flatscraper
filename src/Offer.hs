@@ -4,24 +4,34 @@ import Data.Text
 import Data.Time (UTCTime)
 import Text.HTML.Scalpel
 
+-- TODO ilość pokoi klimatyzacja balkon
+data OfferExtra = KitchenAnnex | SeparateRooms | Dishwasher | Internet | Oven | Climatronic | Balcony
+  deriving (Show, Read, Eq)
+
+data OfferLocation = OfferLocation
+  { offerLocationRegion :: Maybe Text
+  , offerLocationStreet :: Maybe Text
+  } deriving (Show, Eq)
+
 data Offer = Offer
   { offerVisit :: UTCTime
+  , offerScraperName :: Text
   , offerTitle :: Text
   , offerPrice :: Int
-  , offerRentPrice :: Maybe Int
   , offerURL :: Text
-  , offerRegion :: Maybe Text
-  , offerStreet :: Maybe Text
-  , offerDirect :: Maybe Bool
   , offerDetailed :: Bool
-  , offerScraperName :: Text
+  , offerRooms :: Maybe Int
+  , offerRentPrice :: Maybe Int
+  , offerLocation :: Maybe OfferLocation
+  , offerOwnerOffer :: Maybe Bool
+  , offerExtras :: [OfferExtra]
   } deriving (Show, Eq)
 
 type BasicOffer = Text -> Int -> Text -> Offer
 
 basicOffer :: Text -> UTCTime -> BasicOffer
 basicOffer scraperName timestamp title price url =
-  Offer timestamp title price Nothing url Nothing Nothing Nothing False scraperName
+  Offer timestamp scraperName title price url False Nothing Nothing Nothing Nothing []
 
 data OfferScraper = OfferScraper
   { offerScraperConfig :: Config Text
