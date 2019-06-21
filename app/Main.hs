@@ -13,7 +13,7 @@ import Data.Monoid ((<>))
 import Control.Monad
 import Data.List (isInfixOf)
 import System.Environment (getArgs)
-import System.IO (stderr, hPutStrLn)
+import System.IO (stderr, hPutStrLn, hPrint)
 import Control.Exception (handle, SomeException)
 import Data.CaseInsensitive (mk)
 
@@ -85,7 +85,7 @@ main = do
   let config = Config utf8Decoder (Just httpManager)
   urls <- getArgs
   offers <- concat <$> mapM (scrapeURL config) urls
-  hPutStrLn stderr (show offers)
+  hPrint stderr offers
   case renderOfferFeed offers of
      Just x -> T.putStr x
      Nothing -> T.hPutStrLn stderr "Scrap failed"
