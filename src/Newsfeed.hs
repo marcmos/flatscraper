@@ -39,6 +39,7 @@ extraDescription Internet = "internet"
 
 ownerDescription :: Offer -> [T.Text]
 ownerDescription Offer { offerOwnerOffer = Just True } = ["oferta prywatna"]
+ownerDescription Offer { offerOwnerOffer = Just False } = ["oferta z biura/agencji"]
 ownerDescription _ = []
 
 offerTag :: Offer -> T.Text
@@ -52,10 +53,11 @@ offerTag offer =
 agencyFee :: Offer -> Maybe Int
 agencyFee offer = do
   False <- offerOwnerOffer offer
-  return $ offerPrice offer `div` 12
+  -- return $ offerPrice offer `div` 12
+  Nothing
 
 pricePlusFee :: Offer -> Maybe Int
-pricePlusFee offer = ((offerPrice offer) +) <$> agencyFee offer
+pricePlusFee offer = (offerPrice offer +) <$> agencyFee offer
 
 monthlyPrice :: Offer -> Maybe Int
 monthlyPrice offer = do
@@ -65,18 +67,18 @@ monthlyPrice offer = do
 
 offerDescriptionTexts :: Offer -> [T.Text]
 offerDescriptionTexts offer =
-  ["Czynsz: " <> (T.pack . show) (offerPrice offer)] <>
-  (maybe [] (return . ("odstępne: " <>) . T.pack . show) (offerRentPrice offer)) <>
-  (maybe [] (return . ("narzut agencji (estymowany): " <>) . T.pack . show) (agencyFee offer)) <>
-  (maybe [] (return . ("cena za mc: " <>) . T.pack . show) (monthlyPrice offer)) <>
-  (ownerDescription offer) <>
-  (maybe [] return $ roomsDescription offer) <>
+  -- ["Czynsz: " <> (T.pack . show) (offerPrice offer)] <>
+  -- maybe [] (return . ("odstępne: " <>) . T.pack . show) (offerRentPrice offer) <>
+  -- maybe [] (return . ("narzut agencji (estymowany): " <>) . T.pack . show) (agencyFee offer) <>
+  -- maybe [] (return . ("cena za mc: " <>) . T.pack . show) (monthlyPrice offer) <>
+  ownerDescription offer <>
+  maybe [] return (roomsDescription offer) <>
   (extraDescription <$> filter (/= SeparateRooms) (offerExtras offer))
 
 roomsDescription :: Offer -> Maybe T.Text
 roomsDescription offer =
-  (\p -> "pokoje" <> (if elem SeparateRooms (offerExtras offer) then " osobne(?): " else ": ") <> p) <$>
-  (T.pack . show) <$> (offerRooms offer)
+  (\p -> "pokoje" <> (if SeparateRooms `elem` offerExtras offer then " osobne(?): " else ": ") <> p) .
+  (T.pack . show) <$> offerRooms offer
 
 renderOfferFeedEntry :: Offer -> RSSItem
 renderOfferFeedEntry offer = (nullItem title)
