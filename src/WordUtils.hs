@@ -41,11 +41,10 @@ dropShitwords = dropWords shitwords
 parsePrice :: Text -> Int
 parsePrice x =
   fromRight 0 $ fst <$>
-  (decimal . T.takeWhile ((/=) ',') . T.concat . (Data.List.filter (T.any isDigit) <$> T.words)) x
+  (decimal . T.takeWhile (',' /=) . T.concat . (Data.List.filter (T.any isDigit) <$> T.words)) x
 
 regMatch :: Text -> Text -> Bool
-regMatch exp input =
-  matchTest (regex exp) input
+regMatch expr = matchTest (regex expr)
   where regex = makeRegexOpts
           (CompOption False True True True False)
           defaultExecOpt
@@ -56,9 +55,8 @@ parseAnnex input = regMatch "aneks" input || regMatch "salon połączony" input 
 
 parseKeywords :: Text -> [Bool]
 parseKeywords input =
-  (parseAnnex input) :
-  ((`matchTest` input) <$> makeRegexOpts compOptions defaultExecOpt . T.pack
-  <$> [ "osobn"
+  parseAnnex input :
+  ((`matchTest` input) . makeRegexOpts compOptions defaultExecOpt . T.pack <$> [ "osobn"
       , "zmywar"
       , "internet"
       , "piekarnik"
@@ -70,13 +68,13 @@ parseKeywords input =
 -- FIXME cancer
 parseExtras :: Text -> [OfferExtra]
 parseExtras input =
-  (if annex then [KitchenAnnex] else []) <>
-  (if rooms then [SeparateRooms] else []) <>
-  (if dish then [Dishwasher] else []) <>
-  (if internet then [Internet] else []) <>
-  (if oven then [Oven] else []) <>
-  (if climatronic then [Climatronic] else []) <>
-  (if balcony then [Balcony] else [])
+  [KitchenAnnex | annex] <>
+  [SeparateRooms | rooms] <>
+  [Dishwasher | dish] <>
+  [Internet | internet] <>
+  [Oven | oven] <>
+  [Climatronic | climatronic] <>
+  [Balcony | balcony]
   where [annex, rooms, dish, internet, oven, climatronic, balcony] = parseKeywords input
 
 parseRooms :: Text -> Maybe Int
