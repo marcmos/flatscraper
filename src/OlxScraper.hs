@@ -26,7 +26,7 @@ detailsScraper offer@(Offer {offerDetailed = True}) = return offer
 detailsScraper offer = do
   attributes <- attrsScraper
   rent <- return $ do
-    attribute <- Data.List.find (\x -> "Czynsz" `isInfixOf` (fst x)) attributes
+    attribute <- Data.List.find (\x -> "Czynsz (dodatkowo)" `isInfixOf` (fst x)) attributes
     return . parsePrice . snd $ attribute
   private <- return $ (isJust $ Data.List.find (\x -> "Osoby prywatnej" `isInfixOf` (snd x)) attributes)
   rooms <- return $ lookup "Liczba pokoi" attributes >>= parseRooms
@@ -40,9 +40,9 @@ detailsScraper offer = do
 
 attrsScraper :: Scraper Text [(Text, Text)]
 attrsScraper = chroot ("div" @: [hasClass "descriptioncontent"]) $ do
-  offerAttrs <- chroots ("table" @: [hasClass "item"]) $ do
-    k <- stripSpaces <$> text "th"
-    v <- stripSpaces <$> text "td"
+  offerAttrs <- chroots ("li" @: [hasClass "offer-details__item"]) $ do
+    k <- stripSpaces <$> text "span"
+    v <- stripSpaces <$> text "strong"
     return (k, v)
   return offerAttrs
 
