@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.34.3.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 70a7da9061658f50dc15c50b6cf92b81b36689a4f9144adb86069be710810824
+-- hash: da834a13f2661e37fa4c378eebdeef6cea8f3661cbb2efbd73f538a0538bd3b6
 
 name:           flatscraper
 version:        0.2.0.0
@@ -24,9 +24,11 @@ library
       GumtreeScraper
       Newsfeed
       Offer
+      OfferFilter
       OlxScraper
       OtodomScraper
       ScrapePersistence
+      TestData
       WordUtils
   other-modules:
       Paths_flatscraper
