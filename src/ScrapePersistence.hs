@@ -39,6 +39,7 @@ OfferVisit
     UniqueUrl url
     ownerRentPrice Int
     rentPrice Int Maybe
+    area Int Maybe
     rooms Int Maybe
     region Text Maybe
     street Text Maybe
@@ -59,6 +60,7 @@ loadPersistedDetails offers = runSqlite "flatscraper.sqlite" $ do
           { offerVisit = offerVisitScrapeTimestamp ent
           , offerPrice = offerVisitOwnerRentPrice ent
           , offerRentPrice = offerVisitRentPrice ent
+          , offerArea = offerVisitArea ent
           , offerRooms = offerVisitRooms ent
           , offerOwnerOffer = offerVisitOwnerOffer ent
           , offerExtras = maybe [] parseExtras (offerVisitExtras ent)
@@ -77,4 +79,4 @@ persistOffers offers = do
     -- FIXME insertBy
     forM_ offers $ \offer -> insertBy . setOfferVisitExtras offer $
       OfferVisit timestamp (offerURL offer) (offerPrice offer) (offerRentPrice offer)
-      (offerRooms offer) Nothing Nothing (offerOwnerOffer offer) Nothing
+      (offerArea offer) (offerRooms offer) Nothing Nothing (offerOwnerOffer offer) Nothing

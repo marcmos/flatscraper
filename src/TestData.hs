@@ -12,9 +12,12 @@ testOffer = Offer {
     , offerPrice = 1500
     , offerURL = "https://www.gumtree.pl/a-mieszkania-i-domy-do-wynajecia/krakow/2-pokoje-36m2-azory-umeblowane-dobra-komunikacja/1009022892640912716667809"
     , offerDetailed = True
+    , offerArea = Just 36
     , offerRooms = Just 2
     , offerRentPrice = Nothing
     , offerLocation = Nothing
     , offerOwnerOffer = Just False
     , offerExtras = []
     }
+
+testURLGumtree = "https://www.gumtree.pl/a-mieszkania-i-domy-do-wynajecia/krakow/wynajme-2+pokojowe-mieszkanie-na-armii-krajowej-w-krakowie/1007741585170910536600309"
