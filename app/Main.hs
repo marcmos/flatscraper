@@ -26,6 +26,7 @@ import OlxScraper (olxScraper)
 import GumtreeScraper (gumtreeScraper)
 import Newsfeed (renderOfferFeed)
 import ScrapePersistence
+import OfferFilter (dropBlacklisted)
 
 import Offer
 
@@ -53,7 +54,7 @@ scrapeDetails' config scraper offers = forM offers $ \offer ->
 
 scrape :: OfferScraper -> String -> IO [Offer]
 scrape (OfferScraper config template listScraper detailsScraper) =
-  scrapeList >=> loadPersistedDetails >=> scrapeDetails >=> \offers -> do
+  scrapeList >=> filterOffers >=> loadPersistedDetails >=> scrapeDetails >=> \offers -> do
     persistOffers offers
     return offers
   where
@@ -62,6 +63,7 @@ scrape (OfferScraper config template listScraper detailsScraper) =
       fromMaybe [] <$> runScrape config url (listScraper $ template timestamp)
     scrapeDetails'' = scrapeDetails' config
     scrapeDetails offers = maybe (return offers) (`scrapeDetails''` offers) detailsScraper
+    filterOffers = return . dropBlacklisted
 
 safeScrape :: OfferScraper -> String -> IO [Offer]
 safeScrape scraper url =
