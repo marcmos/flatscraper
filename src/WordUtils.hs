@@ -6,6 +6,7 @@ module WordUtils
   , parsePrice
   , parseExtras
   , parseRooms
+  , parseInt
   ) where
 
 import Data.Text as T
@@ -81,3 +82,6 @@ parseRooms :: Text -> Maybe Int
 parseRooms "Kawalerka" = Just 1
 parseRooms input = digitToInt <$> T.find isDigit input
 
+parseInt :: Text -> Maybe Int
+parseInt x = rightToMaybe $ fst <$> decimal x
+  where rightToMaybe = either (const Nothing) Just

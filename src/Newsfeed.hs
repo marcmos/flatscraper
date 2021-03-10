@@ -4,7 +4,7 @@ module Newsfeed
   ( renderOfferFeed
   ) where
 
-import Data.Text as T (pack, intercalate, Text)
+import Data.Text as T (pack, intercalate, Text, concat)
 import qualified Data.Text.Lazy as TL (Text)
 import Text.RSS.Syntax
 import Text.RSS.Export
@@ -73,12 +73,19 @@ offerDescriptionTexts offer =
   -- maybe [] (return . ("cena za mc: " <>) . T.pack . show) (monthlyPrice offer) <>
   ownerDescription offer <>
   maybe [] return (roomsDescription offer) <>
+  maybe [] return (areaDescription offer) <>
   (extraDescription <$> filter (/= SeparateRooms) (offerExtras offer))
 
 roomsDescription :: Offer -> Maybe T.Text
 roomsDescription offer =
   (\p -> "pokoje" <> (if SeparateRooms `elem` offerExtras offer then " osobne(?): " else ": ") <> p) .
   (T.pack . show) <$> offerRooms offer
+
+areaDescription :: Offer -> Maybe T.Text
+areaDescription offer = (\x -> T.pack "metraż: " <> (T.pack . show) x) <$> offerArea offer
+
+areaTag :: Offer -> T.Text
+areaTag offer = maybe " " (\x -> T.concat [T.pack " [", T.pack . show $ x,  T.pack "] "]) (offerArea offer)
 
 renderOfferFeedEntry :: Offer -> RSSItem
 renderOfferFeedEntry offer = (nullItem title)
@@ -95,7 +102,7 @@ renderOfferFeedEntry offer = (nullItem title)
             (T.pack . show) rentPrice <> "=" <>
             (T.pack . show) (price + rentPrice)
           Nothing        -> T.pack . show $ offerPrice offer)
-          <> " " <> offerTitle offer
+          <> areaTag offer <> offerTitle offer
 
 -- FIXME nullRSS empty strings replaced later
 renderOfferFeed :: [Offer] -> Maybe TL.Text

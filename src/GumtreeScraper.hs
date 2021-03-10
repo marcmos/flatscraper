@@ -6,21 +6,29 @@ module GumtreeScraper
 
 import Text.HTML.Scalpel
 import Data.Text (Text, isInfixOf)
-import Data.List (find)
 
 import Offer
 import WordUtils
 
+attrsScraper :: Scraper Text [(Text, Text)]
+attrsScraper = chroot ("div" @: [hasClass "vip-details"]) $
+  do chroots "li"
+     $ do k <- stripSpaces <$> text ("span" @: [hasClass "name"])
+          v <- stripSpaces <$> text ("span" @: [hasClass "value"])
+          return (k, v)
+
 detailedOfferScraper :: Offer -> Scraper Text Offer
 detailedOfferScraper offer = chroot ("div" @: [hasClass "vip-details"]) $ do
-  offerAttrs <- (stripSpaces <$>) <$> texts ("div" @: [hasClass "attribute"] // "span" @: [hasClass "value"])
-  direct <- return . Just $ (not . elem "Agencja") offerAttrs
-  rooms <- return $ find ("pok" `isInfixOf`) offerAttrs >>= parseRooms
+  offerAttrs <- attrsScraper
+  let direct = (== "Właściciel") <$> lookup "Do wynajęcia przez" offerAttrs
+  let rooms = lookup "Liczba pokoi" offerAttrs >>= parseRooms
+  let area = lookup "Wielkość (m2)" offerAttrs >>= parseInt
   extras <- parseExtras <$> text ("div" @: [hasClass "description"])
   return offer { offerOwnerOffer = direct
                , offerExtras = extras
                , offerDetailed = True
                , offerRooms = rooms
+               , offerArea = area
                }
 
 listOfferScraper :: BasicOffer -> Scraper Text Offer
