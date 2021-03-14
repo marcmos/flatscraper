@@ -38,6 +38,7 @@ OfferVisit
     url Text
     UniqueUrl url
     ownerRentPrice Int
+    filtered Text Maybe
     rentPrice Int Maybe
     area Int Maybe
     rooms Int Maybe
@@ -59,6 +60,7 @@ loadPersistedDetails offers = runSqlite "flatscraper.sqlite" $ do
         entityToRecord offer (Entity _ ent) = offer
           { offerVisit = offerVisitScrapeTimestamp ent
           , offerPrice = offerVisitOwnerRentPrice ent
+          , offerFiltered = offerVisitFiltered ent
           , offerRentPrice = offerVisitRentPrice ent
           , offerArea = offerVisitArea ent
           , offerRooms = offerVisitRooms ent
@@ -78,5 +80,5 @@ persistOffers offers = do
     runMigration migrateAll
     -- FIXME insertBy
     forM_ offers $ \offer -> insertBy . setOfferVisitExtras offer $
-      OfferVisit timestamp (offerURL offer) (offerPrice offer) (offerRentPrice offer)
+      OfferVisit timestamp (offerURL offer) (offerPrice offer) (offerFiltered offer) (offerRentPrice offer)
       (offerArea offer) (offerRooms offer) Nothing Nothing (offerOwnerOffer offer) Nothing

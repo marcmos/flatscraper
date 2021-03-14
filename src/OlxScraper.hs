@@ -33,13 +33,15 @@ detailsScraper offer = do
     return . parsePrice . snd $ attribute
   private <- return $ (isJust $ Data.List.find (\x -> "Osoby prywatnej" `isInfixOf` (snd x)) attributes)
   rooms <- return $ lookup "Liczba pokoi" attributes >>= parseRooms
-  extras <- parseExtras <$> text ("div" @: ["id" @= "textContent"])
+  description <- text ("div" @: ["id" @= "textContent"])
+  let extras = parseExtras description
   return $ offer { offerDetailed = True
                  , offerRentPrice = rent
                  , offerArea = area
                  , offerOwnerOffer = Just private
                  , offerRooms = rooms
                  , offerExtras = extras
+                 , offerDescription = Just description
                  }
 
 attrsScraper :: Scraper Text [(Text, Text)]

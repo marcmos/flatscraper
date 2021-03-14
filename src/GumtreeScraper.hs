@@ -23,12 +23,14 @@ detailedOfferScraper offer = chroot ("div" @: [hasClass "vip-details"]) $ do
   let direct = (== "Właściciel") <$> lookup "Do wynajęcia przez" offerAttrs
   let rooms = lookup "Liczba pokoi" offerAttrs >>= parseRooms
   let area = lookup "Wielkość (m2)" offerAttrs >>= parseInt
-  extras <- parseExtras <$> text ("div" @: [hasClass "description"])
+  description <- text ("div" @: [hasClass "description"])
+  let extras = parseExtras description
   return offer { offerOwnerOffer = direct
                , offerExtras = extras
                , offerDetailed = True
                , offerRooms = rooms
                , offerArea = area
+               , offerDescription = Just description
                }
 
 listOfferScraper :: BasicOffer -> Scraper Text Offer

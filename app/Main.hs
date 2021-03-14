@@ -7,7 +7,7 @@ import qualified Data.Text as T (unpack)
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Data.Text.Lazy.IO as T (putStr)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Time
 import Data.Monoid ((<>))
 import Control.Monad
@@ -26,7 +26,7 @@ import OlxScraper (olxScraper)
 import GumtreeScraper (gumtreeScraper)
 import Newsfeed (renderOfferFeed)
 import ScrapePersistence
-import OfferFilter (dropBlacklisted)
+import OfferFilter (runFilters)
 
 import Offer
 
@@ -52,18 +52,21 @@ scrapeDetails' config scraper offers = forM offers $ \offer ->
     then return Nothing
     else runScrape config (T.unpack . offerURL $ offer) (scraper offer)
 
+markFiltered :: [Offer] -> [Offer]
+markFiltered offers = (\offer -> offer { offerFiltered = runFilters offer }) <$> offers
+
 scrape :: OfferScraper -> String -> IO [Offer]
 scrape (OfferScraper config template listScraper detailsScraper) =
-  scrapeList >=> filterOffers >=> loadPersistedDetails >=> scrapeDetails >=> \offers -> do
+  scrapeList >=> loadPersistedDetails >=> scrapeDetails >=> (return . markFiltered) >=> (\offers -> do
     persistOffers offers
-    return offers
+    return offers) >=> filterOffers
   where
     scrapeList url = do
       timestamp <- getCurrentTime
       fromMaybe [] <$> runScrape config url (listScraper $ template timestamp)
     scrapeDetails'' = scrapeDetails' config
     scrapeDetails offers = maybe (return offers) (`scrapeDetails''` offers) detailsScraper
-    filterOffers = return . dropBlacklisted
+    filterOffers = return . filter (isNothing . offerFiltered)
 
 safeScrape :: OfferScraper -> String -> IO [Offer]
 safeScrape scraper url =
@@ -87,7 +90,7 @@ main = do
   let config = Config utf8Decoder (Just httpManager)
   urls <- getArgs
   offers <- concat <$> mapM (scrapeURL config) urls
-  hPrint stderr offers
+  -- hPrint stderr offers
   case renderOfferFeed offers of
      Just x -> T.putStr x
      Nothing -> T.hPutStrLn stderr "Scrap failed"
