@@ -34,8 +34,9 @@ bannedLocations = [
 
   , "kleparz"
   , "wrocławs"
-  , "mazowiecka"
+  , "mazowieck"
   , "wielick"
+  , "matecznego"
 
   -- , "centrum a", "centruma"
   -- , "centrum b", "centrumb" -- FIXME centrum biurowe
@@ -77,11 +78,14 @@ bannedLocations = [
   , "serenad"
 
   , "agh"
-  , " uj"
+  -- , " uj"
   ]
 
 titleBlacklist :: [Text]
-titleBlacklist = bannedLocations ++ ["kazimierz"]
+titleBlacklist = bannedLocations ++ [
+  --  "kazimierz"
+    "salwator" -- biuro nieruchomości SALWATOR
+  ]
 
 descriptionBlacklist :: [Text]
 descriptionBlacklist = bannedLocations
