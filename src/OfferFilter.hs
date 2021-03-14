@@ -27,8 +27,7 @@ bannedLocations = [
   , "prokoci"
 
   -- , "kazimierz" -- corner case: galeria kazimierz
-  , "kazimierzu"
-  , "kazimierza"
+  , "na kazimierzu"
 
   , "stradom"
   , "starowiśln"
@@ -43,8 +42,9 @@ bannedLocations = [
   -- , "centrum c", "centrumc"
   -- , "centrum d", "centrumd"
 
-  , " hut"
-  , " hucie"
+  , "huta"
+  , "hucie"
+
   , "borek"
   , "fałę"
   , "łagiew"
@@ -52,7 +52,12 @@ bannedLocations = [
   , "błoń"
   , "błoni"
 
-  , " mak"
+  , "czerwone maki"
+  , "czerwonych maków"
+  , "czerwonym makom"
+  , "czerwonymi makami"
+  , "czerwonych makach"
+
   , "europejski"
 
   , "29 listopada"
@@ -76,7 +81,7 @@ bannedLocations = [
   ]
 
 titleBlacklist :: [Text]
-titleBlacklist = bannedLocations
+titleBlacklist = bannedLocations ++ ["kazimierz"]
 
 descriptionBlacklist :: [Text]
 descriptionBlacklist = bannedLocations
