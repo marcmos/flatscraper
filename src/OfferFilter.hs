@@ -62,7 +62,9 @@ bannedLocations = [
   , "europejski"
 
   , "29 listopada"
-  , "opolsk"
+  -- corner case: małopolska
+  , "opolska"
+  , "opolskiej"
   , "prandoty"
   , "olsz"
   , "żabi"
