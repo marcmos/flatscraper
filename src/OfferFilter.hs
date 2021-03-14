@@ -26,7 +26,10 @@ bannedLocations = [
   , "zwierzy" -- zwierzyniec
   , "prokoci"
 
-  , "kazimierz" -- corner case: galeria kazimierz
+  -- , "kazimierz" -- corner case: galeria kazimierz
+  , "kazimierzu"
+  , "kazimierza"
+
   , "stradom"
   , "starowiśln"
 
@@ -35,10 +38,10 @@ bannedLocations = [
   , "mazowiecka"
   , "wielick"
 
-  , "centrum a", "centruma"
-  , "centrum b", "centrumb"
-  , "centrum c", "centrumc"
-  , "centrum d", "centrumd"
+  -- , "centrum a", "centruma"
+  -- , "centrum b", "centrumb" -- FIXME centrum biurowe
+  -- , "centrum c", "centrumc"
+  -- , "centrum d", "centrumd"
 
   , " hut"
   , " hucie"
@@ -70,7 +73,6 @@ bannedLocations = [
 
   , "agh"
   , " uj"
-
   ]
 
 titleBlacklist :: [Text]
