@@ -20,6 +20,8 @@ data Offer = Offer
   , offerPrice :: Int
   , offerURL :: Text
   , offerDetailed :: Bool
+  , offerDescription :: Maybe Text
+  , offerFiltered :: Maybe Text
   , offerArea :: Maybe Int
   , offerRooms :: Maybe Int
   , offerRentPrice :: Maybe Int
@@ -32,7 +34,7 @@ type BasicOffer = Text -> Int -> Text -> Offer
 
 basicOffer :: Text -> UTCTime -> BasicOffer
 basicOffer scraperName timestamp title price url =
-  Offer timestamp scraperName title price url False Nothing Nothing Nothing Nothing Nothing []
+  Offer timestamp scraperName title price url False Nothing Nothing Nothing Nothing Nothing Nothing Nothing []
 
 data OfferScraper = OfferScraper
   { offerScraperConfig :: Config Text
