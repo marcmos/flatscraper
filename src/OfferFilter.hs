@@ -20,7 +20,7 @@ bannedLocations = [
   , "salwator"
   , "duchack"
   , "stare miasto" -- use only for title filtering
-  , "rakowic"
+  -- , "rakowic"
   , "łobz"
   , "zwierzy" -- zwierzyniec
   , "prokoci"
@@ -32,6 +32,7 @@ bannedLocations = [
   , "kleparz"
   , "wrocławs"
   , "mazowiecka"
+  , "wielick"
 
   , "centrum a", "centruma"
   , "centrum b", "centrumb"
@@ -65,6 +66,9 @@ bannedLocations = [
   , "nokia"
   , "motorola"
   , "serenad"
+
+  , "agh"
+  , " uj"
 
   ]
 
