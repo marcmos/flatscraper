@@ -66,7 +66,9 @@ loadPersistedDetails offers = runSqlite "flatscraper.sqlite" $ do
           , offerRooms = offerVisitRooms ent
           , offerOwnerOffer = offerVisitOwnerOffer ent
           , offerExtras = maybe [] parseExtras (offerVisitExtras ent)
-          , offerDetailed = True }
+          , offerDetailed = True
+          , offerDescription = Nothing
+          }
         augment offer = maybe offer (entityToRecord offer) <$> entityQ offer
 
 setOfferVisitExtras :: Offer -> OfferVisit -> OfferVisit
@@ -80,5 +82,16 @@ persistOffers offers = do
     runMigration migrateAll
     -- FIXME insertBy
     forM_ offers $ \offer -> insertBy . setOfferVisitExtras offer $
-      OfferVisit timestamp (offerURL offer) (offerPrice offer) (offerFiltered offer) (offerRentPrice offer)
-      (offerArea offer) (offerRooms offer) Nothing Nothing (offerOwnerOffer offer) Nothing
+      OfferVisit {
+          offerVisitScrapeTimestamp = timestamp
+        , offerVisitUrl = offerURL offer
+        , offerVisitOwnerRentPrice = offerPrice offer
+        , offerVisitFiltered = offerFiltered offer
+        , offerVisitRentPrice = offerRentPrice offer
+        , offerVisitArea = offerArea offer
+        , offerVisitRooms = offerRooms offer
+        , offerVisitOwnerOffer = offerOwnerOffer offer
+        , offerVisitRegion = Nothing
+        , offerVisitStreet = Nothing
+        , offerVisitExtras = Nothing -- FIXME: filled in by setOfferVisitExtras
+      }
