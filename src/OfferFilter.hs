@@ -2,11 +2,11 @@
 
 module OfferFilter where
 
-import Data.Text (Text, isInfixOf, toLower, intercalate)
+import Data.Text (Text, isInfixOf, toLower, intercalate, pack)
 import Data.List (any)
 import Data.Maybe (mapMaybe)
 
-import Offer (Offer (offerDescription), offerTitle)
+import Offer (Offer (offerDescription, offerArea), offerTitle)
 
 bannedLocations :: [Text]
 bannedLocations = [
@@ -94,7 +94,7 @@ data FieldFilter a = FieldFilter {
 }
 
 data OfferFilter = InfixFieldFilter (FieldFilter Text) [Text] |
-                   RangeValueFieldFilter (FieldFilter Int)
+                   RangeValueFieldFilter (FieldFilter Int) Int
 
 titleBlacklistFilter :: OfferFilter
 titleBlacklistFilter = InfixFieldFilter (FieldFilter "title" (return . offerTitle)) titleBlacklist
@@ -102,15 +102,22 @@ titleBlacklistFilter = InfixFieldFilter (FieldFilter "title" (return . offerTitl
 descriptionBlacklistFilter :: OfferFilter
 descriptionBlacklistFilter = InfixFieldFilter (FieldFilter "description" offerDescription) descriptionBlacklist
 
+minimalAreaFilter :: Int -> OfferFilter
+minimalAreaFilter = RangeValueFieldFilter (FieldFilter "area" offerArea)
+
 runFilter :: OfferFilter -> Offer -> Maybe Text
 runFilter (InfixFieldFilter (FieldFilter fieldName fieldExtractor) blacklist) offer = do
   fieldValue <- toLower <$> fieldExtractor offer
   let matchedWords = mapMaybe (\x -> if x `isInfixOf` fieldValue then Just x else Nothing) blacklist
   if null matchedWords then Nothing else Just (fieldName <> " blacklist match: " <> intercalate ", " matchedWords)
-runFilter (RangeValueFieldFilter fieldFilter) offer = undefined
+runFilter (RangeValueFieldFilter (FieldFilter fieldName fieldExtractor) minValue) offer = do
+  fieldValue <- fieldExtractor offer
+  if fieldValue < minValue
+    then Just (fieldName <> " value " <> (pack . show) fieldValue <> " smaller than " <> (pack . show) minValue)
+    else Nothing
 
 standardFilters :: [OfferFilter]
-standardFilters = [titleBlacklistFilter, descriptionBlacklistFilter]
+standardFilters = [titleBlacklistFilter, descriptionBlacklistFilter, minimalAreaFilter 35]
 
 runFilters :: Offer -> Maybe Text
 runFilters offer =
