@@ -7,7 +7,7 @@ import qualified Data.Text as T (unpack)
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Data.Text.Lazy.IO as T (putStr)
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe, isNothing, isJust)
 import Data.Time
 import Data.Monoid ((<>))
 import Control.Monad
@@ -53,7 +53,12 @@ scrapeDetails' config scraper offers = forM offers $ \offer ->
     else runScrape config (T.unpack . offerURL $ offer) (scraper offer)
 
 markFiltered :: [Offer] -> [Offer]
-markFiltered offers = (\offer -> offer { offerFiltered = runFilters offer }) <$> offers
+markFiltered offers = (\offer -> if isJust (offerFiltered offer)
+  -- FIXME: BUG: re-running filter again when description is empty (i.e. restored from a db)
+  --             will produce different results, so this optimization is required from the
+  --             validity perspective, not only performance
+  then offer
+  else offer { offerFiltered = runFilters offer }) <$> offers
 
 scrape :: OfferScraper -> String -> IO [Offer]
 scrape (OfferScraper config template listScraper detailsScraper) =
