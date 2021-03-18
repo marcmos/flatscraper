@@ -21,7 +21,6 @@ dependencies:
 - persistent-template
 - persistent-sqlite
 - regex-tdfa
-- regex-tdfa-text
 - scalpel >= 0.6 && <0.7
 - text
 - time
