@@ -31,8 +31,17 @@ shitwords = T.pack <$> [
   "wynajme", "-", "dużym", "czyste", "czysta", "przytulna", "przytulne",
   "wynajem", "super", "wynajecia", "nowoczesną", "nowoczesne", "wszędzie",
   "blisko", "świetna", "ciche", "widokowe", "sypialnie", "przestronne",
-  "dwa pokoje", "2 pokoje", "dwupokojowe", "2 pokojowe", "2-pok",
-  "2-pokojowe", "2-pokojowego", "dobra", "dobre"
+  "2", "pokoje", "dwupokojowe", "pokojowe", "2-pok", "dwa",
+  "2-pokojowe", "2-pokojowego",
+  "dobra", "dobre", "dobrej",
+  "jasne", "eleganckie", "funkcjonalne", "duże", "stylowe", "klimatyczne",
+  "zadbane", "atrakcyjne",
+  "apartament", "mieszkania", "budownictwo",
+  "bezpośrednio", "właściciel",
+  "centrum", "kraków",
+  "wynajem", "wynajmu", "komunikacja",
+  "osobne", "dla", "pary", "zaraz",
+  "na", "w"
   ]
 
 dropWords :: Foldable t => t Text -> Text -> Text
