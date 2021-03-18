@@ -35,6 +35,7 @@ bannedLocations = [
   , "kleparz"
   , "wrocławs"
   , "mazowieck"
+  , " lea"
   , "wielick"
   , "matecznego"
 
@@ -63,8 +64,8 @@ bannedLocations = [
 
   , "29 listopada"
   -- corner case: małopolska
-  , "opolska"
-  , "opolskiej"
+  , " opolska"
+  , " opolskiej"
   , "prandoty"
   , "olsz"
   , "żabi"
