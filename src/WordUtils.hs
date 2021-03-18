@@ -38,7 +38,7 @@ shitwords = T.pack <$> [
   "zadbane", "atrakcyjne",
   "apartament", "mieszkania", "budownictwo",
   "bezpośrednio", "właściciel",
-  "centrum", "kraków",
+  "centrum", "kraków", "krakowa",
   "wynajem", "wynajmu", "komunikacja",
   "osobne", "dla", "pary", "zaraz",
   "na", "w"
