@@ -129,7 +129,7 @@ runFilter (RangeValueFieldFilter (FieldFilter fieldName fieldExtractor) minValue
     else Nothing
 
 standardFilters :: [OfferFilter]
-standardFilters = [titleBlacklistFilter, descriptionBlacklistFilter, minimalAreaFilter 35]
+standardFilters = [titleBlacklistFilter, descriptionBlacklistFilter, minimalAreaFilter 38]
 
 runFilters :: Offer -> Maybe Text
 runFilters offer =
