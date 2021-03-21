@@ -45,6 +45,7 @@ library
     , persistent
     , persistent-sqlite
     , persistent-template
+    , regex
     , regex-tdfa
     , scalpel >=0.6 && <0.7
     , text

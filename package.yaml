@@ -20,6 +20,7 @@ dependencies:
 - persistent
 - persistent-template
 - persistent-sqlite
+- regex
 - regex-tdfa
 - scalpel >= 0.6 && <0.7
 - text
