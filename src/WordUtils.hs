@@ -1,23 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 
-module WordUtils
-  ( stripSpaces
-  , dropShitwords
-  , parsePrice
-  , parseExtras
-  , parseRooms
-  , parseInt
-  ) where
+module WordUtils where
 
 import Data.Text as T
 import Data.Text.Read (decimal)
-import Data.List (filter)
-import Data.Char (isDigit, digitToInt)
+import Data.List (filter, nub, minimumBy, maximumBy)
+import Data.Char (isDigit, digitToInt, isAlphaNum)
 import Data.Either (fromRight)
 import Text.Regex.TDFA
+import Text.RE.TDFA.Text
 import Text.Regex.TDFA.Text ()
 
-import Offer (OfferExtra(..))
+import Offer (OfferExtra(..), Offer (offerRentPrice))
+import Data.Maybe (mapMaybe)
 
 stripSpaces :: Text -> Text
 stripSpaces = T.unwords . T.words
@@ -96,3 +92,36 @@ parseRooms input = digitToInt <$> T.find isDigit input
 parseInt :: Text -> Maybe Int
 parseInt x = rightToMaybe $ fst <$> decimal x
   where rightToMaybe = either (const Nothing) Just
+
+tokenizeReplaceMap :: Char -> Char
+tokenizeReplaceMap c
+  | (not . isAlphaNum) c = ' '
+  | otherwise    = c
+
+tokenizeDescription :: Text -> [Text]
+tokenizeDescription = T.words . T.map tokenizeReplaceMap
+
+numbers t = mapMaybe parseInt (tokenizeDescription t)
+
+priceInRange :: Int -> Int -> Bool
+priceInRange area rentPrice = rentPrice >= area * 5 && rentPrice <= area * 15 && rentPrice `mod` 5 == 0
+
+normalizeDescription :: Text -> Text
+normalizeDescription = normalizeNumbers . removePhone
+
+possibleRentPrices :: Int -> Text -> [Int]
+possibleRentPrices area = Data.List.filter (priceInRange area) . nub . numbers . normalizeDescription
+
+pickRentPrice :: Int -> [Int] -> Maybe Int
+pickRentPrice _ [x] = Just x
+pickRentPrice _ []  = Nothing
+pickRentPrice area xs = Just $ minimumBy (\x y -> compare (abs (x - area * 10)) (abs (y - area * 10))) xs
+
+possibleRentPrice :: Int -> Text -> Maybe Int
+possibleRentPrice area desc = pickRentPrice area $ possibleRentPrices area desc
+
+removePhone :: Text -> Text
+removePhone = (*=~/ [ed|( ?(\+48 ?)?[0-9]{3}[ -]?[0-9]{3}[ -]?[0-9]{3})///|])
+
+normalizeNumbers :: Text -> Text
+normalizeNumbers = (*=~/ [ed|([a-zA-Z-]+)([0-9]+)///$1 $2|]) . (*=~/ [ed|([1-9])[., ]([0-9]{3})///$1$2|])

@@ -29,6 +29,7 @@ import ScrapePersistence
 import OfferFilter (runFilters)
 
 import Offer
+import WordUtils (possibleRentPrice)
 
 addLegitHeadersNoScam100 :: Request -> IO Request
 addLegitHeadersNoScam100 req = return $ req
@@ -60,9 +61,19 @@ markFiltered offers = (\offer -> if isJust (offerFiltered offer)
   then offer
   else offer { offerFiltered = runFilters offer }) <$> offers
 
+guessRentPrice :: Offer -> Offer
+guessRentPrice offer@Offer { offerRentPrice = Just _ } = offer
+guessRentPrice offer = fromMaybe offer $ do
+  area <- offerArea offer
+  desc <- offerDescription offer
+  return $ offer { offerRentPrice = possibleRentPrice area desc }
+
+guessRentPrices :: [Offer] -> [Offer]
+guessRentPrices = map guessRentPrice
+
 scrape :: OfferScraper -> String -> IO [Offer]
 scrape (OfferScraper config template listScraper detailsScraper) =
-  scrapeList >=> loadPersistedDetails >=> scrapeDetails >=> (return . markFiltered) >=> (\offers -> do
+  scrapeList >=> loadPersistedDetails >=> scrapeDetails >=> (return . guessRentPrices . markFiltered) >=> (\offers -> do
     persistOffers offers
     return offers) >=> filterOffers
   where

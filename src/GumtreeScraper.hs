@@ -2,6 +2,7 @@
 
 module GumtreeScraper
   ( gumtreeScraper
+  , detailedOfferScraper
   ) where
 
 import Text.HTML.Scalpel
