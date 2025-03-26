@@ -23,7 +23,6 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import GratkaScraper (gratkaScraper)
 import OtodomScraper (otodomScraper)
 import OlxScraper (olxScraper)
-import GumtreeScraper (gumtreeScraper)
 import Newsfeed (renderOfferFeed)
 import ScrapePersistence
 import OfferFilter (runFilters)
@@ -95,7 +94,6 @@ scrapeURL config url
   | "gratka.pl"  `isInfixOf` url = safeScrape (gratkaScraper config) url
   | "otodom.pl"  `isInfixOf` url = safeScrape (otodomScraper config) url
   | "olx.pl"     `isInfixOf` url = safeScrape (olxScraper config) url
-  | "gumtree.pl" `isInfixOf` url = safeScrape (gumtreeScraper config) url
   | otherwise                = do
       hPutStrLn stderr $ "no scraper for URL " <> url
       return []
