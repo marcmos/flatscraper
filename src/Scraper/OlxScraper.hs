@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module OlxScraper
+module Scraper.OlxScraper
     ( olxScraper
     )
 where

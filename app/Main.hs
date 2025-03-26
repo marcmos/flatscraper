@@ -20,9 +20,9 @@ import Data.CaseInsensitive (mk)
 import Text.HTML.Scalpel hiding (scrape, scrapeURL)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import GratkaScraper (gratkaScraper)
-import OtodomScraper (otodomScraper)
-import OlxScraper (olxScraper)
+import Scraper.GratkaScraper (gratkaScraper)
+import Scraper.OtodomScraper (otodomScraper)
+import Scraper.OlxScraper (olxScraper)
 import Newsfeed (renderOfferFeed)
 import ScrapePersistence
 import OfferFilter (runFilters)

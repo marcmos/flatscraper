@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module GratkaScraper
+module Scraper.GratkaScraper
     ( gratkaScraper
     ) where
 

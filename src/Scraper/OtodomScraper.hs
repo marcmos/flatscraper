@@ -1,15 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module OtodomScraper
-    ( otodomScraper
-    ) where
+module Scraper.OtodomScraper
+  ( otodomScraper,
+  )
+where
 
-import Text.HTML.Scalpel
-import Data.Text as T
-import Data.List (find)
 import Control.Monad ()
-
+import Data.List (find)
+import Data.Text as T
 import Offer
+import Text.HTML.Scalpel
 import WordUtils
 
 offerScraper :: BasicOffer -> Scraper Text Offer
@@ -22,21 +22,28 @@ offerScraper offer = do
 detailsScraper :: Offer -> Scraper Text Offer
 detailsScraper offer@(Offer {offerDetailed = True}) = return offer
 detailsScraper offer = do
-  offerAttrs <- texts ("section" @: [hasClass "section-overview"] //
-                       "div" // "ul" // "li")
+  offerAttrs <-
+    texts
+      ( "section" @: [hasClass "section-overview"]
+          // "div"
+          // "ul"
+          // "li"
+      )
   rent <- return $ parsePrice <$> Data.List.find ("Czynsz" `isInfixOf`) offerAttrs
   return $ case rent of
-    Just r  -> offer { offerRentPrice = Just r, offerDetailed = True }
+    Just r -> offer {offerRentPrice = Just r, offerDetailed = True}
     Nothing -> offer
 
 offersScraper :: BasicOffer -> Scraper Text [Offer]
-offersScraper offer = chroots
-  ("article" @: [hasClass "offer-item", "data-featured-name" @= "listing_no_promo"])
-  (offerScraper offer)
+offersScraper offer =
+  chroots
+    ("article" @: [hasClass "offer-item", "data-featured-name" @= "listing_no_promo"])
+    (offerScraper offer)
 
 otodomScraper :: Config Text -> OfferScraper
-otodomScraper config = OfferScraper
-  config
-  (basicOffer "otodom.pl")
-  offersScraper
-  (Just detailsScraper)
+otodomScraper config =
+  OfferScraper
+    config
+    (basicOffer "otodom.pl")
+    offersScraper
+    (Just detailsScraper)
