@@ -42,13 +42,3 @@ data OfferScraper = OfferScraper
   , offerListScraper :: BasicOffer -> Scraper Text [Offer]
   , offerDetailsScraper :: Maybe (Offer -> Scraper Text Offer)
   }
-
-scraper
-  :: Text
-  -> Config Text
-  -> (BasicOffer -> Scraper Text [Offer])
-  -> Maybe (Offer -> Scraper Text Offer)
-  -> OfferScraper
-scraper name config =
-  OfferScraper config (basicOffer name)
-
