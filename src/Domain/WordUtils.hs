@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 
-module WordUtils where
+module Domain.WordUtils where
 
 import Data.Text as T
 import Data.Text.Read (decimal)
@@ -12,7 +12,7 @@ import Text.Regex.TDFA
 import Text.RE.TDFA.Text
 import Text.Regex.TDFA.Text ()
 
-import Offer (OfferExtra(..), Offer (offerRentPrice))
+import Domain.Offer (OfferExtra(..), Offer (offerRentPrice))
 import Data.Maybe (mapMaybe)
 
 stripSpaces :: Text -> Text

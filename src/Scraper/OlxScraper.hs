@@ -11,8 +11,8 @@ import Data.List (find, lookup)
 import Control.Monad ()
 import Data.Maybe (isJust)
 
-import Offer
-import WordUtils
+import Domain.Offer
+import Domain.WordUtils
 
 offerScraper :: BasicOffer -> Scraper Text Offer
 offerScraper offer = do

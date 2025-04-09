@@ -8,8 +8,8 @@ import Text.HTML.Scalpel
 import Data.Text (Text, isInfixOf)
 import Data.List (find)
 
-import Offer
-import WordUtils
+import Domain.Offer
+import Domain.WordUtils
 
 offerScraper :: BasicOffer -> Scraper Text Offer
 offerScraper offer = do

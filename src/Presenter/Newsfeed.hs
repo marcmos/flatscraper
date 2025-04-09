@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Newsfeed
+module Presenter.Newsfeed
   ( renderOfferFeed,
   )
 where
@@ -10,7 +10,7 @@ import Data.Text as T (Text, intercalate, pack, concat)
 import qualified Data.Text.Lazy as TL (Text)
 import Data.Time
 import Data.List (intersperse)
-import Offer
+import Domain.Offer
 import Text.RSS.Export
 import Text.RSS.Syntax
 

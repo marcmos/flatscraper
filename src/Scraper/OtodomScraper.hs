@@ -8,9 +8,9 @@ where
 import Control.Monad ()
 import Data.List (find)
 import Data.Text as T
-import Offer
+import Domain.Offer
 import Text.HTML.Scalpel
-import WordUtils
+import Domain.WordUtils
 
 offerScraper :: BasicOffer -> Scraper Text Offer
 offerScraper offer = do

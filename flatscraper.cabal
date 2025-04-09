@@ -1,10 +1,8 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.3.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: da834a13f2661e37fa4c378eebdeef6cea8f3661cbb2efbd73f538a0538bd3b6
 
 name:           flatscraper
 version:        0.2.0.0
@@ -20,14 +18,14 @@ extra-source-files:
 
 library
   exposed-modules:
+      Domain.Offer
+      Domain.OfferFilter
+      Domain.WordUtils
+      Persistence.SQLite
+      Presenter.Newsfeed
       Scraper.GratkaScraper
-      Newsfeed
-      Offer
-      OfferFilter
       Scraper.OlxScraper
       Scraper.OtodomScraper
-      ScrapePersistence
-      WordUtils
   other-modules:
       Paths_flatscraper
   hs-source-dirs:
@@ -45,7 +43,7 @@ library
     , persistent-template
     , regex
     , regex-tdfa
-    , scalpel >=0.6 && <0.7
+    , scalpel ==0.6.*
     , text
     , time
   default-language: Haskell2010
@@ -68,8 +66,9 @@ executable flatscraper
     , persistent
     , persistent-sqlite
     , persistent-template
+    , regex
     , regex-tdfa
-    , scalpel >=0.6 && <0.7
+    , scalpel ==0.6.*
     , text
     , time
   default-language: Haskell2010

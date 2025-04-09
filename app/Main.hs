@@ -23,12 +23,12 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Scraper.GratkaScraper (gratkaScraper)
 import Scraper.OtodomScraper (otodomScraper)
 import Scraper.OlxScraper (olxScraper)
-import Newsfeed (renderOfferFeed)
-import ScrapePersistence
-import OfferFilter (runFilters)
+import Presenter.Newsfeed (renderOfferFeed)
+import Persistence.SQLite
+import Domain.OfferFilter (runFilters)
 
-import Offer
-import WordUtils (possibleRentPrice)
+import Domain.Offer
+import Domain.WordUtils (possibleRentPrice)
 
 addLegitHeadersNoScam100 :: Request -> IO Request
 addLegitHeadersNoScam100 req = return $ req

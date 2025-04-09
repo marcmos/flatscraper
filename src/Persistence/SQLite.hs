@@ -14,7 +14,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module ScrapePersistence ( loadPersistedDetails
+module Persistence.SQLite ( loadPersistedDetails
                          , persistOffers
                          ) where
 
@@ -29,7 +29,7 @@ import Data.Maybe (catMaybes)
 import Text.Read (readMaybe)
 import Control.Monad (forM_)
 import Control.Monad.IO.Class
-import Offer (Offer(..), OfferExtra)
+import Domain.Offer (Offer(..), OfferExtra)
 
 -- TODO rooms
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
