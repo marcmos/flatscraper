@@ -1,6 +1,15 @@
-module UseCase.FeedGenerator (FeedPresenter, present, getFreshAndPresent) where
+module UseCase.FeedGenerator
+  ( FeedPresenter (..),
+    OfferDetailLoader (..),
+    showNewSinceLastVisit,
+    ResultFeed,
+  )
+where
 
+import Data.Time.Clock (UTCTime, getCurrentTime)
 import UseCase.Offer (DetailedOffer (..), StubOffer)
+
+-- Public interface
 
 newtype ResultFeed = ResultFeed [DetailedOffer] deriving (Show)
 
@@ -9,12 +18,17 @@ class FeedPresenter p where
 
 class OfferDetailLoader odl where
   loadDetails :: odl -> StubOffer -> IO DetailedOffer
+  loadNewSince :: odl -> UTCTime -> Int -> IO [DetailedOffer]
 
-getFreshAndPresent :: (FeedPresenter p) => p -> IO ()
-getFreshAndPresent presenter = do
-  present presenter mockData
-  where
-    mockData = ResultFeed [DetailedOffer 1 "test offer"]
+showNewSinceLastVisit :: (FeedPresenter p, OfferDetailLoader odl) => odl -> p -> Int -> IO ()
+showNewSinceLastVisit loader presenter count = do
+  lastVisit <- lastVisitTime
+  newOffers <- loadNewSince loader lastVisit count
+  let feed = ResultFeed newOffers
+  present presenter feed
 
-showNewSinceLastVisit :: (FeedPresenter p) => p -> Int -> Int -> IO ()
-showNewSinceLastVisit presenter count lastVisitTimestamp = undefined
+-- Internal
+
+-- FIXME: mock
+lastVisitTime :: IO UTCTime
+lastVisitTime = getCurrentTime

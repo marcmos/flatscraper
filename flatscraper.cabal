@@ -26,6 +26,7 @@ library
       Legacy.Scraper.OlxScraper
       Legacy.Scraper.OtodomScraper
       Legacy.SQLite
+      Persistence.DataAccess
       Presenter.CLIFeedPresenter
       UseCase.FeedGenerator
       UseCase.Offer
