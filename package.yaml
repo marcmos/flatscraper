@@ -12,11 +12,15 @@ description:         Please see the README at <https://gitlab.memleak.pl/mmos/fl
 
 dependencies:
 - base >= 4.10 && < 5
+- aeson
 - bytestring
 - case-insensitive
+- either
 - feed
 - http-client
 - http-client-tls
+- lens
+- lens-aeson
 - persistent
 - persistent-template
 - persistent-sqlite

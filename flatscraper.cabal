@@ -26,23 +26,31 @@ library
       Legacy.Scraper.OlxScraper
       Legacy.Scraper.OtodomScraper
       Legacy.SQLite
+      Persistence.BasicScraperLoader
       Persistence.DataAccess
+      Persistence.PersistedOfferLoader
       Presenter.CLIFeedPresenter
+      Scraper.OtodomScraper
+      UseCase.DigestGenerator
       UseCase.FeedGenerator
       UseCase.Offer
-      UseCase.Scrape
+      UseCase.ScrapePersister
   other-modules:
       Paths_flatscraper
   hs-source-dirs:
       src
   ghc-options: -Wall
   build-depends:
-      base >=4.10 && <5
+      aeson
+    , base >=4.10 && <5
     , bytestring
     , case-insensitive
+    , either
     , feed
     , http-client
     , http-client-tls
+    , lens
+    , lens-aeson
     , persistent
     , persistent-sqlite
     , persistent-template
@@ -61,13 +69,17 @@ executable flatscraper
       app
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.10 && <5
+      aeson
+    , base >=4.10 && <5
     , bytestring
     , case-insensitive
+    , either
     , feed
     , flatscraper
     , http-client
     , http-client-tls
+    , lens
+    , lens-aeson
     , persistent
     , persistent-sqlite
     , persistent-template
@@ -86,13 +98,17 @@ executable new-cli
       new-cli
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.10 && <5
+      aeson
+    , base >=4.10 && <5
     , bytestring
     , case-insensitive
+    , either
     , feed
     , flatscraper
     , http-client
     , http-client-tls
+    , lens
+    , lens-aeson
     , persistent
     , persistent-sqlite
     , persistent-template
