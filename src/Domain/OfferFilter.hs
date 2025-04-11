@@ -1,112 +1,102 @@
-{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Domain.OfferFilter where
 
-import Data.Text (Text, isInfixOf, toLower, intercalate, pack)
 import Data.List (any)
 import Data.Maybe (mapMaybe)
-
-import Domain.Offer (Offer (offerDescription, offerArea), offerTitle)
+import Data.Text (Text, intercalate, isInfixOf, pack, toLower)
+import Domain.Offer (Offer (offerArea, offerDescription), offerTitle)
 
 bannedLocations :: [Text]
-bannedLocations = [
-    "ruczaj"
-  , "bronowic"
-  , "krowodrz"
-  , "dębnik"
-  , "prądni"
-  , "justowsk"
-  , "azor"
-  , "kurdwan"
-  , "salwator"
-  , "duchack"
-  , "stare miasto" -- use only for title filtering
-  -- , "rakowic"
-  , "łobz"
-  , "zwierzy" -- zwierzyniec
-  , "prokoci"
+bannedLocations =
+  [ "ruczaj",
+    "bronowic",
+    "krowodrz",
+    "dębnik",
+    "prądni",
+    "justowsk",
+    "azor",
+    "kurdwan",
+    "salwator",
+    "duchack",
+    "stare miasto", -- use only for title filtering
+    -- , "rakowic"
+    "łobz",
+    "zwierzy", -- zwierzyniec
+    "prokoci",
+    -- , "kazimierz" -- corner case: galeria kazimierz
+    "na kazimierzu",
+    "stradom",
+    "starowiśln",
+    "kleparz",
+    "wrocławs",
+    "mazowieck",
+    " lea",
+    "wielick",
+    "matecznego",
+    -- , "centrum a", "centruma"
+    -- , "centrum b", "centrumb" -- FIXME centrum biurowe
+    -- , "centrum c", "centrumc"
+    -- , "centrum d", "centrumd"
 
-  -- , "kazimierz" -- corner case: galeria kazimierz
-  , "na kazimierzu"
-
-  , "stradom"
-  , "starowiśln"
-
-  , "kleparz"
-  , "wrocławs"
-  , "mazowieck"
-  , " lea"
-  , "wielick"
-  , "matecznego"
-
-  -- , "centrum a", "centruma"
-  -- , "centrum b", "centrumb" -- FIXME centrum biurowe
-  -- , "centrum c", "centrumc"
-  -- , "centrum d", "centrumd"
-
-  , "huta"
-  , "hucie"
-
-  , "borek"
-  , "fałę"
-  , "łagiew"
-
-  , "błoń"
-  , "błoni"
-
-  , "czerwone maki"
-  , "czerwonych maków"
-  , "czerwonym makom"
-  , "czerwonymi makami"
-  , "czerwonych makach"
-
-  , "europejski"
-
-  , "29 listopada"
-  -- corner case: małopolska
-  , " opolska"
-  , " opolskiej"
-  , "prandoty"
-  , "olsz"
-  , "żabi"
-  , "dobrego pasterza"
-
-  , "podwawels"
-
-  , "krzeszow"
-
-  , "quattro"
-  , "nokia"
-  , "motorola"
-  , "serenad"
-
-  , "agh"
-  -- , " uj"
+    "huta",
+    "hucie",
+    "borek",
+    "fałę",
+    "łagiew",
+    "błoń",
+    "błoni",
+    "czerwone maki",
+    "czerwonych maków",
+    "czerwonym makom",
+    "czerwonymi makami",
+    "czerwonych makach",
+    "europejski",
+    "29 listopada",
+    -- corner case: małopolska
+    " opolska",
+    " opolskiej",
+    "prandoty",
+    "olsz",
+    "żabi",
+    "dobrego pasterza",
+    "podwawels",
+    "krzeszow",
+    "quattro",
+    "nokia",
+    "motorola",
+    "serenad",
+    "agh"
+    -- , " uj"
   ]
 
 titleBlacklist :: [Text]
-titleBlacklist = bannedLocations ++ [
-  --  "kazimierz"
-    "salwator" -- biuro nieruchomości SALWATOR
-  ]
+titleBlacklist =
+  bannedLocations
+    ++ [
+         --  "kazimierz"
+         "salwator" -- biuro nieruchomości SALWATOR
+       ]
 
 descriptionBlacklist :: [Text]
 descriptionBlacklist = bannedLocations
 
 allFieldsTextPredicate :: [Text] -> Offer -> Bool
 allFieldsTextPredicate banned offer = not . any (`isInfixOf` compareString) $ banned
-    where compareString = toLower . offerTitle $ offer
+  where
+    compareString = toLower . offerTitle $ offer
 
 dropBlacklisted :: [Offer] -> [Offer]
 dropBlacklisted = filter (allFieldsTextPredicate bannedLocations)
 
-data FieldFilter a = FieldFilter {
-    fieldFilterFieldName :: Text
-  , fieldFilterFieldExtractor :: Offer -> Maybe a
-}
+data FieldFilter a = FieldFilter
+  { fieldFilterFieldName :: Text,
+    fieldFilterFieldExtractor :: Offer -> Maybe a
+  }
 
-data OfferFilter = InfixFieldFilter (FieldFilter Text) [Text] |
-                   RangeValueFieldFilter (FieldFilter Int) Int
+data OfferFilter
+  = InfixFieldFilter (FieldFilter Text) [Text]
+  | RangeValueFieldFilter (FieldFilter Int) Int
 
 titleBlacklistFilter :: OfferFilter
 titleBlacklistFilter = InfixFieldFilter (FieldFilter "title" (return . offerTitle)) titleBlacklist
@@ -134,4 +124,5 @@ standardFilters = [titleBlacklistFilter, descriptionBlacklistFilter, minimalArea
 runFilters :: Offer -> Maybe Text
 runFilters offer =
   if null matches then Nothing else Just $ intercalate ", " matches
-  where matches = mapMaybe (`runFilter` offer) standardFilters
+  where
+    matches = mapMaybe (`runFilter` offer) standardFilters

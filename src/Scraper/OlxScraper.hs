@@ -1,18 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Scraper.OlxScraper
-    ( olxScraper
-    )
+  ( olxScraper,
+  )
 where
 
-import Text.HTML.Scalpel
-import Data.Text as T
-import Data.List (find, lookup)
 import Control.Monad ()
+import Data.List (find, lookup)
 import Data.Maybe (isJust)
-
+import Data.Text as T
 import Domain.Offer
 import Domain.WordUtils
+import Text.HTML.Scalpel
 
 offerScraper :: BasicOffer -> Scraper Text Offer
 offerScraper offer = do
@@ -35,14 +34,16 @@ detailsScraper offer = do
   rooms <- return $ lookup "Liczba pokoi" attributes >>= parseRooms
   description <- text ("div" @: ["id" @= "textContent"])
   let extras = parseExtras description
-  return $ offer { offerDetailed = True
-                 , offerRentPrice = rent
-                 , offerArea = area
-                 , offerOwnerOffer = Just private
-                 , offerRooms = rooms
-                 , offerExtras = extras
-                 , offerDescription = Just description
-                 }
+  return $
+    offer
+      { offerDetailed = True,
+        offerRentPrice = rent,
+        offerArea = area,
+        offerOwnerOffer = Just private,
+        offerRooms = rooms,
+        offerExtras = extras,
+        offerDescription = Just description
+      }
 
 attrsScraper :: Scraper Text [(Text, Text)]
 attrsScraper = chroot ("div" @: [hasClass "descriptioncontent"]) $ do
@@ -53,13 +54,15 @@ attrsScraper = chroot ("div" @: [hasClass "descriptioncontent"]) $ do
   return offerAttrs
 
 offersScraper :: BasicOffer -> Scraper Text [Offer]
-offersScraper offer = chroots
-  (("table" @: ["id" @= "offers_table"]) // "td" @: [hasClass "offer"])
-  (offerScraper offer)
+offersScraper offer =
+  chroots
+    (("table" @: ["id" @= "offers_table"]) // "td" @: [hasClass "offer"])
+    (offerScraper offer)
 
 olxScraper :: Config Text -> OfferScraper
-olxScraper config = OfferScraper
-  config
-  (basicOffer "olx.pl")
-  offersScraper
-  (Just detailsScraper)
+olxScraper config =
+  OfferScraper
+    config
+    (basicOffer "olx.pl")
+    offersScraper
+    (Just detailsScraper)

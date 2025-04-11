@@ -5,11 +5,11 @@ module Presenter.Newsfeed
   )
 where
 
+import Data.List (intersperse)
 import Data.Maybe (catMaybes, fromMaybe)
-import Data.Text as T (Text, intercalate, pack, concat)
+import Data.Text as T (Text, concat, intercalate, pack)
 import qualified Data.Text.Lazy as TL (Text)
 import Data.Time
-import Data.List (intersperse)
 import Domain.Offer
 import Text.RSS.Export
 import Text.RSS.Syntax
@@ -112,11 +112,12 @@ renderPrice offer =
   if totalPrice == ownerPrice
     then (T.pack . show) ownerPrice
     else T.concat $ (intersperse (T.pack "+") $ (T.pack . show) <$> priceParts) <> ["=", T.pack . show $ totalPrice]
-  where ownerPrice = offerPrice offer
-        rentPrice = offerRentPrice offer
-        agencyFee = if offerOwnerOffer offer == Just False then Just (ownerPrice `div` 12) else Nothing
-        priceParts = catMaybes $ Just ownerPrice : rentPrice : agencyFee : []
-        totalPrice = sum priceParts
+  where
+    ownerPrice = offerPrice offer
+    rentPrice = offerRentPrice offer
+    agencyFee = if offerOwnerOffer offer == Just False then Just (ownerPrice `div` 12) else Nothing
+    priceParts = catMaybes $ Just ownerPrice : rentPrice : agencyFee : []
+    totalPrice = sum priceParts
 
 renderOfferFeedEntry :: Offer -> RSSItem
 renderOfferFeedEntry offer =
@@ -129,7 +130,7 @@ renderOfferFeedEntry offer =
   where
     price = offerPrice offer
     title =
-        renderPrice offer
+      renderPrice offer
         <> areaTag offer
         <> offerTitle offer
 

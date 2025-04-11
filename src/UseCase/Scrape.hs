@@ -1,5 +1,6 @@
 module UseCase.Scrape () where
-import UseCase.Offer (StubOffer, DetailedOffer)
+
+import UseCase.Offer (DetailedOffer, StubOffer)
 
 class OfferDetailStorer ods where
-    storeDetails :: ods -> StubOffer -> IO DetailedOffer
+  storeDetails :: ods -> StubOffer -> IO DetailedOffer
