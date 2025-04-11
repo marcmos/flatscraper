@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Domain.OfferFilter where
+module Legacy.Domain.OfferFilter where
 
 import Data.List (any)
 import Data.Maybe (mapMaybe)
 import Data.Text (Text, intercalate, isInfixOf, pack, toLower)
-import Domain.Offer (Offer (offerArea, offerDescription), offerTitle)
+import Legacy.Domain.Offer (Offer (offerArea, offerDescription), offerTitle)
 
 bannedLocations :: [Text]
 bannedLocations =

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Presenter.Newsfeed
+module Legacy.Newsfeed
   ( renderOfferFeed,
   )
 where
@@ -10,7 +10,7 @@ import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text as T (Text, concat, intercalate, pack)
 import qualified Data.Text.Lazy as TL (Text)
 import Data.Time
-import Domain.Offer
+import Legacy.Domain.Offer
 import Text.RSS.Export
 import Text.RSS.Syntax
 

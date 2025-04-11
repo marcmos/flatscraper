@@ -13,14 +13,14 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Persistence.SQLite
+module Legacy.SQLite
   ( loadPersistedDetails,
     persistOffers,
   )
 where
 
 import Control.Monad (forM_)
-import Control.Monad.IO.Class
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Maybe (catMaybes)
 import Data.Text as T
 import Data.Time
@@ -28,7 +28,7 @@ import Database.Persist
 import Database.Persist.Sql
 import Database.Persist.Sqlite
 import Database.Persist.TH
-import Domain.Offer (Offer (..), OfferExtra)
+import Legacy.Domain.Offer (Offer (..), OfferExtra)
 import Text.Read (readMaybe)
 
 -- TODO rooms

@@ -14,16 +14,16 @@ import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Data.Text.Lazy.IO as T (putStr)
 import Data.Time
-import Domain.Offer
-import Domain.OfferFilter (runFilters)
-import Domain.WordUtils (possibleRentPrice)
+import Legacy.Domain.Offer
+import Legacy.Domain.OfferFilter (runFilters)
+import Legacy.Domain.WordUtils (possibleRentPrice)
+import Legacy.Newsfeed (renderOfferFeed)
+import Legacy.SQLite
+import Legacy.Scraper.GratkaScraper (gratkaScraper)
+import Legacy.Scraper.OlxScraper (olxScraper)
+import Legacy.Scraper.OtodomScraper (otodomScraper)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Persistence.SQLite
-import Presenter.Newsfeed (renderOfferFeed)
-import Scraper.GratkaScraper (gratkaScraper)
-import Scraper.OlxScraper (olxScraper)
-import Scraper.OtodomScraper (otodomScraper)
 import System.Environment (getArgs)
 import System.IO (hPrint, hPutStrLn, stderr)
 import Text.HTML.Scalpel hiding (scrape, scrapeURL)

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Scraper.OlxScraper
+module Legacy.Scraper.OlxScraper
   ( olxScraper,
   )
 where
@@ -9,8 +9,8 @@ import Control.Monad ()
 import Data.List (find, lookup)
 import Data.Maybe (isJust)
 import Data.Text as T
-import Domain.Offer
-import Domain.WordUtils
+import Legacy.Domain.Offer
+import Legacy.Domain.WordUtils
 import Text.HTML.Scalpel
 
 offerScraper :: BasicOffer -> Scraper Text Offer

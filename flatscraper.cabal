@@ -18,15 +18,15 @@ extra-source-files:
 
 library
   exposed-modules:
-      Domain.Offer
-      Domain.OfferFilter
-      Domain.WordUtils
-      Persistence.SQLite
+      Legacy.Domain.Offer
+      Legacy.Domain.OfferFilter
+      Legacy.Domain.WordUtils
+      Legacy.Newsfeed
+      Legacy.Scraper.GratkaScraper
+      Legacy.Scraper.OlxScraper
+      Legacy.Scraper.OtodomScraper
+      Legacy.SQLite
       Presenter.CLIFeedPresenter
-      Presenter.Newsfeed
-      Scraper.GratkaScraper
-      Scraper.OlxScraper
-      Scraper.OtodomScraper
       UseCase.FeedGenerator
       UseCase.Offer
       UseCase.Scrape

@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Scraper.GratkaScraper
+module Legacy.Scraper.GratkaScraper
   ( gratkaScraper,
   )
 where
 
 import Data.List (find)
 import Data.Text (Text, isInfixOf)
-import Domain.Offer
-import Domain.WordUtils
+import Legacy.Domain.Offer
+import Legacy.Domain.WordUtils
 import Text.HTML.Scalpel
 
 offerScraper :: BasicOffer -> Scraper Text Offer

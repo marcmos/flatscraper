@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Domain.WordUtils where
+module Legacy.Domain.WordUtils where
 
 import Data.Char (digitToInt, isAlphaNum, isDigit)
 import Data.Either (fromRight)
@@ -9,7 +9,7 @@ import Data.List (filter, maximumBy, minimumBy, nub)
 import Data.Maybe (mapMaybe)
 import Data.Text as T
 import Data.Text.Read (decimal)
-import Domain.Offer (Offer (offerRentPrice), OfferExtra (..))
+import Legacy.Domain.Offer (Offer (offerRentPrice), OfferExtra (..))
 import Text.RE.TDFA.Text
 import Text.Regex.TDFA
 import Text.Regex.TDFA.Text ()

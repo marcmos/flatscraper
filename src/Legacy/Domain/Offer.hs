@@ -1,4 +1,4 @@
-module Domain.Offer where
+module Legacy.Domain.Offer where
 
 import Data.Text
 import Data.Time (UTCTime)

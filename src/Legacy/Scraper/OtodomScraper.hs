@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Scraper.OtodomScraper
+module Legacy.Scraper.OtodomScraper
   ( otodomScraper,
   )
 where
@@ -8,8 +8,8 @@ where
 import Control.Monad ()
 import Data.List (find)
 import Data.Text as T
-import Domain.Offer
-import Domain.WordUtils
+import Legacy.Domain.Offer
+import Legacy.Domain.WordUtils
 import Text.HTML.Scalpel
 
 offerScraper :: BasicOffer -> Scraper Text Offer
@@ -24,7 +24,8 @@ detailsScraper offer@(Offer {offerDetailed = True}) = return offer
 detailsScraper offer = do
   offerAttrs <-
     texts
-      ( "section" @: [hasClass "section-overview"]
+      ( "section"
+          @: [hasClass "section-overview"]
           // "div"
           // "ul"
           // "li"
