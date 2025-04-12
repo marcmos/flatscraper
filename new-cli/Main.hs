@@ -3,13 +3,15 @@
 module Main where
 
 import Data.CaseInsensitive (mk)
+import Data.Maybe (fromJust)
 import Data.Text.Encoding (encodeUtf8)
+import qualified Data.Text.IO as T (readFile)
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Persistence.BasicScraperLoader (BasicScraperLoader (BasicScraperLoader))
 import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
-import qualified Scraper.OtodomScraper (offersScraper)
-import Text.HTML.Scalpel (Config (Config), utf8Decoder)
+import Scraper.OtodomScraper (offersScraper)
+import Text.HTML.Scalpel (Config (Config), scrapeStringLike, utf8Decoder)
 import UseCase.Offer (OfferDetailsLoader (loadDetails))
 import UseCase.ScrapePersister (loadOffers)
 
@@ -25,25 +27,33 @@ addLegitHeadersNoScam100 req =
           ]
       }
 
+scrapeFile path scraper = do
+  htmlContent <- T.readFile path
+  return $ scrapeStringLike htmlContent scraper
+
 main :: IO ()
-main = do
-  httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
-  let config = Config utf8Decoder (Just httpManager)
-  let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/cala-polska"
+main =
+  -- httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
+  -- let config = Config utf8Decoder (Just httpManager)
+  -- let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/cala-polska"
 
   -- scrape from scratch
   -- tests scraper
-  let loader = BasicScraperLoader config Scraper.OtodomScraper.offersScraper testURL
-  offers <- loadOffers loader
-  -- detailedOffers <- mapM (loadDetails loader) offers
-  print offers
+  -- let loader = BasicScraperLoader config Scraper.OtodomScraper.offersScraper testURL
+  -- offers <- loadOffers loader
+  -- -- detailedOffers <- mapM (loadDetails loader) offers
+  -- print offers
 
-  -- wczytac list loader scrapera
-  -- wczytac details loader z bazy
-  -- wczytac details loader ze scrapera details
-  -- zawolac persist
+  do
+    offers <- fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
+    print offers
 
-  -- showNewSinceLastVisit loader cliPresenter 5
-  return ()
+    -- wczytac list loader scrapera
+    -- wczytac details loader z bazy
+    -- wczytac details loader ze scrapera details
+    -- zawolac persist
+
+    -- showNewSinceLastVisit loader cliPresenter 5
+    return ()
   where
     cliPresenter = CLIPresenter 1 2
