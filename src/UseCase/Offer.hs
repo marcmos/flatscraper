@@ -21,8 +21,8 @@ data OfferDetails = OfferDetails
   }
   deriving (Eq, Show)
 
-newOfferView :: Text -> Int -> Double -> OfferView
-newOfferView url price area = OfferView url price area Nothing Nothing
+newOfferView :: Text -> Int -> Double -> Text -> OfferView
+newOfferView url price area title = OfferView url price area title Nothing
 
 -- class OfferDetailLoader odl where
 --   loadDetails :: odl -> StubOffer -> IO DetailedOffer
