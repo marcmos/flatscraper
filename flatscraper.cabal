@@ -26,9 +26,10 @@ library
       Legacy.Scraper.OlxScraper
       Legacy.Scraper.OtodomScraper
       Legacy.SQLite
-      Persistence.BasicScraperLoader
       Persistence.DataAccess
       Persistence.PersistedOfferLoader
+      Persistence.ScrapeLoader
+      Persistence.SQLite
       Presenter.CLIFeedPresenter
       Scraper.OtodomScraper
       UseCase.DigestGenerator

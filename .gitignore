@@ -1,3 +1,6 @@
 .stack-work/
 flatscraper.cabal
 *~
+flatscraper.sqlite
+flatscraper.sqlite-shm
+flatscraper.sqlite-wal

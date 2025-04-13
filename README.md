@@ -7,4 +7,4 @@ There are two types of generators:
 Implementations:
 1. BasicScraperLoader -- returns offers from the scraped site, single-page fetch
 2. ScrapeDetailsLoader -- augments offers by scraping pages
-2. PersistedDetailsLoader -- augments offers by loading from database
+2. PersistedDetailsLoader -- augments offers by loading details from a database
