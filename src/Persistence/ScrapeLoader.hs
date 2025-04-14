@@ -7,7 +7,7 @@ where
 import Data.Maybe (fromJust)
 import Data.Text (Text, unpack)
 import Text.HTML.Scalpel (Config, Scraper, URL, scrapeURLWithConfig)
-import UseCase.Offer (OfferDetailsLoader (..), OfferListLoader (..), OfferView (offerURL))
+import UseCase.Offer (OfferDetailsLoader (..), OfferSeeder (..), OfferView (offerURL))
 
 data ScrapeListLoader = ScrapeListLoader (Config Text) (Scraper Text [OfferView]) URL
 
@@ -18,6 +18,6 @@ instance OfferDetailsLoader ScrapeDetailsLoader where
     putStrLn "scraping details"
     fromJust <$> scrapeURLWithConfig config (Data.Text.unpack $ offerURL offer) (scraper offer)
 
-instance OfferListLoader ScrapeListLoader where
-  loadOffers (ScrapeListLoader config scraper url) = do
+instance OfferSeeder ScrapeListLoader where
+  seedOffers (ScrapeListLoader config scraper url) = do
     fromJust <$> scrapeURLWithConfig config url scraper

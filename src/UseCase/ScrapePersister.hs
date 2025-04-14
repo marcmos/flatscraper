@@ -1,5 +1,5 @@
 module UseCase.ScrapePersister
-  ( loadOffers,
+  ( seedOffers,
     storeDetailedOffers,
     OfferStorer (storeOffers),
     scrapeAndStore,
@@ -8,7 +8,7 @@ where
 
 import UseCase.Offer
   ( OfferDetailsLoader (loadDetails),
-    OfferListLoader (loadOffers),
+    OfferSeeder (seedOffers),
     OfferView,
     offerDetails,
   )
@@ -17,13 +17,13 @@ class OfferStorer os where
   storeOffers :: os -> [OfferView] -> IO ()
 
 storeDetailedOffers ::
-  (OfferListLoader oll, OfferDetailsLoader odl, OfferStorer os) =>
+  (OfferSeeder oll, OfferDetailsLoader odl, OfferStorer os) =>
   oll ->
   odl ->
   os ->
   IO [OfferView]
 storeDetailedOffers listLoader detailLoader storer = do
-  offers <- loadOffers listLoader
+  offers <- seedOffers listLoader
   detailedOffers <- mapM (loadDetails detailLoader) offers
   storeOffers storer detailedOffers
   return detailedOffers
@@ -33,14 +33,14 @@ storeDetailedOffers listLoader detailLoader storer = do
 -- wczytac details loader ze scrapera details
 -- zawolac persist
 scrapeAndStore ::
-  (OfferListLoader oll, OfferDetailsLoader odl1, OfferDetailsLoader odl2, OfferStorer os) =>
+  (OfferSeeder oll, OfferDetailsLoader odl1, OfferDetailsLoader odl2, OfferStorer os) =>
   oll ->
   odl1 ->
   odl2 ->
   os ->
   IO [OfferView]
 scrapeAndStore scraper detailsScraper detailsLoader storer = do
-  offers <- loadOffers scraper
+  offers <- seedOffers scraper
   detailedOffers <- mapM (loadDetails detailsLoader) offers
   detailedOffers' <-
     mapM

@@ -29,8 +29,8 @@ newOfferView url price area title = OfferView url price area title Nothing
 --   loadNewSince :: odl -> UTCTime -> Int -> IO [OfferView]
 
 -- TODO: rename to OfferSeeder
-class OfferListLoader oll where
-  loadOffers :: oll -> IO [OfferView]
+class OfferSeeder os where
+  seedOffers :: os -> IO [OfferView]
 
 class OfferDetailsLoader odl where
   loadDetails :: odl -> OfferView -> IO OfferView

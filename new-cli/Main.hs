@@ -16,7 +16,7 @@ import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
 import Scraper.OtodomScraper (detailsScraper, offersScraper)
 import Text.HTML.Scalpel (Config (Config), Scraper, scrapeStringLike, utf8Decoder)
 import UseCase.Offer (OfferDetailsLoader (loadDetails))
-import UseCase.ScrapePersister (loadOffers, scrapeAndStore, storeDetailedOffers)
+import UseCase.ScrapePersister (scrapeAndStore, seedOffers, storeDetailedOffers)
 
 addLegitHeadersNoScam100 :: Request -> IO Request
 addLegitHeadersNoScam100 req =
@@ -49,7 +49,7 @@ main = do
   let loader = SQLitePersistence
   let detailsLoader = ScrapeDetailsLoader config detailsScraper
 
-  -- offers <- take 2 <$> loadOffers loader
+  -- offers <- take 2 <$> seedOffers loader
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   -- detailedOffers <- mapM (loadDetails detailsLoader) offers
 

@@ -25,7 +25,7 @@ import Database.Persist (Entity (Entity), Filter, SelectOpt (LimitTo), selectFir
 import Database.Persist.Sql (runMigration)
 import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
-import UseCase.Offer (OfferDetails (OfferDetails, offerDescription, offerDistrict, offerStreet), OfferDetailsLoader (loadDetails), OfferListLoader (loadOffers), OfferView (OfferView, offerDetails, offerURL), offerRooms)
+import UseCase.Offer (OfferDetails (OfferDetails, offerDescription, offerDistrict, offerStreet), OfferDetailsLoader (loadDetails), OfferSeeder (seedOffers), OfferView (OfferView, offerDetails, offerURL), offerRooms)
 import UseCase.ScrapePersister (OfferStorer (storeOffers))
 
 share
@@ -88,8 +88,8 @@ instance OfferDetailsLoader SQLitePersistence where
                   }
           }
 
-instance OfferListLoader SQLitePersistence where
-  loadOffers _ = liftIO $ loadRecentOffers 10
+instance OfferSeeder SQLitePersistence where
+  seedOffers _ = liftIO $ loadRecentOffers 10
 
 -- loadRecentOffers :: SQLitePersistence -> Int -> IO [Entity OfferInstance]
 loadRecentOffers count = do
