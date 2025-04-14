@@ -45,7 +45,8 @@ main = do
 
   -- scrape from scratch
   -- tests scraper
-  let loader = ScrapeListLoader config (take 2 <$> offersScraper) testURL2
+  -- let loader = ScrapeListLoader config (take 2 <$> offersScraper) testURL2
+  let loader = SQLitePersistence
   let detailsLoader = ScrapeDetailsLoader config detailsScraper
 
   -- offers <- take 2 <$> loadOffers loader

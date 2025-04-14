@@ -1,10 +1,13 @@
 # flatscraper
 
-There are two types of generators:
-1. ListLoader -- generates new offers
+There are three types of generators:
+1. ListLoader -- generates new offers.
+* ScrapeListLoader
+* SQLitePersistence
 2. DetailsLoader -- modifies offer, possibly adding more details.
+* ScrapeDetailsLoader
+* SQLitePersistence
 
-Implementations:
-1. BasicScraperLoader -- returns offers from the scraped site, single-page fetch
-2. ScrapeDetailsLoader -- augments offers by scraping pages
-2. PersistedDetailsLoader -- augments offers by loading details from a database
+There are two OfferStorers:
+1. NoOpStorer
+2. SQLitePersistence

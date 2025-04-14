@@ -17,14 +17,15 @@
 module Persistence.SQLite (SQLitePersistence (SQLitePersistence)) where
 
 import Control.Monad (forM_)
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Time.Clock (getCurrentTime)
-import Database.Persist (Entity (Entity), selectFirst, upsertBy, (=.), (==.))
+import Database.Persist (Entity (Entity), Filter, SelectOpt (LimitTo), selectFirst, selectList, upsertBy, (=.), (==.))
 import Database.Persist.Sql (runMigration)
 import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
-import UseCase.Offer (OfferDetails (OfferDetails, offerDescription, offerDistrict, offerStreet), OfferDetailsLoader (loadDetails), OfferView (OfferView, offerDetails, offerURL), offerRooms)
+import UseCase.Offer (OfferDetails (OfferDetails, offerDescription, offerDistrict, offerStreet), OfferDetailsLoader (loadDetails), OfferListLoader (loadOffers), OfferView (OfferView, offerDetails, offerURL), offerRooms)
 import UseCase.ScrapePersister (OfferStorer (storeOffers))
 
 share
@@ -68,7 +69,7 @@ instance OfferStorer SQLitePersistence where
   storeOffers _ = persistOffers
 
 instance OfferDetailsLoader SQLitePersistence where
-  loadDetails _ offer = do
+  loadDetails _ offer =
     runSqlite "flatscraper.sqlite" $ do
       runMigration migrateAll
       maybe offer entityToRecord <$> entityQ
@@ -86,3 +87,28 @@ instance OfferDetailsLoader SQLitePersistence where
                     offerDistrict = Nothing
                   }
           }
+
+instance OfferListLoader SQLitePersistence where
+  loadOffers _ = liftIO $ loadRecentOffers 10
+
+-- loadRecentOffers :: SQLitePersistence -> Int -> IO [Entity OfferInstance]
+loadRecentOffers count = do
+  offers <- runSqlite "flatscraper.sqlite" (selectList ([] :: [Filter OfferInstance]) [LimitTo count])
+  mapM
+    ( \(Entity _ (OfferInstance _ _ url title rooms area)) ->
+        return $
+          OfferView
+            url
+            0
+            area
+            title
+            ( Just
+                OfferDetails
+                  { offerRooms = rooms,
+                    offerDescription = Nothing,
+                    offerStreet = Nothing,
+                    offerDistrict = Nothing
+                  }
+            )
+    )
+    offers

@@ -28,6 +28,7 @@ newOfferView url price area title = OfferView url price area title Nothing
 --   loadDetails :: odl -> StubOffer -> IO DetailedOffer
 --   loadNewSince :: odl -> UTCTime -> Int -> IO [OfferView]
 
+-- TODO: rename to OfferSeeder
 class OfferListLoader oll where
   loadOffers :: oll -> IO [OfferView]
 
