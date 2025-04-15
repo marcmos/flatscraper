@@ -8,15 +8,15 @@ import qualified Data.Text.Lazy.IO as TL (putStrLn)
 import Text.RSS.Export (textRSS)
 import Text.RSS.Syntax (RSSChannel (rssItems), RSSItem (rssItemLink), nullChannel, nullItem, nullRSS, rssChannel)
 import UseCase.FeedGenerator (FeedPresenter (present))
-import UseCase.Offer (OfferView (offerTitle, offerURL))
+import UseCase.Offer (OfferView (_offerTitle, _offerURL))
 
 renderOffer :: OfferView -> RSSItem
 renderOffer offer =
   (nullItem title)
-    { rssItemLink = Just $ offerURL offer
+    { rssItemLink = Just $ _offerURL offer
     }
   where
-    title = offerTitle offer
+    title = _offerTitle offer
 
 renderFeed :: [OfferView] -> Maybe TL.Text
 renderFeed offers =

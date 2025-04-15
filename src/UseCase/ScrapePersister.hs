@@ -10,7 +10,7 @@ import UseCase.Offer
   ( OfferDetailsLoader (loadDetails),
     OfferSeeder (seedOffers),
     OfferView,
-    offerDetails,
+    _offerDetails,
   )
 
 class OfferStorer os where
@@ -45,7 +45,7 @@ scrapeAndStore scraper detailsScraper detailsLoader storer = do
   detailedOffers' <-
     mapM
       ( \ov -> do
-          case offerDetails ov of
+          case _offerDetails ov of
             Just _ -> return ov
             Nothing -> loadDetails detailsScraper ov
       )

@@ -10,10 +10,10 @@ import qualified Data.Text.IO as T (readFile)
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Persistence.SQLite (SQLitePersistence (SQLitePersistence))
-import Persistence.ScrapeLoader (ScrapeDetailsLoader (ScrapeDetailsLoader), ScrapeListLoader (ScrapeListLoader))
+import Persistence.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper (WebScraper), WebScrapers (WebScrapers))
 import Presenter.CLIDigestPresenter (CLIPresenter (CLIPresenter))
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
-import Scraper.OtodomScraper (detailsScraper, offersScraper)
+import qualified Scraper.OtodomScraper (scraper)
 import Text.HTML.Scalpel (Config (Config), Scraper, scrapeStringLike, utf8Decoder)
 import UseCase.FeedGenerator (presentFeed)
 import UseCase.Offer (OfferDetailsLoader (loadDetails))
@@ -36,26 +36,29 @@ data NoOpStorer = NoOpStorer
 instance OfferStorer NoOpStorer where
   storeOffers _ _ = return ()
 
-scrapeFile :: FilePath -> Scraper Text a -> IO (Maybe a)
-scrapeFile path scraper = do
-  htmlContent <- T.readFile path
-  return $ scrapeStringLike htmlContent scraper
+-- scrapeFile :: FilePath -> Scraper Text a -> IO (Maybe a)
+-- scrapeFile path scraper = do
+--   htmlContent <- T.readFile path
+--   return $ scrapeStringLike htmlContent scraper
 
 testOfflineListScraper :: IO ()
 testOfflineListScraper = do
-  offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
+  let (WebScraper scraperPack _) = Scraper.OtodomScraper.scraper
+  let fs = FileSource scraperPack "testfiles/otodom-list.html"
+  offers <- seedOffers fs
+  -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   print offers
 
-testTypicalScrapeFlow :: IO ()
-testTypicalScrapeFlow = do
-  let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/malopolskie/krakow/krakow/krakow?limit=36&ownerTypeSingleSelect=ALL&areaMin=58&areaMax=65&pricePerMeterMax=16000&buildYearMin=2014&floors=%5BFIRST%2CSECOND%2CTHIRD%2CFOURTH%2CFIFTH%2CSIXTH%2CSEVENTH%2CEIGHTH%2CNINTH%2CTENTH%2CABOVE_TENTH%5D&buildingType=%5BBLOCK%2CTENEMENT%2CAPARTMENT%2CLOFT%5D&extras=%5BBALCONY%2CLIFT%2CHAS_PHOTOS%5D&by=LATEST&direction=DESC&viewType=listing"
-  httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
-  let config = Config utf8Decoder (Just httpManager)
-  let otodomOfferListScraper = ScrapeListLoader config (take 2 <$> offersScraper) testURL
-  let dbPersistence = SQLitePersistence
-  let otodomDetailsScraper = ScrapeDetailsLoader config detailsScraper
-  offers <- scrapeAndStore otodomOfferListScraper otodomDetailsScraper dbPersistence dbPersistence
-  print offers
+-- testTypicalScrapeFlow :: IO ()
+-- testTypicalScrapeFlow = do
+--   let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/malopolskie/krakow/krakow/krakow?limit=36&ownerTypeSingleSelect=ALL&areaMin=58&areaMax=65&pricePerMeterMax=16000&buildYearMin=2014&floors=%5BFIRST%2CSECOND%2CTHIRD%2CFOURTH%2CFIFTH%2CSIXTH%2CSEVENTH%2CEIGHTH%2CNINTH%2CTENTH%2CABOVE_TENTH%5D&buildingType=%5BBLOCK%2CTENEMENT%2CAPARTMENT%2CLOFT%5D&extras=%5BBALCONY%2CLIFT%2CHAS_PHOTOS%5D&by=LATEST&direction=DESC&viewType=listing"
+--   httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
+--   let config = Config utf8Decoder (Just httpManager)
+--   let otodomOfferListScraper =
+--   let dbPersistence = SQLitePersistence
+--   let otodomDetailsScraper = ScrapeDetailsLoader config detailsScraper
+--   offers <- scrapeAndStore otodomOfferListScraper otodomDetailsScraper dbPersistence dbPersistence
+--   print offers
 
 printRSSFeed = do
   let offerSeeder = SQLitePersistence
@@ -64,7 +67,8 @@ printRSSFeed = do
 
 main :: IO ()
 main = do
-  let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/cala-polska"
+  let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/malopolskie/krakow/krakow/krakow?limit=36&ownerTypeSingleSelect=ALL&areaMin=58&areaMax=65&pricePerMeterMax=16000&buildYearMin=2014&floors=%5BFIRST%2CSECOND%2CTHIRD%2CFOURTH%2CFIFTH%2CSIXTH%2CSEVENTH%2CEIGHTH%2CNINTH%2CTENTH%2CABOVE_TENTH%5D&buildingType=%5BBLOCK%2CTENEMENT%2CAPARTMENT%2CLOFT%5D&extras=%5BBALCONY%2CLIFT%2CHAS_PHOTOS%5D&by=LATEST&direction=DESC&viewType=listing"
+  let testOfferURL = "https://www.otodom.pl/pl/oferta/2-pokojowe-mieszkanie-38m2-loggia-bezposrednio-ID4umfy"
   -- showNewSinceLastVisit loader cliPresenter 5
 
   -- scrape from scratch
@@ -75,8 +79,18 @@ main = do
 
   -- let offerStorer = NoOpStorer
   -- detailedOffers <- storeDetailedOffers loader detailsLoader offerStorer
-  printRSSFeed
+
+  httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
+  let config = Config utf8Decoder (Just httpManager)
+  let detailsScrapers = WebScrapers (Just config) [Scraper.OtodomScraper.scraper]
+  let ss = WebSource detailsScrapers testURL
+  let dbPersistence = SQLitePersistence
+  -- offers <- seedOffers ss
+  offers <- scrapeAndStore ss detailsScrapers dbPersistence dbPersistence
+  print offers
   where
+    -- testOfflineListScraper
+
     -- print detailedOffers
 
     cliPresenter = CLIPresenter 1 2

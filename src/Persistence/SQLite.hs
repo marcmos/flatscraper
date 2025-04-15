@@ -26,7 +26,13 @@ import Database.Persist (Entity (Entity), Filter, SelectOpt (LimitTo), selectFir
 import Database.Persist.Sql (runMigration)
 import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
-import UseCase.Offer (OfferDetails (OfferDetails, offerDescription, offerDistrict, offerStreet), OfferDetailsLoader (loadDetails), OfferSeeder (seedOffers), OfferView (OfferView, offerArea, offerDetails, offerLatestPrice, offerURL), offerRooms)
+import UseCase.Offer
+  ( OfferDetails (OfferDetails, _offerDescription, _offerDistrict, _offerRooms, _offerStreet),
+    OfferDetailsLoader (loadDetails),
+    OfferSeeder (seedOffers),
+    OfferView (OfferView, _offerArea, _offerDetails, _offerLatestPrice, _offerURL),
+    offerRooms,
+  )
 import UseCase.ScrapePersister (OfferStorer (storeOffers))
 
 share
@@ -60,14 +66,14 @@ persistOffers offers = do
   runSqlite "flatscraper.sqlite" $ do
     runMigration migrateAll
     forM_ offers $ \(OfferView url price area title details) -> do
-      let street = details >>= offerStreet
-      let district = details >>= offerDistrict
+      let street = details >>= _offerStreet
+      let district = details >>= _offerDistrict
       upsertBy
         (UniqueUrl url)
-        (OfferInstance time time url title (details >>= offerRooms) area price street district)
+        (OfferInstance time time url title (details >>= _offerRooms) area price street district)
         [ OfferInstanceUpdatedAt =. time,
           OfferInstanceTitle =. title,
-          OfferInstanceRooms =. (details >>= offerRooms),
+          OfferInstanceRooms =. (details >>= _offerRooms),
           OfferInstanceArea =. area,
           OfferInstancePrice =. price,
           OfferInstanceStreet =. street,
@@ -83,19 +89,19 @@ instance OfferDetailsLoader SQLitePersistence where
       runMigration migrateAll
       maybe offer entityToRecord <$> entityQ
     where
-      entityQ = selectFirst [OfferInstanceUrl ==. offerURL offer] []
+      entityQ = selectFirst [OfferInstanceUrl ==. _offerURL offer] []
       entityToRecord (Entity _ ent) =
         offer
-          { offerURL = offerInstanceUrl ent,
-            offerLatestPrice = offerInstancePrice ent,
-            offerArea = offerInstanceArea ent,
-            offerDetails =
+          { _offerURL = offerInstanceUrl ent,
+            _offerLatestPrice = offerInstancePrice ent,
+            _offerArea = offerInstanceArea ent,
+            _offerDetails =
               Just
                 OfferDetails
-                  { offerDescription = Just $ offerInstanceTitle ent, -- FIXME
-                    offerRooms = offerInstanceRooms ent,
-                    offerStreet = offerInstanceStreet ent,
-                    offerDistrict = offerInstanceDistrict ent
+                  { _offerDescription = Just $ offerInstanceTitle ent, -- FIXME
+                    _offerRooms = offerInstanceRooms ent,
+                    _offerStreet = offerInstanceStreet ent,
+                    _offerDistrict = offerInstanceDistrict ent
                   }
           }
 
@@ -104,7 +110,9 @@ instance OfferSeeder SQLitePersistence where
 
 loadRecentOffers :: (MonadUnliftIO m) => Int -> m [OfferView]
 loadRecentOffers count = do
-  offers <- runSqlite "flatscraper.sqlite" (selectList ([] :: [Filter OfferInstance]) [LimitTo count])
+  offers <- runSqlite "flatscraper.sqlite" $ do
+    runMigration migrateAll
+    selectList ([] :: [Filter OfferInstance]) [LimitTo count]
   mapM
     ( \(Entity _ (OfferInstance _ _ url title rooms area price street district)) ->
         return $
@@ -115,10 +123,10 @@ loadRecentOffers count = do
             title
             ( Just
                 OfferDetails
-                  { offerRooms = rooms,
-                    offerDescription = Nothing,
-                    offerStreet = street,
-                    offerDistrict = district
+                  { _offerRooms = rooms,
+                    _offerDescription = Nothing,
+                    _offerStreet = street,
+                    _offerDistrict = district
                   }
             )
     )

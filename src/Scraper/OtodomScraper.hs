@@ -1,32 +1,50 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Scraper.OtodomScraper
-  ( offersScraper,
-    detailsScraper,
+  ( scraper,
   )
 where
 
-import Control.Lens ((^?), (^?!))
+import Control.Lens
+  ( non,
+    over,
+    (&),
+    (.~),
+    (?~),
+    (^?),
+    (^?!),
+  )
 import Control.Monad ()
 import Data.Aeson (Value (), decodeStrict)
 import Data.Aeson.Lens (AsNumber (_Integer), key, _String)
 import Data.Char (isDigit)
 import Data.Either.Combinators (rightToMaybe)
 import Data.List (find)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Text as T (Text, any, concat, isSuffixOf, takeWhile, words)
 import qualified Data.Text.Encoding as T (encodeUtf8)
 import Data.Text.Lens ()
 import qualified Data.Text.Read as T (decimal, double)
+import Persistence.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
 import Text.HTML.Scalpel (Scraper, attr, chroots, text, texts, (//), (@:), (@=))
 import UseCase.Offer
-  ( OfferDetails (OfferDetails, offerDescription, offerDistrict, offerRooms, offerStreet),
-    OfferView
-      ( offerArea,
-        offerDetails,
-        offerTitle
+  ( OfferView
+      ( OfferView,
+        _offerArea,
+        _offerDetails,
+        _offerLatestPrice,
+        _offerTitle,
+        _offerURL
       ),
+    emptyDetails,
     newOfferView,
+    offerArea,
+    offerDescription,
+    offerDetails,
+    offerDistrict,
+    offerRooms,
+    offerStreet,
+    offerTitle,
   )
 
 parsePrice :: Text -> Int
@@ -46,7 +64,7 @@ parseNum x = do
   b <- rightToMaybe $ T.double a
   return $ fst b
 
-fromJSON :: Text -> OfferView -> Maybe OfferView
+fromJSON :: Text -> Maybe OfferView -> Maybe OfferView
 fromJSON input offer =
   let bs = T.encodeUtf8 input
       json = decodeStrict bs :: Maybe Value
@@ -55,7 +73,7 @@ fromJSON input offer =
       street = ad >>= (^? key "location" . key "address" . key "street" . key "name" . _String)
       district = ad >>= (^? key "location" . key "address" . key "district" . key "name" . _String)
       area = (^?! key "target" . key "Area" . _String) <$> ad
-      rooms = (^?! key "property" . key "properties" . key "numberOfRooms" . _Integer) <$> ad
+      rooms = fromInteger <$> ((^?! key "property" . key "properties" . key "numberOfRooms" . _Integer) <$> ad)
       title = (^?! key "title" . _String) <$> ad
    in -- ppm = ad >>= (^? key "target" . key "Price_per_m" . _Integer)
       -- coordinates = (^?! key "location" . key "coordinates") <$> ad
@@ -65,52 +83,43 @@ fromJSON input offer =
       do
         t <- title
         a <- parseNum area
-        let r = fromInteger <$> rooms
-        return $ case offerDetails offer of
-          Just o ->
-            offer
-              { offerDetails =
-                  Just
-                    o
-                      { offerRooms = r,
-                        offerStreet = street,
-                        offerDistrict = district
-                      },
-                offerArea = a
-              }
-          Nothing ->
-            offer
-              { offerArea = a,
-                offerDetails =
-                  Just
-                    OfferDetails
-                      { offerRooms = r,
-                        offerDescription = Nothing,
-                        offerStreet = street,
-                        offerDistrict = district
-                      }
-              }
+        p <- fromInteger <$> price :: Maybe Int
+        let defaultOffer =
+              fromMaybe
+                ( OfferView
+                    { _offerURL = "",
+                      _offerLatestPrice = p,
+                      _offerArea = a,
+                      _offerTitle = t,
+                      _offerDetails = Nothing
+                    }
+                )
+                offer
+        let defaultDetails = fromMaybe emptyDetails (_offerDetails defaultOffer)
+        let updateDetails d =
+              d
+                & (offerRooms .~ rooms)
+                & (offerStreet .~ street)
+                & (offerDistrict .~ district)
+                & (offerDescription ?~ "updated here")
 
--- offer
---   { offerArea = parseNum area,
---     offerLocation = OfferLocation district . Just <$> street,
---     offerRooms = fromInteger <$> rooms,
---     offerTitle = t,
---     offerPrice = fromInteger p
---   }
+        ( over (non defaultOffer . offerTitle) (const t)
+            . over (non defaultOffer . offerArea) (const a)
+            . over (non defaultOffer . offerDetails . non defaultDetails) updateDetails
+          )
+          offer
 
-detailsScraper :: OfferView -> Scraper Text OfferView
+detailsScraper :: Maybe OfferView -> Scraper Text OfferView
 detailsScraper offer = do
   json <- Text.HTML.Scalpel.text $ "script" @: ["id" @= "__NEXT_DATA__"]
-  return $ fromMaybe offer (fromJSON json offer)
+  let resultOffer = fromJSON json offer
+  case resultOffer of
+    Just o -> return o
+    Nothing -> fail "parsing failed"
 
 offersScraper :: Scraper Text [OfferView]
-offersScraper = chroots ("div" @: ["data-cy" @= "search.listing.organic"] // "article") offerScraper
+offersScraper = take 2 <$> chroots ("div" @: ["data-cy" @= "search.listing.organic"] // "article") offerScraper
 
--- otodomScraper :: Config Text -> OfferScraper
--- otodomScraper config =
---   OfferScraper
---     config
---     (basicOffer "otodom.pl")
---     offersScraper
---     (Just detailsScraper)
+scraper :: WebScraper
+-- scraper = prefixWebScraper "https://www.otodom.pl" (ScraperPack offersScraper Nothing)
+scraper = prefixWebScraper "https://www.otodom.pl" (ScraperPack offersScraper (Just detailsScraper))
