@@ -18,6 +18,7 @@ module Persistence.SQLite (SQLitePersistence (SQLitePersistence)) where
 
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Time.Clock (getCurrentTime)
@@ -25,7 +26,7 @@ import Database.Persist (Entity (Entity), Filter, SelectOpt (LimitTo), selectFir
 import Database.Persist.Sql (runMigration)
 import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
-import UseCase.Offer (OfferDetails (OfferDetails, offerDescription, offerDistrict, offerStreet), OfferDetailsLoader (loadDetails), OfferSeeder (seedOffers), OfferView (OfferView, offerDetails, offerURL), offerRooms)
+import UseCase.Offer (OfferDetails (OfferDetails, offerDescription, offerDistrict, offerStreet), OfferDetailsLoader (loadDetails), OfferSeeder (seedOffers), OfferView (OfferView, offerArea, offerDetails, offerLatestPrice, offerURL), offerRooms)
 import UseCase.ScrapePersister (OfferStorer (storeOffers))
 
 share
@@ -39,13 +40,16 @@ OfferInstance
     title Text
     rooms Int Maybe
     area Double
+    price Int
+    street Text Maybe
+    district Text Maybe
     deriving Show
 
-OfferPrice
-  offerInstanceId OfferInstanceId
-  created UTCTime
-  price Int
-  deriving Show
+-- OfferPrice
+--   offerInstanceId OfferInstanceId
+--   created UTCTime
+--   price Int
+--   deriving Show
 |]
 
 data SQLitePersistence = SQLitePersistence
@@ -55,14 +59,19 @@ persistOffers offers = do
   time <- getCurrentTime
   runSqlite "flatscraper.sqlite" $ do
     runMigration migrateAll
-    forM_ offers $ \(OfferView url _ area title details) -> do
+    forM_ offers $ \(OfferView url price area title details) -> do
+      let street = details >>= offerStreet
+      let district = details >>= offerDistrict
       upsertBy
         (UniqueUrl url)
-        (OfferInstance time time url title (details >>= offerRooms) area)
+        (OfferInstance time time url title (details >>= offerRooms) area price street district)
         [ OfferInstanceUpdatedAt =. time,
           OfferInstanceTitle =. title,
           OfferInstanceRooms =. (details >>= offerRooms),
-          OfferInstanceArea =. area
+          OfferInstanceArea =. area,
+          OfferInstancePrice =. price,
+          OfferInstanceStreet =. street,
+          OfferInstanceDistrict =. district
         ]
 
 instance OfferStorer SQLitePersistence where
@@ -78,36 +87,38 @@ instance OfferDetailsLoader SQLitePersistence where
       entityToRecord (Entity _ ent) =
         offer
           { offerURL = offerInstanceUrl ent,
+            offerLatestPrice = offerInstancePrice ent,
+            offerArea = offerInstanceArea ent,
             offerDetails =
               Just
                 OfferDetails
                   { offerDescription = Just $ offerInstanceTitle ent, -- FIXME
                     offerRooms = offerInstanceRooms ent,
-                    offerStreet = Nothing,
-                    offerDistrict = Nothing
+                    offerStreet = offerInstanceStreet ent,
+                    offerDistrict = offerInstanceDistrict ent
                   }
           }
 
 instance OfferSeeder SQLitePersistence where
   seedOffers _ = liftIO $ loadRecentOffers 10
 
--- loadRecentOffers :: SQLitePersistence -> Int -> IO [Entity OfferInstance]
+loadRecentOffers :: (MonadUnliftIO m) => Int -> m [OfferView]
 loadRecentOffers count = do
   offers <- runSqlite "flatscraper.sqlite" (selectList ([] :: [Filter OfferInstance]) [LimitTo count])
   mapM
-    ( \(Entity _ (OfferInstance _ _ url title rooms area)) ->
+    ( \(Entity _ (OfferInstance _ _ url title rooms area price street district)) ->
         return $
           OfferView
             url
-            0
+            price
             area
             title
             ( Just
                 OfferDetails
                   { offerRooms = rooms,
                     offerDescription = Nothing,
-                    offerStreet = Nothing,
-                    offerDistrict = Nothing
+                    offerStreet = street,
+                    offerDistrict = district
                   }
             )
     )

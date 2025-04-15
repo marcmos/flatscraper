@@ -24,11 +24,6 @@ data OfferDetails = OfferDetails
 newOfferView :: Text -> Int -> Double -> Text -> OfferView
 newOfferView url price area title = OfferView url price area title Nothing
 
--- class OfferDetailLoader odl where
---   loadDetails :: odl -> StubOffer -> IO DetailedOffer
---   loadNewSince :: odl -> UTCTime -> Int -> IO [OfferView]
-
--- TODO: rename to OfferSeeder
 class OfferSeeder os where
   seedOffers :: os -> IO [OfferView]
 

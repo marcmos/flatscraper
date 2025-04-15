@@ -1,5 +1,5 @@
 module UseCase.DigestGenerator
-  ( FeedPresenter (..),
+  ( DigestPresenter (..),
   )
 where
 
@@ -10,7 +10,7 @@ import UseCase.Offer (OfferView)
 
 -- newtype ResultFeed = ResultFeed [DetailedOffer] deriving (Show)
 
-class FeedPresenter p where
+class DigestPresenter p where
   present :: p -> [OfferView] -> IO ()
 
 -- showNewSinceLastVisit :: (FeedPresenter p, OfferDetailLoader odl) => odl -> p -> Int -> IO ()

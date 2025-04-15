@@ -26,10 +26,9 @@ library
       Legacy.Scraper.OlxScraper
       Legacy.Scraper.OtodomScraper
       Legacy.SQLite
-      Persistence.DataAccess
-      Persistence.PersistedOfferLoader
       Persistence.ScrapeLoader
       Persistence.SQLite
+      Presenter.CLIDigestPresenter
       Presenter.CLIFeedPresenter
       Scraper.OtodomScraper
       UseCase.DigestGenerator
@@ -60,6 +59,7 @@ library
     , scalpel ==0.6.*
     , text
     , time
+    , unliftio-core
   default-language: Haskell2010
 
 executable flatscraper
@@ -89,6 +89,7 @@ executable flatscraper
     , scalpel ==0.6.*
     , text
     , time
+    , unliftio-core
   default-language: Haskell2010
 
 executable new-cli
@@ -118,4 +119,5 @@ executable new-cli
     , scalpel ==0.6.*
     , text
     , time
+    , unliftio-core
   default-language: Haskell2010
