@@ -30,6 +30,7 @@ library
       Persistence.SQLite
       Presenter.CLIDigestPresenter
       Presenter.CLIFeedPresenter
+      Presenter.RSSFeedPresenter
       Scraper.OtodomScraper
       UseCase.DigestGenerator
       UseCase.FeedGenerator

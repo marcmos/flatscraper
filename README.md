@@ -11,3 +11,8 @@ There are three types of generators:
 There are two OfferStorers:
 1. NoOpStorer
 2. SQLitePersistence
+
+TODO:
+* set OverloadedString project-wide
+* run SQL migrations once
+* keep SQLite filename in instance field

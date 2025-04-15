@@ -12,8 +12,10 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Persistence.SQLite (SQLitePersistence (SQLitePersistence))
 import Persistence.ScrapeLoader (ScrapeDetailsLoader (ScrapeDetailsLoader), ScrapeListLoader (ScrapeListLoader))
 import Presenter.CLIDigestPresenter (CLIPresenter (CLIPresenter))
+import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
 import Scraper.OtodomScraper (detailsScraper, offersScraper)
 import Text.HTML.Scalpel (Config (Config), Scraper, scrapeStringLike, utf8Decoder)
+import UseCase.FeedGenerator (presentFeed)
 import UseCase.Offer (OfferDetailsLoader (loadDetails))
 import UseCase.ScrapePersister (OfferStorer (storeOffers), scrapeAndStore, seedOffers, storeDetailedOffers)
 
@@ -55,6 +57,11 @@ testTypicalScrapeFlow = do
   offers <- scrapeAndStore otodomOfferListScraper otodomDetailsScraper dbPersistence dbPersistence
   print offers
 
+printRSSFeed = do
+  let offerSeeder = SQLitePersistence
+  let presenter = RSSFeedPresenter
+  presentFeed offerSeeder presenter
+
 main :: IO ()
 main = do
   let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/cala-polska"
@@ -68,7 +75,7 @@ main = do
 
   -- let offerStorer = NoOpStorer
   -- detailedOffers <- storeDetailedOffers loader detailsLoader offerStorer
-  testTypicalScrapeFlow
+  printRSSFeed
   where
     -- print detailedOffers
 
