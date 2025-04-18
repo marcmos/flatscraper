@@ -20,7 +20,7 @@ import Data.Aeson.Lens (AsNumber (_Integer), key, _String)
 import Data.Char (isDigit)
 import Data.Either.Combinators (rightToMaybe)
 import Data.List (find)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Text as T (Text, any, concat, isSuffixOf, takeWhile, words)
 import qualified Data.Text.Encoding as T (encodeUtf8)
 import Data.Text.Lens ()
@@ -118,7 +118,7 @@ detailsScraper offer = do
     Nothing -> fail "parsing failed"
 
 offersScraper :: Scraper Text [OfferView]
-offersScraper = take 2 <$> chroots ("div" @: ["data-cy" @= "search.listing.organic"] // "article") offerScraper
+offersScraper = chroots ("div" @: ["data-cy" @= "search.listing.organic"] // "article") offerScraper
 
 scraper :: WebScraper
 -- scraper = prefixWebScraper "https://www.otodom.pl" (ScraperPack offersScraper Nothing)

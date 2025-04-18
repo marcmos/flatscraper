@@ -49,17 +49,6 @@ testOfflineListScraper = do
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   print offers
 
--- testTypicalScrapeFlow :: IO ()
--- testTypicalScrapeFlow = do
---   let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/malopolskie/krakow/krakow/krakow?limit=36&ownerTypeSingleSelect=ALL&areaMin=58&areaMax=65&pricePerMeterMax=16000&buildYearMin=2014&floors=%5BFIRST%2CSECOND%2CTHIRD%2CFOURTH%2CFIFTH%2CSIXTH%2CSEVENTH%2CEIGHTH%2CNINTH%2CTENTH%2CABOVE_TENTH%5D&buildingType=%5BBLOCK%2CTENEMENT%2CAPARTMENT%2CLOFT%5D&extras=%5BBALCONY%2CLIFT%2CHAS_PHOTOS%5D&by=LATEST&direction=DESC&viewType=listing"
---   httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
---   let config = Config utf8Decoder (Just httpManager)
---   let otodomOfferListScraper =
---   let dbPersistence = SQLitePersistence
---   let otodomDetailsScraper = ScrapeDetailsLoader config detailsScraper
---   offers <- scrapeAndStore otodomOfferListScraper otodomDetailsScraper dbPersistence dbPersistence
---   print offers
-
 printRSSFeed = do
   let offerSeeder = SQLitePersistence
   let presenter = RSSFeedPresenter
