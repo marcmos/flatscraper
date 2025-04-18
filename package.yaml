@@ -58,3 +58,14 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - flatscraper
+
+  flatscraper-scrape:
+    main:                Main.hs
+    source-dirs:         cli/scrape
+    ghc-options:
+    - -Wall
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - flatscraper

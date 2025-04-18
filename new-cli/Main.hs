@@ -3,10 +3,7 @@
 module Main where
 
 import Data.CaseInsensitive (mk)
-import Data.Maybe (fromJust)
-import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
-import qualified Data.Text.IO as T (readFile)
 import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
 import DataAccess.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper (WebScraper), WebScrapers (WebScrapers))
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
@@ -15,10 +12,9 @@ import Presenter.CLIDigestPresenter (CLIPresenter (CLIPresenter))
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
 import qualified Scraper.OlxScraper
 import qualified Scraper.OtodomScraper (scraper)
-import Text.HTML.Scalpel (Config (Config), Scraper, scrapeStringLike, utf8Decoder)
+import Text.HTML.Scalpel (Config (Config), utf8Decoder)
 import UseCase.FeedGenerator (presentFeed)
-import UseCase.Offer (OfferDetailsLoader (loadDetails))
-import UseCase.ScrapePersister (OfferStorer (storeOffers), scrapeAndStore, seedOffers, storeDetailedOffers)
+import UseCase.ScrapePersister (OfferStorer (storeOffers), seedOffers)
 
 addLegitHeadersNoScam100 :: Request -> IO Request
 addLegitHeadersNoScam100 req =
@@ -36,11 +32,6 @@ data NoOpStorer = NoOpStorer
 
 instance OfferStorer NoOpStorer where
   storeOffers _ _ = return ()
-
--- scrapeFile :: FilePath -> Scraper Text a -> IO (Maybe a)
--- scrapeFile path scraper = do
---   htmlContent <- T.readFile path
---   return $ scrapeStringLike htmlContent scraper
 
 testOfflineListScraper :: IO ()
 testOfflineListScraper = do
@@ -73,9 +64,9 @@ main = do
 
   httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
   let config = Config utf8Decoder (Just httpManager)
-  let detailsScrapers = WebScrapers (Just config) [Scraper.OtodomScraper.scraper, Scraper.OlxScraper.scraper]
-  let ss = WebSource detailsScrapers testOlxUrl
-  let dbPersistence = SQLitePersistence
+  let scrapers = WebScrapers (Just config) [Scraper.OtodomScraper.scraper, Scraper.OlxScraper.scraper]
+  let source = WebSource scrapers testOlxUrl
+  let persistence = SQLitePersistence
   -- offers <- seedOffers ss
   -- offers <- scrapeAndStore ss detailsScrapers dbPersistence dbPersistence
   -- print offers
