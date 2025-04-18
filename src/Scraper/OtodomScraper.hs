@@ -25,7 +25,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T (encodeUtf8)
 import Data.Text.Lens ()
 import qualified Data.Text.Read as T (double)
-import Persistence.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
+import DataAccess.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
 import Scraper.Common (parsePrice)
 import Text.HTML.Scalpel (Scraper, attr, chroots, text, texts, (//), (@:), (@=))
 import UseCase.Offer

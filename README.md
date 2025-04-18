@@ -18,8 +18,6 @@ TODO:
 * run SQL migrations once
 * keep SQLite filename in instance field
 
-dodać scraper olx
-dodać details scraper selector
 wygenerować rss feed olx (tylko takie dane, jakie mam)
 dodać nowego maina do scrape'owania, który bierze linki z args
 wygenerować digest cli z hardcode'owaną datą północ

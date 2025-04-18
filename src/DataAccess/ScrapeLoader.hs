@@ -1,4 +1,4 @@
-module Persistence.ScrapeLoader
+module DataAccess.ScrapeLoader
   ( ScraperPack (ScraperPack),
     WebScraper (WebScraper),
     prefixWebScraper,

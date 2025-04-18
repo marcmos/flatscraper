@@ -14,7 +14,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Persistence.SQLite (SQLitePersistence (SQLitePersistence)) where
+module DataAccess.SQLite (SQLitePersistence (SQLitePersistence)) where
 
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO (liftIO))
