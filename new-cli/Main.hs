@@ -13,6 +13,7 @@ import Persistence.SQLite (SQLitePersistence (SQLitePersistence))
 import Persistence.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper (WebScraper), WebScrapers (WebScrapers))
 import Presenter.CLIDigestPresenter (CLIPresenter (CLIPresenter))
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
+import qualified Scraper.OlxScraper
 import qualified Scraper.OtodomScraper (scraper)
 import Text.HTML.Scalpel (Config (Config), Scraper, scrapeStringLike, utf8Decoder)
 import UseCase.FeedGenerator (presentFeed)
@@ -43,8 +44,8 @@ instance OfferStorer NoOpStorer where
 
 testOfflineListScraper :: IO ()
 testOfflineListScraper = do
-  let (WebScraper scraperPack _) = Scraper.OtodomScraper.scraper
-  let fs = FileSource scraperPack "testfiles/otodom-list.html"
+  let (WebScraper scraperPack _) = Scraper.OlxScraper.scraper
+  let fs = FileSource scraperPack "testfiles/olx-list.html"
   offers <- seedOffers fs
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   print offers
@@ -58,6 +59,7 @@ main :: IO ()
 main = do
   let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/malopolskie/krakow/krakow/krakow?limit=36&ownerTypeSingleSelect=ALL&areaMin=58&areaMax=65&pricePerMeterMax=16000&buildYearMin=2014&floors=%5BFIRST%2CSECOND%2CTHIRD%2CFOURTH%2CFIFTH%2CSIXTH%2CSEVENTH%2CEIGHTH%2CNINTH%2CTENTH%2CABOVE_TENTH%5D&buildingType=%5BBLOCK%2CTENEMENT%2CAPARTMENT%2CLOFT%5D&extras=%5BBALCONY%2CLIFT%2CHAS_PHOTOS%5D&by=LATEST&direction=DESC&viewType=listing"
   let testOfferURL = "https://www.otodom.pl/pl/oferta/2-pokojowe-mieszkanie-38m2-loggia-bezposrednio-ID4umfy"
+  let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
   -- showNewSinceLastVisit loader cliPresenter 5
 
   -- scrape from scratch
@@ -71,12 +73,13 @@ main = do
 
   httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
   let config = Config utf8Decoder (Just httpManager)
-  let detailsScrapers = WebScrapers (Just config) [Scraper.OtodomScraper.scraper]
-  let ss = WebSource detailsScrapers testURL
+  let detailsScrapers = WebScrapers (Just config) [Scraper.OtodomScraper.scraper, Scraper.OlxScraper.scraper]
+  let ss = WebSource detailsScrapers testOlxUrl
   let dbPersistence = SQLitePersistence
   -- offers <- seedOffers ss
-  offers <- scrapeAndStore ss detailsScrapers dbPersistence dbPersistence
-  print offers
+  -- offers <- scrapeAndStore ss detailsScrapers dbPersistence dbPersistence
+  -- print offers
+  printRSSFeed
   where
     -- testOfflineListScraper
 

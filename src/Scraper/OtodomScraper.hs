@@ -17,15 +17,16 @@ import Control.Lens
 import Control.Monad ()
 import Data.Aeson (Value (), decodeStrict)
 import Data.Aeson.Lens (AsNumber (_Integer), key, _String)
-import Data.Char (isDigit)
 import Data.Either.Combinators (rightToMaybe)
 import Data.List (find)
 import Data.Maybe (fromMaybe)
-import Data.Text as T (Text, any, concat, isSuffixOf, takeWhile, words)
+import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T (encodeUtf8)
 import Data.Text.Lens ()
-import qualified Data.Text.Read as T (decimal, double)
+import qualified Data.Text.Read as T (double)
 import Persistence.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
+import Scraper.Common (parsePrice)
 import Text.HTML.Scalpel (Scraper, attr, chroots, text, texts, (//), (@:), (@=))
 import UseCase.Offer
   ( OfferView
@@ -46,10 +47,6 @@ import UseCase.Offer
     offerStreet,
     offerTitle,
   )
-
-parsePrice :: Text -> Int
-parsePrice x =
-  either (const 0) fst ((T.decimal . T.takeWhile (',' /=) . T.concat . (filter (T.any isDigit) <$> T.words)) x)
 
 offerScraper :: Scraper Text OfferView
 offerScraper = do
