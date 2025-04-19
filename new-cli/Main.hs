@@ -4,6 +4,8 @@ module Main where
 
 import Data.CaseInsensitive (mk)
 import Data.Text.Encoding (encodeUtf8)
+import Data.Text.ICU (LocaleName (Locale))
+import qualified Data.Text.ICU as Locale
 import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
 import DataAccess.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper (WebScraper), WebScrapers (WebScrapers))
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
@@ -43,7 +45,8 @@ testOfflineListScraper = do
 
 printRSSFeed = do
   let offerSeeder = SQLitePersistence
-  let presenter = RSSFeedPresenter
+  let locale = Locale.Locale "pl"
+  let presenter = RSSFeedPresenter locale
   presentFeed offerSeeder presenter
 
 main :: IO ()

@@ -106,7 +106,7 @@ instance OfferDetailsLoader SQLitePersistence where
           }
 
 instance OfferSeeder SQLitePersistence where
-  seedOffers _ = liftIO $ loadRecentOffers 10
+  seedOffers _ = liftIO $ loadRecentOffers 20
 
 loadRecentOffers :: (MonadUnliftIO m) => Int -> m [OfferView]
 loadRecentOffers count = do
