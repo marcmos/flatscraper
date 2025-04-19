@@ -29,7 +29,10 @@ addLegitHeadersNoScam100 req =
 
 main :: IO ()
 main = do
-  args <- getArgs
+  -- args <- getArgs
+  let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
+  let args = [testOlxUrl]
+
   case listToMaybe args of
     Just url -> do
       httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}

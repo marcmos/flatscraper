@@ -53,20 +53,6 @@ main = do
   let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
   -- showNewSinceLastVisit loader cliPresenter 5
 
-  -- scrape from scratch
-  -- tests scraper
-
-  -- offers <- take 2 <$> seedOffers loader
-  -- detailedOffers <- mapM (loadDetails detailsLoader) offers
-
-  -- let offerStorer = NoOpStorer
-  -- detailedOffers <- storeDetailedOffers loader detailsLoader offerStorer
-
-  httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
-  let config = Config utf8Decoder (Just httpManager)
-  let scrapers = WebScrapers (Just config) [Scraper.OtodomScraper.scraper, Scraper.OlxScraper.scraper]
-  let source = WebSource scrapers testOlxUrl
-  let persistence = SQLitePersistence
   -- offers <- seedOffers ss
   -- offers <- scrapeAndStore ss detailsScrapers dbPersistence dbPersistence
   -- print offers

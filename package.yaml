@@ -69,3 +69,14 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - flatscraper
+
+  flatscraper-gen-feed:
+    main:                Main.hs
+    source-dirs:         cli/gen-feed
+    ghc-options:
+    - -Wall
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - flatscraper

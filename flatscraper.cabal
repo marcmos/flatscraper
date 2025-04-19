@@ -95,6 +95,36 @@ executable flatscraper
     , unliftio-core
   default-language: Haskell2010
 
+executable flatscraper-gen-feed
+  main-is: Main.hs
+  other-modules:
+      Paths_flatscraper
+  hs-source-dirs:
+      cli/gen-feed
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.10 && <5
+    , bytestring
+    , case-insensitive
+    , either
+    , feed
+    , flatscraper
+    , http-client
+    , http-client-tls
+    , lens
+    , lens-aeson
+    , persistent
+    , persistent-sqlite
+    , persistent-template
+    , regex
+    , regex-tdfa
+    , scalpel ==0.6.*
+    , text
+    , time
+    , unliftio-core
+  default-language: Haskell2010
+
 executable flatscraper-scrape
   main-is: Main.hs
   other-modules:
