@@ -22,18 +22,13 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Time.Clock (getCurrentTime)
-import Database.Persist (Entity (Entity), Filter, SelectOpt (LimitTo), selectFirst, selectList, upsertBy, (=.), (==.))
+import Database.Persist (Entity (Entity), Filter, SelectOpt (LimitTo), selectFirst, selectList, upsertBy, (=.), (==.), (>.))
 import Database.Persist.Sql (runMigration)
 import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
-import UseCase.Offer
-  ( OfferDetails (OfferDetails, _offerDescription, _offerDistrict, _offerRooms, _offerStreet),
-    OfferDetailsLoader (loadDetails),
-    OfferSeeder (seedOffers),
-    OfferView (OfferView, _offerArea, _offerDetails, _offerLatestPrice, _offerURL),
-    offerRooms,
-  )
-import UseCase.ScrapePersister (OfferStorer (storeOffers))
+import Domain.Offer (OfferDetails (OfferDetails, _offerDescription, _offerDistrict, _offerRooms, _offerStreet), OfferView (OfferView, _offerArea, _offerLatestPrice, _offerURL), _offerDetails)
+import UseCase.Offer (OfferSeeder (seedOffers), QueryAccess (getOffersCreatedAfter))
+import UseCase.ScrapePersister (OfferDetailsLoader (loadDetails), OfferStorer (storeOffers))
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]
@@ -113,21 +108,26 @@ loadRecentOffers count = do
   offers <- runSqlite "flatscraper.sqlite" $ do
     runMigration migrateAll
     selectList ([] :: [Filter OfferInstance]) [LimitTo count]
-  mapM
-    ( \(Entity _ (OfferInstance _ _ url title rooms area price street district)) ->
-        return $
-          OfferView
-            url
-            price
-            area
-            title
-            ( Just
-                OfferDetails
-                  { _offerRooms = rooms,
-                    _offerDescription = Nothing,
-                    _offerStreet = street,
-                    _offerDistrict = district
-                  }
-            )
+  return $ map toOfferView offers
+
+instance QueryAccess SQLitePersistence where
+  getOffersCreatedAfter _ timestamp = do
+    offers <- runSqlite "flatscraper.sqlite" $ selectList [OfferInstanceCreatedAt >. timestamp] []
+    return $ map toOfferView offers
+
+-- Internal
+toOfferView :: Entity OfferInstance -> OfferView
+toOfferView (Entity _ (OfferInstance _ _ url title rooms area price street district)) =
+  OfferView
+    url
+    price
+    area
+    title
+    ( Just
+        OfferDetails
+          { _offerRooms = rooms,
+            _offerDescription = Nothing,
+            _offerStreet = street,
+            _offerDistrict = district
+          }
     )
-    offers

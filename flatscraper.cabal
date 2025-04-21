@@ -20,7 +20,7 @@ library
   exposed-modules:
       DataAccess.ScrapeLoader
       DataAccess.SQLite
-      Domain.Offer2
+      Domain.Offer
       Legacy.Domain.Offer
       Legacy.Domain.OfferFilter
       Legacy.Domain.WordUtils

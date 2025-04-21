@@ -22,3 +22,7 @@ wygenerować rss feed olx (tylko takie dane, jakie mam)
 dodać nowego maina do scrape'owania, który bierze linki z args
 wygenerować digest cli z hardcode'owaną datą północ
 dodać pole o typie ogłoszenia
+podzielić dzielnice na kategorie, od najlepszych do najgorszych
+do prezentacji: dostępność (pierwsze piętro albo winda), czy do remontu, czy blisko przystanek
+    tramwajowy/autobusowy, czy jest gaz, ilość pięter, parking, klimatyzacja
+trackowanie liczby wyświetleń

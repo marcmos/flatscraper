@@ -12,9 +12,9 @@ import Data.Text (Text)
 import qualified Data.Text as T (isPrefixOf, replace, takeWhile)
 import qualified Data.Text.Read as T (double)
 import DataAccess.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
+import Domain.Offer (OfferView, newOfferView)
 import Scraper.Common (parsePrice')
 import Text.HTML.Scalpel (Scraper, attr, chroots, text, texts, (//), (@:), (@=))
-import UseCase.Offer (OfferView, newOfferView)
 
 listOfferScraper :: Scraper Text OfferView
 listOfferScraper = do

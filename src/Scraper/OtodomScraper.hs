@@ -26,9 +26,7 @@ import qualified Data.Text.Encoding as T (encodeUtf8)
 import Data.Text.Lens ()
 import qualified Data.Text.Read as T (double)
 import DataAccess.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
-import Scraper.Common (parsePrice)
-import Text.HTML.Scalpel (Scraper, attr, chroots, text, texts, (//), (@:), (@=))
-import UseCase.Offer
+import Domain.Offer
   ( OfferView
       ( OfferView,
         _offerArea,
@@ -47,6 +45,8 @@ import UseCase.Offer
     offerStreet,
     offerTitle,
   )
+import Scraper.Common (parsePrice)
+import Text.HTML.Scalpel (Scraper, attr, chroots, text, texts, (//), (@:), (@=))
 
 offerScraper :: Scraper Text OfferView
 offerScraper = do

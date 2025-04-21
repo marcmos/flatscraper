@@ -3,18 +3,18 @@ module UseCase.ScrapePersister
     storeDetailedOffers,
     OfferStorer (storeOffers),
     scrapeAndStore,
+    OfferDetailsLoader (loadDetails),
   )
 where
 
-import UseCase.Offer
-  ( OfferDetailsLoader (loadDetails),
-    OfferSeeder (seedOffers),
-    OfferView,
-    _offerDetails,
-  )
+import Domain.Offer (OfferView (_offerDetails))
+import UseCase.Offer (OfferSeeder (seedOffers))
 
 class OfferStorer os where
   storeOffers :: os -> [OfferView] -> IO ()
+
+class OfferDetailsLoader odl where
+  loadDetails :: odl -> OfferView -> IO OfferView
 
 storeDetailedOffers ::
   (OfferSeeder oll, OfferDetailsLoader odl, OfferStorer os) =>

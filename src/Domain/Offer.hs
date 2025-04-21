@@ -1,4 +1,6 @@
-module Domain.Offer2 where
+{-# LANGUAGE TemplateHaskell #-}
+
+module Domain.Offer where
 
 import Control.Lens (makeLenses)
 import Data.Text (Text)
@@ -24,3 +26,12 @@ data OfferDetails = OfferDetails
 
 makeLenses ''OfferView
 makeLenses ''OfferDetails
+
+newOfferView :: Text -> Int -> Double -> Text -> OfferView
+newOfferView url price area title = OfferView url price area title Nothing
+
+emptyDetails :: OfferDetails
+emptyDetails = OfferDetails Nothing Nothing Nothing Nothing
+
+pricePerMeter :: OfferView -> Double
+pricePerMeter offer = fromIntegral (_offerLatestPrice offer) / _offerArea offer

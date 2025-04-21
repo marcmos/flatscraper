@@ -11,8 +11,10 @@ import Data.List (find, isPrefixOf)
 import Data.Maybe (fromMaybe, maybeToList)
 import Data.Text (Text, unpack)
 import qualified Data.Text.IO as T (readFile)
+import Domain.Offer (OfferView (_offerURL))
 import Text.HTML.Scalpel (Config, Scraper, URL, scrapeStringLike, scrapeURL, scrapeURLWithConfig)
-import UseCase.Offer (OfferDetailsLoader (loadDetails), OfferSeeder (..), OfferView (_offerURL))
+import UseCase.Offer (OfferSeeder (seedOffers))
+import UseCase.ScrapePersister (OfferDetailsLoader (loadDetails))
 
 type ListScraper = Scraper Text [OfferView]
 
