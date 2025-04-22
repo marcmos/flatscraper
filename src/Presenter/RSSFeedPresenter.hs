@@ -16,70 +16,33 @@ import UseCase.FeedGenerator
     OfferFeed (OfferFeed),
     OfferFeedItem
       ( OfferFeedItem,
-        offerArea,
-        offerDistrict,
-        offerPrice,
-        offerPricePerMeter,
-        offerStreet,
+        offerDescription,
         offerTitle,
         offerURL
       ),
   )
 
-genTitle :: Formatters -> OfferFeedItem -> Text
-genTitle
-  formatters
-  ( OfferFeedItem
-      { offerPrice = price,
-        offerPricePerMeter = ppm,
-        offerArea = area,
-        offerTitle = title,
-        offerStreet = street,
-        offerDistrict = district
-      }
-    ) = areaText <> "m\178 | " <> priceText <> ppmText <> locationText <> " | " <> title
-    where
-      areaText = formatDouble (numFormatter formatters) area
-      priceText = formatIntegral (cashFormatter formatters) price <> "zł"
-      ppmText = " | " <> formatDouble (numFormatter formatters) ppm <> "zł/m\178"
-      locationText = case (street, district) of
-        (Just s, Just d) -> " | " <> s <> " (" <> d <> ")"
-        (Just s, Nothing) -> " | " <> s
-        (Nothing, Just d) -> " | " <> d
-        _ -> ""
-
-renderOffer :: Formatters -> OfferFeedItem -> RSSItem
-renderOffer formatters offer =
+renderOffer :: OfferFeedItem -> RSSItem
+renderOffer offer =
   (nullItem title)
     { rssItemLink = Just $ offerURL offer
     }
   where
-    title = genTitle formatters offer
+    title = offerDescription offer
 
-renderFeed :: Formatters -> OfferFeed -> Maybe TL.Text
-renderFeed formatters (OfferFeed offers) =
+renderFeed :: OfferFeed -> Maybe TL.Text
+renderFeed (OfferFeed offers) =
   textRSS $
     (nullRSS "" "")
-      { rssChannel = (nullChannel "flatscraper" "") {rssItems = renderOffer formatters <$> offers}
+      { rssChannel = (nullChannel "flatscraper" "") {rssItems = renderOffer <$> offers}
       }
 
-data Formatters = Formatters
-  { cashFormatter :: ICU.NumberFormatter,
-    numFormatter :: ICU.NumberFormatter
-  }
-
-newtype RSSFeedPresenter = RSSFeedPresenter LocaleName
+data RSSFeedPresenter = RSSFeedPresenter
 
 instance FeedPresenter RSSFeedPresenter where
-  present (RSSFeedPresenter locale) offers = do
-    cashFormatter <- numberFormatter "precision-currency-cash" locale
-    pricePerMeterFormatter <- numberFormatter "precision-integer" locale
-    let formatters = Formatters cashFormatter pricePerMeterFormatter
+  present RSSFeedPresenter offers = do
     let feed =
           fromMaybe
             "Failed to generate feed"
-            ( renderFeed
-                formatters
-                offers
-            )
+            (renderFeed offers)
     TL.putStrLn feed

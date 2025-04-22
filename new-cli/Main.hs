@@ -10,13 +10,12 @@ import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
 import DataAccess.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper (WebScraper), WebScrapers (WebScrapers))
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Presenter.CLIDigestPresenter (CLIPresenter (CLIPresenter))
+import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
 import qualified Scraper.OlxScraper
 import qualified Scraper.OtodomScraper (scraper)
 import Text.HTML.Scalpel (Config (Config), utf8Decoder)
-import UseCase.DigestGenerator (showNewSinceLastVisit)
-import UseCase.FeedGenerator (presentFeed)
+import UseCase.FeedGenerator (showNewSinceLastVisit)
 import UseCase.ScrapePersister (OfferStorer (storeOffers), seedOffers)
 
 addLegitHeadersNoScam100 :: Request -> IO Request

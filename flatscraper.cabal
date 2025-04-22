@@ -29,13 +29,11 @@ library
       Legacy.Scraper.OlxScraper
       Legacy.Scraper.OtodomScraper
       Legacy.SQLite
-      Presenter.CLIDigestPresenter
       Presenter.CLIFeedPresenter
       Presenter.RSSFeedPresenter
       Scraper.Common
       Scraper.OlxScraper
       Scraper.OtodomScraper
-      UseCase.DigestGenerator
       UseCase.FeedGenerator
       UseCase.Offer
       UseCase.ScrapePersister

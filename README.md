@@ -13,13 +13,10 @@ There are two OfferStorers:
 2. SQLitePersistence
 
 TODO:
-* rename Persistence do DataAccess
 * set OverloadedString project-wide
 * run SQL migrations once
 * keep SQLite filename in instance field
 
-wygenerować rss feed olx (tylko takie dane, jakie mam)
-dodać nowego maina do scrape'owania, który bierze linki z args
 wygenerować digest cli z hardcode'owaną datą północ
 dodać pole o typie ogłoszenia
 podzielić dzielnice na kategorie, od najlepszych do najgorszych
