@@ -3,10 +3,6 @@
 module Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter)) where
 
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
-import Data.Text.ICU (LocaleName)
-import Data.Text.ICU.NumberFormatter (formatDouble, formatIntegral, numberFormatter)
-import qualified Data.Text.ICU.NumberFormatter as ICU
 import qualified Data.Text.Lazy as TL (Text)
 import qualified Data.Text.Lazy.IO as TL (putStrLn)
 import Text.RSS.Export (textRSS)
@@ -14,12 +10,7 @@ import Text.RSS.Syntax (RSSChannel (rssItems), RSSItem (rssItemLink), nullChanne
 import UseCase.FeedGenerator
   ( FeedPresenter (present),
     OfferFeed (OfferFeed),
-    OfferFeedItem
-      ( OfferFeedItem,
-        offerDescription,
-        offerTitle,
-        offerURL
-      ),
+    OfferFeedItem (offerDescription, offerURL),
   )
 
 renderOffer :: OfferFeedItem -> RSSItem

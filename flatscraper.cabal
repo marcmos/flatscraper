@@ -30,6 +30,7 @@ library
       Legacy.Scraper.OtodomScraper
       Legacy.SQLite
       Presenter.CLIFeedPresenter
+      Presenter.HTMLOffer
       Presenter.RSSFeedPresenter
       Scraper.Common
       Scraper.OlxScraper
@@ -45,6 +46,7 @@ library
   build-depends:
       aeson
     , base >=4.10 && <5
+    , blaze-html
     , bytestring
     , case-insensitive
     , either
@@ -59,6 +61,7 @@ library
     , regex
     , regex-tdfa
     , scalpel ==0.6.*
+    , tagsoup
     , text
     , text-icu
     , time
@@ -75,6 +78,7 @@ executable flatscraper
   build-depends:
       aeson
     , base >=4.10 && <5
+    , blaze-html
     , bytestring
     , case-insensitive
     , either
@@ -90,6 +94,7 @@ executable flatscraper
     , regex
     , regex-tdfa
     , scalpel ==0.6.*
+    , tagsoup
     , text
     , text-icu
     , time
@@ -106,6 +111,7 @@ executable flatscraper-gen-feed
   build-depends:
       aeson
     , base >=4.10 && <5
+    , blaze-html
     , bytestring
     , case-insensitive
     , either
@@ -121,6 +127,7 @@ executable flatscraper-gen-feed
     , regex
     , regex-tdfa
     , scalpel ==0.6.*
+    , tagsoup
     , text
     , text-icu
     , time
@@ -137,6 +144,7 @@ executable flatscraper-scrape
   build-depends:
       aeson
     , base >=4.10 && <5
+    , blaze-html
     , bytestring
     , case-insensitive
     , either
@@ -152,6 +160,7 @@ executable flatscraper-scrape
     , regex
     , regex-tdfa
     , scalpel ==0.6.*
+    , tagsoup
     , text
     , text-icu
     , time
@@ -168,6 +177,7 @@ executable new-cli
   build-depends:
       aeson
     , base >=4.10 && <5
+    , blaze-html
     , bytestring
     , case-insensitive
     , either
@@ -183,6 +193,7 @@ executable new-cli
     , regex
     , regex-tdfa
     , scalpel ==0.6.*
+    , tagsoup
     , text
     , text-icu
     , time

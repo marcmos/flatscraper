@@ -13,6 +13,7 @@ description:         Please see the README at <https://gitlab.memleak.pl/mmos/fl
 dependencies:
 - base >= 4.10 && < 5
 - aeson
+- blaze-html
 - bytestring
 - case-insensitive
 - either
@@ -27,6 +28,7 @@ dependencies:
 - regex
 - regex-tdfa
 - scalpel >= 0.6 && <0.7
+- tagsoup
 - text
 - text-icu
 - unliftio-core
