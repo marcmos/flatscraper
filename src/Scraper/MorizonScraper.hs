@@ -11,7 +11,7 @@ import qualified Data.Text as T (pack, replace, takeWhile)
 import qualified Data.Text.Read as T (decimal, double)
 import DataAccess.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
 import Domain.Offer
-  ( OfferDetails (_offerPropertyFloor),
+  ( OfferDetails (_offerBuiltYear, _offerHasElevator, _offerPropertyFloor),
     OfferView (_offerDetails),
     emptyDetails,
     emptyOffer,
@@ -57,16 +57,13 @@ detailsScraper offer = do
 
   case offer of
     Just o -> do
-      let updateDetails d =
-            d
-              & (offerStreet .~ locationDetailed)
-              & (offerBuiltYear .~ bYear)
-              & (offerHasElevator .~ if isJust hasElev then Just True else Nothing)
-          defaultDetails = fromMaybe emptyDetails (_offerDetails o)
-          z = over (non o . offerDetails . non defaultDetails) updateDetails (Just o)
-      case z of
-        Just newOffer -> return newOffer
-        _ -> return o
+      let updatedDetails =
+            (fromMaybe emptyDetails (_offerDetails o))
+              { _offerStreet = locationDetailed,
+                _offerBuiltYear = bYear,
+                _offerHasElevator = if isJust hasElev then Just True else Nothing
+              }
+      return $ o {_offerDetails = Just updatedDetails}
     Nothing -> fail "FIXME: implement scrape details based only on direct details page scrape"
 
 parseDecimal :: Text -> Maybe Int

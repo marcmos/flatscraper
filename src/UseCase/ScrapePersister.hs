@@ -61,5 +61,4 @@ scrapeAndStore scraper detailsScraper detailsLoader storer = do
       )
       detailedOffers
   storeOffers storer detailedOffers'
-  print detailedOffers'
   return detailedOffers'

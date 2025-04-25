@@ -148,10 +148,10 @@ instance OfferDetailsLoader SQLitePersistence where
                     _offerRooms = offerInstanceRooms ent,
                     _offerStreet = offerInstanceStreet ent,
                     _offerDistrict = offerInstanceDistrict ent,
-                    _offerHasElevator = Nothing,
-                    _offerPropertyFloor = Nothing,
-                    _offerBuildingFloors = Nothing,
-                    _offerBuiltYear = Nothing
+                    _offerHasElevator = offerInstanceHasElevator ent,
+                    _offerPropertyFloor = offerInstancePropertyFloor ent,
+                    _offerBuildingFloors = offerInstanceBuildingFloors ent,
+                    _offerBuiltYear = offerInstanceYearBuilt ent
                   }
           }
 
