@@ -44,22 +44,25 @@ emptyDetails = OfferDetails Nothing Nothing Nothing Nothing Nothing Nothing Noth
 pricePerMeter :: OfferView -> Double
 pricePerMeter offer = fromIntegral (_offerLatestPrice offer) / _offerArea offer
 
+data ElevatorGuess = BuildingHasManyFloors | BuildingShort | BuildingNewAndHasFloors
+  deriving (Show)
+
 data HasElevator = HasElevator
   { _hasElevator :: Bool,
-    _hasElevatorGuess :: Bool
+    _hasElevatorGuess :: Maybe ElevatorGuess
   }
   deriving (Show)
 
 hasElevator :: OfferView -> Maybe HasElevator
 hasElevator (OfferView {_offerDetails = Just (OfferDetails {_offerHasElevator = Just True})}) =
-  Just $ HasElevator True False
+  Just $ HasElevator True Nothing
 hasElevator (OfferView {_offerDetails = Just (OfferDetails {_offerHasElevator = Just False})}) =
-  Just $ HasElevator False False
+  Just $ HasElevator False Nothing
 hasElevator (OfferView {_offerDetails = Just (OfferDetails {_offerBuildingFloors = Just floors})})
   | floors >= 6 =
-      Just $ HasElevator True True
+      Just $ HasElevator True (Just BuildingHasManyFloors)
   | floors <= 3 =
-      Just $ HasElevator False True
+      Just $ HasElevator False (Just BuildingShort)
 hasElevator
   ( OfferView
       { _offerDetails =
@@ -71,5 +74,5 @@ hasElevator
               )
       }
     )
-    | floors >= 4 && bY >= 2000 = Just $ HasElevator True True
+    | floors >= 5 && bY >= 2000 = Just $ HasElevator True (Just BuildingNewAndHasFloors)
 hasElevator _ = Nothing

@@ -39,6 +39,7 @@ import Domain.Offer
     hasElevator,
     pricePerMeter,
   )
+import Text.Blaze.Html5 (Html)
 import UseCase.Offer (QueryAccess (getOffersCreatedAfter))
 
 class FeedPresenter fp where
@@ -48,7 +49,14 @@ data OfferFeedItem = OfferFeedItem
   { offerURL :: Text,
     offerTitle :: Text,
     offerDescription :: Text,
-    offerHasElevator :: Maybe (Bool, Bool)
+    offerHasElevator :: Maybe HasElevator,
+    offerIsAccessible :: Maybe Bool,
+    offerFloorText :: Maybe Text,
+    offerAreaText :: Maybe Text,
+    offerPriceText :: Maybe Text,
+    offerPricePerAreaText :: Maybe Text,
+    offerLocationText :: Maybe Text,
+    offerBuildYearText :: Maybe Text
   }
 
 newtype OfferFeed = OfferFeed [OfferFeedItem]
@@ -58,34 +66,41 @@ data Formatters = Formatters
     numFormatter :: ICU.NumberFormatter
   }
 
+priceText :: Formatters -> OfferView -> Text
+priceText (Formatters {numFormatter = formatter}) (OfferView {_offerLatestPrice = price}) =
+  formatIntegral formatter price <> "zł"
+
+areaText :: Formatters -> OfferView -> Text
+areaText (Formatters {numFormatter = formatter}) (OfferView {_offerArea = area}) =
+  formatDouble formatter area <> "m\178"
+
+ppmText :: Formatters -> OfferView -> Text
+ppmText (Formatters {numFormatter = formatter}) ov =
+  -- Using numFormatter instead of cashFormatter is no mistake here.
+  -- CashFormatter shows in cent-value precision, which is too much.
+  formatDouble formatter (pricePerMeter ov) <> "zł/m\178"
+
 -- “3‑pok. 65 m² (8 500 zł/m²), 2/5 p., winda, umeblowane,
 -- rata ~2 700 zł + 300 zł czynszu – park 200 m, szkoła 100 m, ciche osiedle.”
-genTitle :: Formatters -> Domain.Offer.OfferView -> Text
+genTitle :: Formatters -> OfferView -> Text
 genTitle
   formatters
-  ov@Domain.Offer.OfferView
-    { _offerLatestPrice = price,
-      _offerArea = area,
-      _offerTitle = title,
+  ov@OfferView
+    { _offerTitle = title,
       _offerDetails = details
     } =
-    areaText
-      <> "m\178 | "
-      <> priceText
-      <> ppmText
+    areaText formatters ov
+      <> " | "
+      <> priceText formatters ov
+      <> " | "
+      <> ppmText formatters ov
+      <> " | "
       <> locationText
       <> " | "
       <> title
-      <> " "
-      <> elevText
     where
       street = details >>= _offerStreet
       district = details >>= _offerDistrict
-      ppm = Domain.Offer.pricePerMeter ov
-      areaText = formatDouble (numFormatter formatters) area
-      priceText = formatIntegral (cashFormatter formatters) price <> "zł"
-      ppmText = " | " <> formatDouble (numFormatter formatters) ppm <> "zł/m\178"
-      elevText = T.pack $ show (hasElevator ov)
       locationText = case (street, district) of
         (Just s, Just d) -> " | " <> s <> " (" <> d <> ")"
         (Just s, Nothing) -> " | " <> s
@@ -99,6 +114,9 @@ defaultFormatters = do
   pricePerMeterFormatter <- numberFormatter "precision-integer" locale
   return $ Formatters moneyFormatter pricePerMeterFormatter
 
+toText :: (Show a) => a -> Text
+toText = T.pack . show
+
 showNewSinceLastVisit :: (FeedPresenter p, QueryAccess a) => a -> p -> IO ()
 showNewSinceLastVisit queryAccess presenter = do
   lastVisit <- lastVisitTime
@@ -106,15 +124,34 @@ showNewSinceLastVisit queryAccess presenter = do
   newOffers <- getOffersCreatedAfter queryAccess lastVisit
   present presenter (OfferFeed $ map (repack formatters) newOffers)
   where
-    repack formatters ov@Domain.Offer.OfferView {_offerURL = url} =
-      OfferFeedItem
-        { offerURL = url,
-          offerDescription = description,
-          offerTitle = description,
-          offerHasElevator = case hasElevator ov of
-            Just (HasElevator a b) -> Just (a, b)
-            Nothing -> Nothing
-        }
+    repack formatters ov@OfferView {_offerURL = url} =
+      let pFloor = _offerDetails ov >>= _offerPropertyFloor
+          bFloors = _offerDetails ov >>= _offerBuildingFloors
+          elevator = hasElevator ov
+          floorText = case (pFloor, bFloors) of
+            (Just 0, Just b) -> Just $ "parter/" <> toText b
+            (Just 0, Nothing) -> Just "parter"
+            (Just p, Just b) -> Just $ "piętro " <> toText p <> "/" <> toText b
+            (Just p, _) -> Just $ "piętro " <> toText p
+            _ -> Nothing
+       in OfferFeedItem
+            { offerURL = url,
+              offerDescription = description,
+              offerTitle = _offerTitle ov,
+              offerHasElevator = elevator,
+              offerIsAccessible =
+                if ((\(HasElevator {_hasElevator = e}) -> e) <$> elevator) == Just True
+                  then Just True
+                  else do
+                    f <- _offerDetails ov >>= _offerPropertyFloor
+                    if f <= 2 then Just True else Nothing,
+              offerFloorText = floorText,
+              offerPriceText = Just $ priceText formatters ov,
+              offerAreaText = Just $ areaText formatters ov,
+              offerPricePerAreaText = Just $ ppmText formatters ov,
+              offerLocationText = _offerDetails ov >>= _offerStreet,
+              offerBuildYearText = (\yr -> "rok " <> toText yr) <$> (_offerDetails ov >>= _offerBuiltYear)
+            }
       where
         description = genTitle formatters ov
 

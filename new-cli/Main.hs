@@ -11,12 +11,13 @@ import DataAccess.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
+import Presenter.HTMLFeedPresenter (HTMLPreviewPresenter (HTMLPreviewPresenter))
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
 import qualified Scraper.MorizonScraper
 import qualified Scraper.OlxScraper
 import qualified Scraper.OtodomScraper (scraper)
 import Text.HTML.Scalpel (Config (Config), utf8Decoder)
-import UseCase.FeedGenerator (showNewSinceLastVisit)
+import UseCase.FeedGenerator (present, showNewSinceLastVisit)
 import UseCase.ScrapePersister (OfferStorer (storeOffers), loadDetails, seedOffers)
 
 addLegitHeadersNoScam100 :: Request -> IO Request
@@ -53,11 +54,17 @@ main = do
   -- let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/malopolskie/krakow/krakow/krakow?limit=36&ownerTypeSingleSelect=ALL&areaMin=58&areaMax=65&pricePerMeterMax=16000&buildYearMin=2014&floors=%5BFIRST%2CSECOND%2CTHIRD%2CFOURTH%2CFIFTH%2CSIXTH%2CSEVENTH%2CEIGHTH%2CNINTH%2CTENTH%2CABOVE_TENTH%5D&buildingType=%5BBLOCK%2CTENEMENT%2CAPARTMENT%2CLOFT%5D&extras=%5BBALCONY%2CLIFT%2CHAS_PHOTOS%5D&by=LATEST&direction=DESC&viewType=listing"
   -- let testOfferURL = "https://www.otodom.pl/pl/oferta/2-pokojowe-mieszkanie-38m2-loggia-bezposrednio-ID4umfy"
   -- let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
-  -- let sqlite = SQLitePersistence
-  -- showNewSinceLastVisit sqlite cliPresenter
+  let sqlite = SQLitePersistence
 
-  testOfflineListScraper
+  -- offers <- take 3 <$> seedOffers sqlite
+  -- detailedOffers <- mapM (loadDetails sqlite) offers
+
+  showNewSinceLastVisit sqlite HTMLPreviewPresenter
   where
+    -- showNewSinceLastVisit sqlite cliPresenter
+
+    -- testOfflineListScraper
+
     -- offers <- seedOffers ss
     -- offers <- scrapeAndStore ss detailsScrapers dbPersistence dbPersistence
     -- print offers

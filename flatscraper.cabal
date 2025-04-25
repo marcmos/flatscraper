@@ -30,7 +30,7 @@ library
       Legacy.Scraper.OtodomScraper
       Legacy.SQLite
       Presenter.CLIFeedPresenter
-      Presenter.HTMLOffer
+      Presenter.HTMLFeedPresenter
       Presenter.RSSFeedPresenter
       Scraper.Common
       Scraper.MorizonScraper
