@@ -10,5 +10,5 @@ import UseCase.FeedGenerator
 data CLIPresenter = CLIPresenter Int Double
 
 instance FeedPresenter CLIPresenter where
-  present (CLIPresenter i d) (OfferFeed offers) = do
+  present (CLIPresenter i d) (OfferFeed _ offers) = do
     forM_ offers (print . offerURL)

@@ -34,7 +34,10 @@ main = do
   -- args <- getArgs
   let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
   let morizonPrivateTestUrl = "https://www.morizon.pl/mieszkania/krakow/?ps%5Bliving_area_from%5D=60&ps%5Blocation%5D%5Bmap%5D=1&ps%5Blocation%5D%5Bmap_bounds%5D=50.1261259,20.2174976:49.9674054,19.7922485&ps%5Bowner%5D%5B0%5D=3&ps%5Bprice_to%5D=1000000&ps%5Bwith_price%5D=1"
-  let args = [morizonPrivateTestUrl, testOlxUrl]
+  let args =
+        [ morizonPrivateTestUrl,
+          testOlxUrl
+        ]
 
   httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
   let config = Config utf8Decoder (Just httpManager)

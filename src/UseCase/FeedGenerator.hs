@@ -5,6 +5,10 @@ module UseCase.FeedGenerator
     OfferFeedItem (..),
     OfferFeed (OfferFeed),
     showNewSinceLastVisit,
+    Formatters (Formatters),
+    priceText,
+    areaText',
+    ppmText',
   )
 where
 
@@ -39,7 +43,6 @@ import Domain.Offer
     hasElevator,
     pricePerMeter,
   )
-import Text.Blaze.Html5 (Html)
 import UseCase.Offer (QueryAccess (getOffersCreatedAfter))
 
 class FeedPresenter fp where
@@ -52,33 +55,38 @@ data OfferFeedItem = OfferFeedItem
     offerHasElevator :: Maybe HasElevator,
     offerIsAccessible :: Maybe Bool,
     offerFloorText :: Maybe Text,
-    offerAreaText :: Maybe Text,
-    offerPriceText :: Maybe Text,
-    offerPricePerAreaText :: Maybe Text,
+    offerArea :: Double,
+    offerPrice :: Int,
+    offerPricePerMeter :: Double,
     offerLocationText :: Maybe Text,
     offerBuildYearText :: Maybe Text
   }
-
-newtype OfferFeed = OfferFeed [OfferFeedItem]
 
 data Formatters = Formatters
   { cashFormatter :: ICU.NumberFormatter,
     numFormatter :: ICU.NumberFormatter
   }
 
-priceText :: Formatters -> OfferView -> Text
-priceText (Formatters {numFormatter = formatter}) (OfferView {_offerLatestPrice = price}) =
+data OfferFeed = OfferFeed Formatters [OfferFeedItem]
+
+priceText :: Formatters -> Int -> Text
+priceText (Formatters {numFormatter = formatter}) price =
   formatIntegral formatter price <> "zł"
 
-areaText :: Formatters -> OfferView -> Text
-areaText (Formatters {numFormatter = formatter}) (OfferView {_offerArea = area}) =
+areaText' :: Formatters -> Double -> Text
+areaText' (Formatters {numFormatter = formatter}) area =
   formatDouble formatter area <> "m\178"
 
-ppmText :: Formatters -> OfferView -> Text
-ppmText (Formatters {numFormatter = formatter}) ov =
+-- areaText :: Formatters -> OfferView -> Text
+-- areaText formatters ov = areaText' formatters (_offerArea ov)
+ppmText' (Formatters {numFormatter = formatter}) ppm =
   -- Using numFormatter instead of cashFormatter is no mistake here.
   -- CashFormatter shows in cent-value precision, which is too much.
-  formatDouble formatter (pricePerMeter ov) <> "zł/m\178"
+  formatDouble formatter ppm <> "zł/m\178"
+
+ppmText :: Formatters -> OfferView -> Text
+ppmText formatters ov =
+  ppmText' formatters (pricePerMeter ov)
 
 -- “3‑pok. 65 m² (8 500 zł/m²), 2/5 p., winda, umeblowane,
 -- rata ~2 700 zł + 300 zł czynszu – park 200 m, szkoła 100 m, ciche osiedle.”
@@ -87,11 +95,13 @@ genTitle
   formatters
   ov@OfferView
     { _offerTitle = title,
-      _offerDetails = details
+      _offerDetails = details,
+      _offerArea = area,
+      _offerLatestPrice = price
     } =
-    areaText formatters ov
+    areaText' formatters area
       <> " | "
-      <> priceText formatters ov
+      <> priceText formatters price
       <> " | "
       <> ppmText formatters ov
       <> " | "
@@ -122,7 +132,7 @@ showNewSinceLastVisit queryAccess presenter = do
   lastVisit <- lastVisitTime
   formatters <- defaultFormatters
   newOffers <- getOffersCreatedAfter queryAccess lastVisit
-  present presenter (OfferFeed $ map (repack formatters) newOffers)
+  present presenter (OfferFeed formatters $ map (repack formatters) newOffers)
   where
     repack formatters ov@OfferView {_offerURL = url} =
       let pFloor = _offerDetails ov >>= _offerPropertyFloor
@@ -146,9 +156,9 @@ showNewSinceLastVisit queryAccess presenter = do
                     f <- _offerDetails ov >>= _offerPropertyFloor
                     if f <= 2 then Just True else Nothing,
               offerFloorText = floorText,
-              offerPriceText = Just $ priceText formatters ov,
-              offerAreaText = Just $ areaText formatters ov,
-              offerPricePerAreaText = Just $ ppmText formatters ov,
+              offerPrice = _offerLatestPrice ov,
+              offerArea = _offerArea ov,
+              offerPricePerMeter = pricePerMeter ov,
               offerLocationText = _offerDetails ov >>= _offerStreet,
               offerBuildYearText = (\yr -> "rok " <> toText yr) <$> (_offerDetails ov >>= _offerBuiltYear)
             }

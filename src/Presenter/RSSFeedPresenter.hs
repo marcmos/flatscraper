@@ -22,7 +22,7 @@ renderOffer offer =
     title = offerDescription offer
 
 renderFeed :: OfferFeed -> Maybe TL.Text
-renderFeed (OfferFeed offers) =
+renderFeed (OfferFeed _ offers) =
   textRSS $
     (nullRSS "" "")
       { rssChannel = (nullChannel "flatscraper" "") {rssItems = renderOffer <$> offers}

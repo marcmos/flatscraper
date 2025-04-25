@@ -11,7 +11,12 @@ import DataAccess.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
-import Presenter.HTMLFeedPresenter (HTMLPreviewPresenter (HTMLPreviewPresenter))
+import Presenter.HTMLFeedPresenter
+  ( BadgeColorMapper (BadgeColorMapper, cmPricePerMeter),
+    HTMLPreviewPresenter (HTMLPreviewPresenter),
+    cmArea,
+    defaultColorMapper,
+  )
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
 import qualified Scraper.MorizonScraper
 import qualified Scraper.OlxScraper
@@ -59,7 +64,13 @@ main = do
   -- offers <- take 3 <$> seedOffers sqlite
   -- detailedOffers <- mapM (loadDetails sqlite) offers
 
-  showNewSinceLastVisit sqlite HTMLPreviewPresenter
+  let badgeColorMapper =
+        defaultColorMapper
+          { cmArea = Just $ \area -> if area >= 70 then "success" else "info",
+            cmPricePerMeter = Just $ \ppm -> if ppm <= 12000 then "success" else "info"
+          }
+
+  showNewSinceLastVisit sqlite (HTMLPreviewPresenter (Just badgeColorMapper))
   where
     -- showNewSinceLastVisit sqlite cliPresenter
 
