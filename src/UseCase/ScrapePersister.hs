@@ -4,6 +4,7 @@ module UseCase.ScrapePersister
     OfferStorer (storeOffers),
     scrapeAndStore,
     OfferDetailsLoader (loadDetails),
+    NoOpDetailsLoader (NoOpDetailsLoader),
   )
 where
 
@@ -15,6 +16,11 @@ class OfferStorer os where
 
 class OfferDetailsLoader odl where
   loadDetails :: odl -> OfferView -> IO OfferView
+
+data NoOpDetailsLoader = NoOpDetailsLoader
+
+instance OfferDetailsLoader NoOpDetailsLoader where
+  loadDetails _ = return
 
 storeDetailedOffers ::
   (OfferSeeder oll, OfferDetailsLoader odl, OfferStorer os) =>
@@ -46,9 +52,14 @@ scrapeAndStore scraper detailsScraper detailsLoader storer = do
     mapM
       ( \ov -> do
           case _offerDetails ov of
-            Just _ -> return ov
+            -- Just _ -> return ov
+            --
+            -- FIXME add a predicate that will tell, if it makes sense to scrape
+            -- when details are set by list scraper
+            Just _ -> loadDetails detailsScraper ov
             Nothing -> loadDetails detailsScraper ov
       )
       detailedOffers
   storeOffers storer detailedOffers'
+  print detailedOffers'
   return detailedOffers'

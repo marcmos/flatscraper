@@ -2,6 +2,7 @@
 
 module Main where
 
+import Control.Monad (forM_)
 import Data.CaseInsensitive (mk)
 import Data.Maybe (listToMaybe)
 import Data.Text.Encoding (encodeUtf8)
@@ -9,6 +10,7 @@ import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
 import DataAccess.ScrapeLoader (ScrapeSource (WebSource), WebScrapers (WebScrapers))
 import Network.HTTP.Client (ManagerSettings (managerModifyRequest), Request, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
+import qualified Scraper.MorizonScraper
 import qualified Scraper.OlxScraper
 import qualified Scraper.OtodomScraper
 import System.Environment (getArgs)
@@ -31,16 +33,24 @@ main :: IO ()
 main = do
   -- args <- getArgs
   let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
-  let args = [testOlxUrl]
+  let morizonPrivateTestUrl = "https://www.morizon.pl/mieszkania/krakow/?ps%5Bliving_area_from%5D=60&ps%5Blocation%5D%5Bmap%5D=1&ps%5Blocation%5D%5Bmap_bounds%5D=50.1261259,20.2174976:49.9674054,19.7922485&ps%5Bowner%5D%5B0%5D=3&ps%5Bprice_to%5D=1000000&ps%5Bwith_price%5D=1"
+  let args = [morizonPrivateTestUrl, testOlxUrl]
 
-  case listToMaybe args of
-    Just url -> do
-      httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
-      let config = Config utf8Decoder (Just httpManager)
-      let detailsScrapers = WebScrapers (Just config) [Scraper.OtodomScraper.scraper, Scraper.OlxScraper.scraper]
-      let offerSeed = WebSource detailsScrapers url
-      let persistence = SQLitePersistence
+  httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
+  let config = Config utf8Decoder (Just httpManager)
+  let detailsScrapers =
+        WebScrapers
+          (Just config)
+          [ Scraper.MorizonScraper.scraper,
+            Scraper.OtodomScraper.scraper,
+            Scraper.OlxScraper.scraper
+          ]
+  let persistence = SQLitePersistence
+  -- let noOpDetailsLoader = NoOpDetailsLoader
 
-      _ <- scrapeAndStore offerSeed detailsScrapers persistence persistence
-      return ()
-    Nothing -> return ()
+  forM_
+    args
+    ( \x ->
+        let offerSeed = WebSource detailsScrapers x
+         in scrapeAndStore offerSeed detailsScrapers persistence persistence
+    )

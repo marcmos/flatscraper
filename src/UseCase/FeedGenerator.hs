@@ -9,13 +9,25 @@ module UseCase.FeedGenerator
 where
 
 import Data.Text (Text)
+import qualified Data.Text as T (pack)
 import qualified Data.Text.ICU as Locale (LocaleName (Locale))
 import Data.Text.ICU.NumberFormatter (formatDouble, formatIntegral, numberFormatter)
 import qualified Data.Text.ICU.NumberFormatter as ICU
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Time.Clock (addUTCTime)
 import Domain.Offer
-  ( OfferDetails (_offerDistrict, _offerStreet),
+  ( HasElevator (HasElevator, _hasElevator),
+    OfferDetails
+      ( _offerBuildingFloors,
+        _offerBuiltYear,
+        _offerDistrict,
+        _offerMarket,
+        _offerMunicipalityArea,
+        _offerPropertyFloor,
+        _offerRooms,
+        _offerStreet
+      ),
+    OfferMarket (MarketPrimary, MarketSecondary),
     OfferView
       ( OfferView,
         _offerArea,
@@ -24,6 +36,7 @@ import Domain.Offer
         _offerTitle,
         _offerURL
       ),
+    hasElevator,
     pricePerMeter,
   )
 import UseCase.Offer (QueryAccess (getOffersCreatedAfter))
@@ -34,7 +47,8 @@ class FeedPresenter fp where
 data OfferFeedItem = OfferFeedItem
   { offerURL :: Text,
     offerTitle :: Text,
-    offerDescription :: Text
+    offerDescription :: Text,
+    offerHasElevator :: Maybe (Bool, Bool)
   }
 
 newtype OfferFeed = OfferFeed [OfferFeedItem]
@@ -54,7 +68,16 @@ genTitle
       _offerArea = area,
       _offerTitle = title,
       _offerDetails = details
-    } = areaText <> "m\178 | " <> priceText <> ppmText <> locationText <> " | " <> title
+    } =
+    areaText
+      <> "m\178 | "
+      <> priceText
+      <> ppmText
+      <> locationText
+      <> " | "
+      <> title
+      <> " "
+      <> elevText
     where
       street = details >>= _offerStreet
       district = details >>= _offerDistrict
@@ -62,6 +85,7 @@ genTitle
       areaText = formatDouble (numFormatter formatters) area
       priceText = formatIntegral (cashFormatter formatters) price <> "zł"
       ppmText = " | " <> formatDouble (numFormatter formatters) ppm <> "zł/m\178"
+      elevText = T.pack $ show (hasElevator ov)
       locationText = case (street, district) of
         (Just s, Just d) -> " | " <> s <> " (" <> d <> ")"
         (Just s, Nothing) -> " | " <> s
@@ -86,7 +110,10 @@ showNewSinceLastVisit queryAccess presenter = do
       OfferFeedItem
         { offerURL = url,
           offerDescription = description,
-          offerTitle = description
+          offerTitle = description,
+          offerHasElevator = case hasElevator ov of
+            Just (HasElevator a b) -> Just (a, b)
+            Nothing -> Nothing
         }
       where
         description = genTitle formatters ov

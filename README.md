@@ -16,6 +16,7 @@ TODO:
 * set OverloadedString project-wide
 * run SQL migrations once
 * keep SQLite filename in instance field
+* strip Scraper suffix from module names
 
 wygenerować digest cli z hardcode'owaną datą północ
 dodać pole o typie ogłoszenia

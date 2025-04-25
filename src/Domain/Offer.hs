@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Domain.Offer where
@@ -22,7 +23,7 @@ data OfferDetails = OfferDetails
     _offerStreet :: Maybe Text,
     _offerDistrict :: Maybe Text,
     _offerHasElevator :: Maybe Bool,
-    _offerApartmentFloor :: Maybe Int,
+    _offerPropertyFloor :: Maybe Int,
     _offerBuildingFloors :: Maybe Int,
     _offerBuiltYear :: Maybe Int
   }
@@ -34,6 +35,9 @@ makeLenses ''OfferDetails
 newOfferView :: Text -> Int -> Double -> Text -> OfferView
 newOfferView url price area title = OfferView url price area title Nothing
 
+emptyOffer :: OfferView
+emptyOffer = OfferView "" 0 0.0 "" Nothing
+
 emptyDetails :: OfferDetails
 emptyDetails = OfferDetails Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
@@ -44,6 +48,7 @@ data HasElevator = HasElevator
   { _hasElevator :: Bool,
     _hasElevatorGuess :: Bool
   }
+  deriving (Show)
 
 hasElevator :: OfferView -> Maybe HasElevator
 hasElevator (OfferView {_offerDetails = Just (OfferDetails {_offerHasElevator = Just True})}) =

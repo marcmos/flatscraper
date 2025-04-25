@@ -33,6 +33,7 @@ library
       Presenter.HTMLOffer
       Presenter.RSSFeedPresenter
       Scraper.Common
+      Scraper.MorizonScraper
       Scraper.OlxScraper
       Scraper.OtodomScraper
       UseCase.FeedGenerator
