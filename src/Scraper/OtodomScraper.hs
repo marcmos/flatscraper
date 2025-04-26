@@ -24,7 +24,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T (encodeUtf8)
 import Data.Text.Lens ()
-import qualified Data.Text.Read as T (double)
+import qualified Data.Text.Read as T (decimal, double)
 import DataAccess.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
 import Domain.Offer
   ( OfferView
@@ -38,9 +38,12 @@ import Domain.Offer
     emptyDetails,
     newOfferView,
     offerArea,
+    offerBuildingFloors,
+    offerBuiltYear,
     offerDescription,
     offerDetails,
     offerDistrict,
+    offerPropertyFloor,
     offerRooms,
     offerStreet,
     offerTitle,
@@ -61,6 +64,11 @@ parseNum x = do
   b <- rightToMaybe $ T.double a
   return $ fst b
 
+parseInt :: Text -> Maybe Int
+parseInt t = do
+  i <- rightToMaybe $ T.decimal t
+  return $ fst i
+
 fromJSON :: Text -> Maybe OfferView -> Maybe OfferView
 fromJSON input offer =
   let bs = T.encodeUtf8 input
@@ -70,8 +78,16 @@ fromJSON input offer =
       street = ad >>= (^? key "location" . key "address" . key "street" . key "name" . _String)
       district = ad >>= (^? key "location" . key "address" . key "district" . key "name" . _String)
       area = (^?! key "target" . key "Area" . _String) <$> ad
-      rooms = fromInteger <$> ((^?! key "property" . key "properties" . key "numberOfRooms" . _Integer) <$> ad)
+      properties = ad >>= (^? key "property" . key "properties")
+      rooms = fromInteger <$> (properties >>= (^? key "numberOfRooms" . _Integer))
+      propertyFloor = case properties >>= (^? key "floor" . _String) of
+        Just "GROUND_FLOOR" -> Just 0
+        Just floorText -> T.stripPrefix "FLOOR_" floorText >>= parseInt
+        Nothing -> Nothing
       title = (^?! key "title" . _String) <$> ad
+      buildingProperties = ad >>= (^? key "property" . key "buildingProperties")
+      builtYear = fromInteger <$> (buildingProperties >>= (^? key "year" . _Integer))
+      buildingFloors = fromInteger <$> (buildingProperties >>= (^? key "numberOfFloors" . _Integer))
    in -- ppm = ad >>= (^? key "target" . key "Price_per_m" . _Integer)
       -- coordinates = (^?! key "location" . key "coordinates") <$> ad
       -- lat = coordinates >>= (^? key "latitude" . _Double)
@@ -99,6 +115,9 @@ fromJSON input offer =
                 & (offerStreet .~ street)
                 & (offerDistrict .~ district)
                 & (offerDescription ?~ "updated here")
+                & (offerBuiltYear .~ builtYear)
+                & (offerBuildingFloors .~ buildingFloors)
+                & (offerPropertyFloor .~ propertyFloor)
 
         ( over (non defaultOffer . offerTitle) (const t)
             . over (non defaultOffer . offerArea) (const a)
