@@ -72,6 +72,8 @@ main = do
 
   showNewSinceLastVisit sqlite (HTMLPreviewPresenter (Just badgeColorMapper))
   where
+    -- testOfflineListScraper
+
     -- showNewSinceLastVisit sqlite cliPresenter
 
     -- testOfflineListScraper

@@ -96,6 +96,13 @@ parseArea t = do
     [_, areaText] -> parseDouble areaText
     _ -> Nothing
 
+parseRooms :: Text -> Maybe Int
+parseRooms t =
+  let roomPat = "([1-9]) pok" :: Text
+   in case getAllTextSubmatches (t =~ roomPat) :: [Text] of
+        [_, roomText] -> parseDecimal roomText
+        _ -> Nothing
+
 listOfferScraper :: Scraper Text OfferView
 listOfferScraper = do
   url <- attr "href" $ "a" @: ["data-cy" @= "propertyUrl"]
@@ -105,14 +112,13 @@ listOfferScraper = do
   -- title <- text "h4"
   detailsTexts <- text ("div" @: [hasClass "property-info"])
   -- detailsTexts <- return "52 m², parter/10"
-  let rooms = do
-        fst <$> rightToMaybe (T.decimal (T.takeWhile (/= ' ') detailsTexts)) :: Maybe Int
+  let rooms = parseRooms detailsTexts
   let offer = do
         p <- price
         area <- parseArea detailsTexts
         let floorInfo = parseFloors detailsTexts
         return $
-          (newOfferView parsedUrl p area "")
+          (newOfferView parsedUrl p area detailsTexts)
             { -- (newOfferView parsedUrl p area $ T.pack . T.show $ detailsMatch)
               _offerDetails =
                 Just

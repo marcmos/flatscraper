@@ -9,6 +9,7 @@ module UseCase.FeedGenerator
     priceText,
     areaText',
     ppmText',
+    toText,
   )
 where
 
@@ -59,7 +60,8 @@ data OfferFeedItem = OfferFeedItem
     offerPrice :: Int,
     offerPricePerMeter :: Double,
     offerLocationText :: Maybe Text,
-    offerBuildYearText :: Maybe Text
+    offerBuildYearText :: Maybe Text,
+    offerRooms :: Maybe Int
   }
 
 data Formatters = Formatters
@@ -160,7 +162,8 @@ showNewSinceLastVisit queryAccess presenter = do
               offerArea = _offerArea ov,
               offerPricePerMeter = pricePerMeter ov,
               offerLocationText = _offerDetails ov >>= _offerStreet,
-              offerBuildYearText = (\yr -> "rok " <> toText yr) <$> (_offerDetails ov >>= _offerBuiltYear)
+              offerBuildYearText = (\yr -> "rok " <> toText yr) <$> (_offerDetails ov >>= _offerBuiltYear),
+              offerRooms = _offerDetails ov >>= _offerRooms
             }
       where
         description = genTitle formatters ov

@@ -9,7 +9,8 @@ module Presenter.HTMLFeedPresenter
 where
 
 import Control.Monad (forM_)
-import Data.Text.Lazy as TL (Text)
+import Data.Text (Text)
+import qualified Data.Text.Lazy as TL (Text)
 import qualified Data.Text.Lazy.IO as T (putStrLn)
 import Domain.Offer (ElevatorGuess (..), HasElevator (HasElevator, _hasElevatorGuess))
 import qualified Text.Blaze.Html as A
@@ -28,6 +29,12 @@ badge Nothing _ = H.toHtml ("" :: Text)
 infoSpan :: (ToMarkup a) => Maybe a -> Html
 infoSpan t = badge t Nothing
 
+roomsText :: Int -> Text
+roomsText 0 = "0 pokoi?"
+roomsText 1 = "1 pokój"
+roomsText n | n < 5 = toText n <> " pokoje"
+roomsText n = toText n <> " pokoi"
+
 itemMarkup :: Formatters -> Maybe BadgeColorMapper -> OfferFeedItem -> H.Html
 itemMarkup
   formatters
@@ -39,7 +46,8 @@ itemMarkup
       offerLocationText = locText,
       offerArea = area,
       offerPrice = price,
-      offerPricePerMeter = ppm
+      offerPricePerMeter = ppm,
+      offerRooms = rooms
     } = do
     let emptyNode = H.toHtml ("" :: Text)
         elevatorText = case elevator >>= _hasElevatorGuess of
@@ -61,6 +69,7 @@ itemMarkup
         badge (Just $ areaText' formatters area) ((colorMapper >>= cmArea) <*> Just area)
         badge (Just $ priceText formatters price) ((colorMapper >>= cmPrice) <*> Just price)
         badge (Just $ ppmText' formatters ppm) ((colorMapper >>= cmPricePerMeter) <*> Just ppm)
+        infoSpan (roomsText <$> rooms)
       -- infoSpan (offerPricePerAreaText ov)
       H.td $ do
         H.toHtml (offerTitle ov)
