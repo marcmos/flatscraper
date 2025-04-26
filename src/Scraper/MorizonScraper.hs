@@ -26,7 +26,7 @@ import Domain.Offer
     _offerRooms,
     _offerStreet,
   )
-import Scraper.Common (parsePrice)
+import Scraper.Common (parseDecimal, parseDouble, parsePrice)
 import Text.HTML.Scalpel (Scraper, attr, chroots, hasClass, text, texts, (//), (@:), (@=))
 import Text.Regex.TDFA (getAllTextSubmatches, (=~))
 import UseCase.FeedGenerator (OfferFeedItem (offerDescription, offerTitle))
@@ -65,12 +65,6 @@ detailsScraper offer = do
               }
       return $ o {_offerDetails = Just updatedDetails}
     Nothing -> fail "FIXME: implement scrape details based only on direct details page scrape"
-
-parseDecimal :: Text -> Maybe Int
-parseDecimal t = fst <$> rightToMaybe (T.decimal t)
-
-parseDouble :: Text -> Maybe Double
-parseDouble t = fst <$> (rightToMaybe . T.double . T.replace "," ".") t
 
 parseFloors :: Text -> Maybe (Int, Maybe Int)
 parseFloors t =
