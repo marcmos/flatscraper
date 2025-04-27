@@ -15,7 +15,7 @@ import qualified Data.Text.Lazy.IO as T (putStrLn)
 import Domain.Offer (ElevatorGuess (..), HasElevator (HasElevator, _hasElevatorGuess))
 import qualified Text.Blaze.Html as A
 import Text.Blaze.Html.Renderer.Text as H (renderHtml)
-import Text.Blaze.Html5 as H (Html, ToMarkup, a, abbr, span, td, toHtml, tr, (!))
+import Text.Blaze.Html5 as H (Html, ToMarkup, a, abbr, div, span, td, toHtml, toValue, tr, (!))
 import Text.Blaze.Html5.Attributes as A (class_, href, title)
 import UseCase.FeedGenerator
 
@@ -64,16 +64,16 @@ itemMarkup
                     HasElevator False _ -> Nothing
                 )
         url = offerURL ov
-    H.tr $ do
-      H.td $ do
+        colClass = "col-md-3 p-2"
+    H.div ! A.class_ "row border" $ do
+      H.div ! A.class_ "col-md-2 p-2" $ do
         badge (Just $ areaText' formatters area) ((colorMapper >>= cmArea) <*> Just area)
         badge (Just $ priceText formatters price) ((colorMapper >>= cmPrice) <*> Just price)
         badge (Just $ ppmText' formatters ppm) ((colorMapper >>= cmPricePerMeter) <*> Just ppm)
         infoSpan (roomsText <$> rooms)
       -- infoSpan (offerPricePerAreaText ov)
-      H.td $ do
-        H.toHtml (offerTitle ov)
-      H.td $ do
+
+      H.div ! A.class_ colClass $ do
         maybe
           emptyNode
           ( \tt ->
@@ -88,10 +88,10 @@ itemMarkup
           )
           ft
         infoSpan (offerBuildYearText ov)
-      H.td $ do
+      H.div ! A.class_ colClass $ do
         infoSpan locText
-      H.td $ do
-        H.a ! A.href (A.toValue url) $ H.toHtml ("link" :: Text)
+      H.div ! A.class_ "col-md-4 p-2" $ do
+        H.a ! A.href (toValue url) $ H.toHtml (offerTitle ov)
 
 renderDetails :: Formatters -> Maybe BadgeColorMapper -> OfferFeedItem -> TL.Text
 renderDetails formatters cm item = H.renderHtml $ itemMarkup formatters cm item
@@ -110,11 +110,11 @@ newtype HTMLPreviewPresenter = HTMLPreviewPresenter (Maybe BadgeColorMapper)
 instance FeedPresenter HTMLPreviewPresenter where
   present (HTMLPreviewPresenter colorMapper) (OfferFeed formatters items) = do
     T.putStrLn "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.css\">"
-    T.putStrLn "<div class=\"container\"><table class=\"table\"><tr><th>Oferta</th><th>Tytuł</th><th>Budynek</th><th>Lokalizacja</th><th>Link</th></tr>"
+    T.putStrLn "<div class=\"container\">"
     forM_
       items
       ( \x -> do
           let r = renderDetails formatters colorMapper x
           T.putStrLn r
       )
-    T.putStrLn "</table></div>"
+    T.putStrLn "</div>"
