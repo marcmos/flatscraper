@@ -8,7 +8,7 @@ module UseCase.ScrapePersister
   )
 where
 
-import Domain.Offer (OfferView (_offerDetails))
+import Domain.Offer (OfferDetails (OfferDetails, _offerRooms), OfferView (OfferView, _offerDetails))
 import UseCase.Offer (OfferSeeder (seedOffers))
 
 class OfferStorer os where
@@ -52,12 +52,12 @@ scrapeAndStore scraper detailsScraper detailsLoader storer = do
     mapM
       ( \ov -> do
           case _offerDetails ov of
-            -- Just _ -> return ov
-            --
             -- FIXME add a predicate that will tell, if it makes sense to scrape
-            -- when details are set by list scraper
-            Just _ -> loadDetails detailsScraper ov
-            Nothing -> loadDetails detailsScraper ov
+            -- when details are set by list scraper. For now a simple heuristics
+            -- is used that is based on the fact, that all "complete" offers
+            -- have room count filled by the list or details scraper.
+            Just OfferDetails {_offerRooms = Just _} -> return ov
+            _ -> loadDetails detailsScraper ov
       )
       detailedOffers
   storeOffers storer detailedOffers'

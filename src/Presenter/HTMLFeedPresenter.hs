@@ -15,7 +15,7 @@ import qualified Data.Text.Lazy.IO as T (putStrLn)
 import Domain.Offer (ElevatorGuess (..), HasElevator (HasElevator, _hasElevatorGuess))
 import qualified Text.Blaze.Html as A
 import Text.Blaze.Html.Renderer.Text as H (renderHtml)
-import Text.Blaze.Html5 as H (Html, ToMarkup, a, abbr, div, span, td, toHtml, toValue, tr, (!))
+import Text.Blaze.Html5 as H (Html, ToMarkup, a, abbr, div, span, toHtml, toValue, (!))
 import Text.Blaze.Html5.Attributes as A (class_, href, title)
 import UseCase.FeedGenerator
 
@@ -71,7 +71,6 @@ itemMarkup
         badge (Just $ priceText formatters price) ((colorMapper >>= cmPrice) <*> Just price)
         badge (Just $ ppmText' formatters ppm) ((colorMapper >>= cmPricePerMeter) <*> Just ppm)
         infoSpan (roomsText <$> rooms)
-      -- infoSpan (offerPricePerAreaText ov)
 
       H.div ! A.class_ colClass $ do
         maybe
