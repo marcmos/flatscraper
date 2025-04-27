@@ -79,8 +79,7 @@ areaText' :: Formatters -> Double -> Text
 areaText' (Formatters {numFormatter = formatter}) area =
   formatDouble formatter area <> "m\178"
 
--- areaText :: Formatters -> OfferView -> Text
--- areaText formatters ov = areaText' formatters (_offerArea ov)
+ppmText' :: Formatters -> Double -> Text
 ppmText' (Formatters {numFormatter = formatter}) ppm =
   -- Using numFormatter instead of cashFormatter is no mistake here.
   -- CashFormatter shows in cent-value precision, which is too much.

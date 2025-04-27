@@ -2,25 +2,16 @@
 
 module Scraper.MorizonScraper (scraper) where
 
-import Control.Lens (element, non, over, (&), (.~), (?~), (^?))
-import Data.Either.Combinators (rightToMaybe)
+import Control.Lens (element, (^?))
 import Data.List (find)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
-import qualified Data.Text as T (pack, replace, takeWhile)
-import qualified Data.Text.Read as T (decimal, double)
 import DataAccess.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
 import Domain.Offer
   ( OfferDetails (_offerBuiltYear, _offerHasElevator, _offerPropertyFloor),
     OfferView (_offerDetails),
     emptyDetails,
-    emptyOffer,
     newOfferView,
-    offerBuiltYear,
-    offerDetails,
-    offerHasElevator,
-    offerStreet,
-    _offerArea,
     _offerBuildingFloors,
     _offerPropertyFloor,
     _offerRooms,
@@ -29,7 +20,6 @@ import Domain.Offer
 import Scraper.Common (parseDecimal, parseDouble, parsePrice)
 import Text.HTML.Scalpel (Scraper, attr, chroots, hasClass, text, texts, (//), (@:), (@=))
 import Text.Regex.TDFA (getAllTextSubmatches, (=~))
-import UseCase.FeedGenerator (OfferFeedItem (offerDescription, offerTitle))
 
 detailsScraper :: Maybe OfferView -> Scraper Text OfferView
 detailsScraper offer = do
