@@ -32,11 +32,11 @@ addLegitHeadersNoScam100 req =
 main :: IO ()
 main = do
   -- args <- getArgs
-  let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
-  let morizonPrivateTestUrl = "https://www.morizon.pl/mieszkania/krakow/?ps%5Bliving_area_from%5D=60&ps%5Blocation%5D%5Bmap%5D=1&ps%5Blocation%5D%5Bmap_bounds%5D=50.1261259,20.2174976:49.9674054,19.7922485&ps%5Bowner%5D%5B0%5D=3&ps%5Bprice_to%5D=1000000&ps%5Bwith_price%5D=1"
+  let olxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Border%5D=created_at:desc&search%5Bfilter_float_price:to%5D=1000000&search%5Bfilter_float_m:from%5D=60"
+  let morizonUrl = "https://www.morizon.pl/mieszkania/najnowsze/krakow/?ps%5Bliving_area_from%5D=60&ps%5Blocation%5D%5Bmap%5D=1&ps%5Blocation%5D%5Bmap_bounds%5D=50.212671292491,20.186952058559:49.880416226457,19.822794041442&ps%5Bowner%5D%5B0%5D=3&ps%5Bowner%5D%5B1%5D=1&ps%5Bowner%5D%5B2%5D=2&ps%5Bprice_to%5D=1000000&ps%5Bwith_price%5D=1"
   let args =
-        [ morizonPrivateTestUrl,
-          testOlxUrl
+        [ morizonUrl,
+          olxUrl
         ]
 
   httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
