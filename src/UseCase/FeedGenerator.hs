@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module UseCase.FeedGenerator
@@ -10,6 +11,7 @@ module UseCase.FeedGenerator
     areaText',
     ppmText',
     toText,
+    FeedViewer (view),
   )
 where
 
@@ -46,8 +48,8 @@ import Domain.Offer
   )
 import UseCase.Offer (QueryAccess (getOffersCreatedAfter))
 
-class FeedPresenter fp where
-  present :: fp -> OfferFeed -> IO ()
+class FeedPresenter fp a where
+  present :: fp a -> OfferFeed -> IO a
 
 data OfferFeedItem = OfferFeedItem
   { offerURL :: Text,
@@ -128,12 +130,21 @@ defaultFormatters = do
 toText :: (Show a) => a -> Text
 toText = T.pack . show
 
-showNewSinceLastVisit :: (FeedPresenter p, QueryAccess a) => a -> p -> IO ()
-showNewSinceLastVisit queryAccess presenter = do
+class FeedViewer fv where
+  view :: fv a -> a -> IO ()
+
+showNewSinceLastVisit ::
+  (FeedViewer fv, FeedPresenter fp a, QueryAccess qa) =>
+  qa ->
+  fp a ->
+  fv a ->
+  IO ()
+showNewSinceLastVisit queryAccess presenter viewer = do
   lastVisit <- lastVisitTime
   formatters <- defaultFormatters
   newOffers <- getOffersCreatedAfter queryAccess lastVisit
-  present presenter (OfferFeed formatters $ map (repack formatters) newOffers)
+  feedText <- present presenter (OfferFeed formatters $ map (repack formatters) newOffers)
+  view viewer feedText
   where
     repack formatters ov@OfferView {_offerURL = url} =
       let pFloor = _offerDetails ov >>= _offerPropertyFloor

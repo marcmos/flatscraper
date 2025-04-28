@@ -1,21 +1,20 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Presenter.HTMLFeedPresenter
-  ( HTMLPreviewPresenter (HTMLPreviewPresenter),
-    BadgeColorMapper (BadgeColorMapper, cmArea, cmPrice, cmPricePerMeter),
+  ( BadgeColorMapper (BadgeColorMapper, cmArea, cmPrice, cmPricePerMeter),
     defaultColorMapper,
+    HTMLFeedPresenter (HTMLFeedPresenter),
   )
 where
 
-import Control.Monad (forM_)
 import Data.Text (Text)
-import qualified Data.Text.Lazy as TL (Text)
-import qualified Data.Text.Lazy.IO as T (putStrLn)
+import qualified Data.Text.IO as T (readFile)
 import Domain.Offer (ElevatorGuess (..), HasElevator (HasElevator, _hasElevatorGuess))
 import qualified Text.Blaze.Html as A
-import Text.Blaze.Html.Renderer.Text as H (renderHtml)
-import Text.Blaze.Html5 as H (Html, ToMarkup, a, abbr, div, span, toHtml, toValue, (!))
+import Text.Blaze.Html5 as H (Html, ToMarkup, a, abbr, body, div, head, html, span, style, toHtml, toValue, (!))
 import Text.Blaze.Html5.Attributes as A (class_, href, title)
 import UseCase.FeedGenerator
 
@@ -64,15 +63,15 @@ itemMarkup
                     HasElevator False _ -> Nothing
                 )
         url = offerURL ov
-        colClass = "col-md-3 p-2"
-    H.div ! A.class_ "row border" $ do
-      H.div ! A.class_ "col-md-2 p-2" $ do
+        rowClass = "p-2"
+    H.div ! A.class_ "border" $ do
+      H.div ! A.class_ rowClass $ do
         badge (Just $ areaText' formatters area) ((colorMapper >>= cmArea) <*> Just area)
         badge (Just $ priceText formatters price) ((colorMapper >>= cmPrice) <*> Just price)
         badge (Just $ ppmText' formatters ppm) ((colorMapper >>= cmPricePerMeter) <*> Just ppm)
         infoSpan (roomsText <$> rooms)
 
-      H.div ! A.class_ colClass $ do
+      H.div ! A.class_ rowClass $ do
         maybe
           emptyNode
           ( \tt ->
@@ -87,13 +86,10 @@ itemMarkup
           )
           ft
         infoSpan (offerBuildYearText ov)
-      H.div ! A.class_ colClass $ do
+      H.div ! A.class_ rowClass $ do
         infoSpan locText
-      H.div ! A.class_ "col-md-4 p-2" $ do
+      H.div ! A.class_ rowClass $ do
         H.a ! A.href (toValue url) $ H.toHtml (offerTitle ov)
-
-renderDetails :: Formatters -> Maybe BadgeColorMapper -> OfferFeedItem -> TL.Text
-renderDetails formatters cm item = H.renderHtml $ itemMarkup formatters cm item
 
 data BadgeColorMapper = BadgeColorMapper
   { cmArea :: Maybe (Double -> Text),
@@ -104,16 +100,13 @@ data BadgeColorMapper = BadgeColorMapper
 defaultColorMapper :: BadgeColorMapper
 defaultColorMapper = BadgeColorMapper Nothing Nothing Nothing
 
-newtype HTMLPreviewPresenter = HTMLPreviewPresenter (Maybe BadgeColorMapper)
+newtype HTMLFeedPresenter a = HTMLFeedPresenter (Maybe BadgeColorMapper)
 
-instance FeedPresenter HTMLPreviewPresenter where
-  present (HTMLPreviewPresenter colorMapper) (OfferFeed formatters items) = do
-    T.putStrLn "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.css\">"
-    T.putStrLn "<div class=\"container\">"
-    forM_
-      items
-      ( \x -> do
-          let r = renderDetails formatters colorMapper x
-          T.putStrLn r
-      )
-    T.putStrLn "</div>"
+instance FeedPresenter HTMLFeedPresenter H.Html where
+  present (HTMLFeedPresenter colorMapper) (OfferFeed formatters items) = do
+    css <- T.readFile "bootstrap.css"
+    return $ H.html $ do
+      H.head $ H.style (H.toHtml css)
+      H.body $
+        H.div ! A.class_ "container" $
+          mapM_ (\x -> do itemMarkup formatters colorMapper x) items

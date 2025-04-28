@@ -18,6 +18,8 @@ dependencies:
 - case-insensitive
 - either
 - feed
+- HaskellNet
+- HaskellNet-SSL
 - http-client
 - http-client-tls
 - lens

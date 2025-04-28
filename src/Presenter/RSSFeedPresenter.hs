@@ -8,8 +8,7 @@ import qualified Data.Text.Lazy.IO as TL (putStrLn)
 import Text.RSS.Export (textRSS)
 import Text.RSS.Syntax (RSSChannel (rssItems), RSSItem (rssItemLink), nullChannel, nullItem, nullRSS, rssChannel)
 import UseCase.FeedGenerator
-  ( FeedPresenter (present),
-    OfferFeed (OfferFeed),
+  ( OfferFeed (OfferFeed),
     OfferFeedItem (offerDescription, offerURL),
   )
 
@@ -30,10 +29,10 @@ renderFeed (OfferFeed _ offers) =
 
 data RSSFeedPresenter = RSSFeedPresenter
 
-instance FeedPresenter RSSFeedPresenter where
-  present RSSFeedPresenter offers = do
-    let feed =
-          fromMaybe
-            "Failed to generate feed"
-            (renderFeed offers)
-    TL.putStrLn feed
+-- instance FeedPresenter RSSFeedPresenter where
+--   present RSSFeedPresenter offers = do
+--     let feed =
+--           fromMaybe
+--             "Failed to generate feed"
+--             (renderFeed offers)
+--     TL.putStrLn feed

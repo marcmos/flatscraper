@@ -8,4 +8,6 @@ main :: IO ()
 main = do
   let offerSeeder = SQLitePersistence
   let presenter = RSSFeedPresenter
-  showNewSinceLastVisit offerSeeder presenter
+  undefined
+
+-- showNewSinceLastVisit offerSeeder presenter
