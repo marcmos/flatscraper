@@ -14,18 +14,32 @@ import Data.Text (Text)
 import qualified Data.Text.IO as T (readFile)
 import Domain.Offer (ElevatorGuess (..), HasElevator (HasElevator, _hasElevatorGuess))
 import qualified Text.Blaze.Html as A
-import Text.Blaze.Html5 as H (Html, ToMarkup, a, abbr, body, div, head, html, span, style, toHtml, toValue, (!))
+import Text.Blaze.Html5 ((!))
+import qualified Text.Blaze.Html5 as H
+  ( Html,
+    ToMarkup,
+    a,
+    abbr,
+    body,
+    div,
+    head,
+    html,
+    span,
+    style,
+    toHtml,
+    toValue,
+  )
 import Text.Blaze.Html5.Attributes as A (class_, href, title)
 import UseCase.FeedGenerator
 
-badge :: (ToMarkup a) => Maybe a -> Maybe Text -> Html
+badge :: (H.ToMarkup a) => Maybe a -> Maybe Text -> H.Html
 badge (Just t) (Just tag) = do
   H.toHtml (" " :: Text)
   H.span ! A.class_ (A.toValue $ "badge badge-" <> tag) $ H.toHtml t
 badge (Just t) Nothing = badge (Just t) (Just "info")
 badge Nothing _ = H.toHtml ("" :: Text)
 
-infoSpan :: (ToMarkup a) => Maybe a -> Html
+infoSpan :: (H.ToMarkup a) => Maybe a -> H.Html
 infoSpan t = badge t Nothing
 
 roomsText :: Int -> Text
@@ -89,7 +103,7 @@ itemMarkup
       H.div ! A.class_ rowClass $ do
         infoSpan locText
       H.div ! A.class_ rowClass $ do
-        H.a ! A.href (toValue url) $ H.toHtml (offerTitle ov)
+        H.a ! A.href (H.toValue url) $ H.toHtml (offerTitle ov)
 
 data BadgeColorMapper = BadgeColorMapper
   { cmArea :: Maybe (Double -> Text),

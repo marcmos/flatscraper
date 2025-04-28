@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Presenter.SMTPView (SMTPView (SMTPView), loadCredentialsFromFile) where
+module View.SMTPView (SMTPView (SMTPView), loadCredentialsFromFile) where
 
 import Data.Text (Text)
 import qualified Data.Text as T

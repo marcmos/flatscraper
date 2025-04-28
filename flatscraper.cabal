@@ -30,10 +30,8 @@ library
       Legacy.Scraper.OtodomScraper
       Legacy.SQLite
       Presenter.CLIFeedPresenter
-      Presenter.CLIView
       Presenter.HTMLFeedPresenter
       Presenter.RSSFeedPresenter
-      Presenter.SMTPView
       Scraper.Common
       Scraper.MorizonScraper
       Scraper.OlxScraper
@@ -41,6 +39,8 @@ library
       UseCase.FeedGenerator
       UseCase.Offer
       UseCase.ScrapePersister
+      View.CLIView
+      View.SMTPView
   other-modules:
       Paths_flatscraper
   hs-source-dirs:

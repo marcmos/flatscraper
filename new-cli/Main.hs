@@ -5,19 +5,12 @@ module Main where
 import Data.CaseInsensitive (mk)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
-import Data.Text.ICU (LocaleName (Locale))
-import qualified Data.Text.ICU as Locale
 import qualified Data.Text.Lazy as TL (Text, toStrict)
 import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
 import DataAccess.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper (WebScraper), WebScrapers (WebScrapers))
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Network.HaskellNet.Auth
-import Network.HaskellNet.SMTP
-import Network.HaskellNet.SMTP.SSL (doSMTPSTARTTLS)
-import Network.Mail.Mime
 import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
-import Presenter.CLIView (CLIView (CLIView), htmlCliView)
 import Presenter.HTMLFeedPresenter
   ( BadgeColorMapper (BadgeColorMapper, cmPricePerMeter),
     HTMLFeedPresenter (HTMLFeedPresenter),
@@ -25,14 +18,15 @@ import Presenter.HTMLFeedPresenter
     defaultColorMapper,
   )
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
-import Presenter.SMTPView (SMTPView (SMTPView), loadCredentialsFromFile)
 import qualified Scraper.MorizonScraper
 import qualified Scraper.OlxScraper
-import qualified Scraper.OtodomScraper (scraper)
+import qualified Text.Blaze.Html as H
 import qualified Text.Blaze.Html.Renderer.Text as H
 import Text.HTML.Scalpel (Config (Config), utf8Decoder)
-import UseCase.FeedGenerator (present, showNewSinceLastVisit)
+import UseCase.FeedGenerator (FeedViewer (view), present, showNewSinceLastVisit)
 import UseCase.ScrapePersister (OfferStorer (storeOffers), loadDetails, seedOffers)
+import View.CLIView (CLIView (CLIView))
+import View.SMTPView (SMTPView (SMTPView), loadCredentialsFromFile)
 
 addLegitHeadersNoScam100 :: Request -> IO Request
 addLegitHeadersNoScam100 req =
@@ -62,6 +56,9 @@ testOfflineListScraper = do
   offers' <- mapM (loadDetails scrapers) offers
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   print offers'
+
+htmlCliView :: CLIView H.Html
+htmlCliView = CLIView (TL.toStrict . H.renderHtml)
 
 main :: IO ()
 main = do
