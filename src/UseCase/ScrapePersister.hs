@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module UseCase.ScrapePersister
   ( seedOffers,
     storeDetailedOffers,
@@ -8,7 +10,12 @@ module UseCase.ScrapePersister
   )
 where
 
-import Domain.Offer (OfferDetails (OfferDetails, _offerRooms), OfferView (OfferView, _offerDetails))
+import Data.Maybe (isNothing)
+import qualified Data.Text as T
+import Domain.Offer
+  ( OfferDetails (_offerBuiltYear),
+    OfferView (_offerDetails, _offerURL),
+  )
 import UseCase.Offer (OfferSeeder (seedOffers))
 
 class OfferStorer os where
@@ -56,7 +63,13 @@ scrapeAndStore scraper detailsScraper detailsLoader storer = do
             -- when details are set by list scraper. For now a simple heuristics
             -- is used that is based on the fact, that all "complete" offers
             -- have room count filled by the list or details scraper.
-            Just OfferDetails {_offerRooms = Just _} -> return ov
+            Just od ->
+              let url = _offerURL ov
+                  builtYear = _offerBuiltYear od
+               in if "https://www.morizon.pl" `T.isPrefixOf` url
+                    && isNothing builtYear
+                    then loadDetails detailsScraper ov
+                    else return ov
             _ -> loadDetails detailsScraper ov
       )
       detailedOffers
