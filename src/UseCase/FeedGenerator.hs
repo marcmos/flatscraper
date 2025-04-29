@@ -20,8 +20,9 @@ import qualified Data.Text as T (pack)
 import qualified Data.Text.ICU as Locale (LocaleName (Locale))
 import Data.Text.ICU.NumberFormatter (formatDouble, formatIntegral, numberFormatter)
 import qualified Data.Text.ICU.NumberFormatter as ICU
-import Data.Time (UTCTime, getCurrentTime)
+import Data.Time (LocalTime (..), UTCTime, getCurrentTime, localDay, localTimeToUTC, midnight, utcToLocalTime)
 import Data.Time.Clock (addUTCTime)
+import Data.Time.LocalTime (getCurrentTimeZone)
 import Domain.Offer
   ( HasElevator (HasElevator, _hasElevator),
     OfferDetails
@@ -180,7 +181,19 @@ showNewSinceLastVisit queryAccess presenter viewer = do
 
 -- Internal
 
+getTodayMidnightUTC :: IO UTCTime
+getTodayMidnightUTC = do
+  now <- getCurrentTime
+  timezone <- getCurrentTimeZone
+  let localTime = utcToLocalTime timezone now
+      day = localDay localTime
+      midnightLocal = LocalTime day midnight
+      midnightUTC = localTimeToUTC timezone midnightLocal
+  return midnightUTC
+
 -- FIXME: mock
 lastVisitTime :: IO UTCTime
-lastVisitTime = do
-  addUTCTime (-(24 * 3600)) <$> getCurrentTime
+lastVisitTime =
+  -- addUTCTime (-(7 * 3600)) <$> getTodayMidnightUTC
+  -- addUTCTime (-(24 * 3600)) <$> getCurrentTime
+  getTodayMidnightUTC
