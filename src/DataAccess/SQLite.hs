@@ -19,6 +19,9 @@ module DataAccess.SQLite (SQLitePersistence (SQLitePersistence)) where
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Data.Aeson (Value (String))
+import Data.Aeson.Lens (AsNumber (_Integer))
+import Data.Maybe (fromJust)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Time.Clock (getCurrentTime)
@@ -65,6 +68,14 @@ OfferInstance
     hasElevator Bool Maybe
     deriving Show
 
+PropertyOfferTextAttribute
+  createdAt UTCTime
+  offerId OfferInstanceId
+  name Text
+  UniqueOfferName offerId name
+  value Text
+  deriving Show
+
 -- OfferPrice
 --   offerInstanceId OfferInstanceId
 --   created UTCTime
@@ -73,6 +84,22 @@ OfferInstance
 |]
 
 data SQLitePersistence = SQLitePersistence
+
+upsertTextAttr offerId attrName attrValue time =
+  case attrValue of
+    Just newValue -> do
+      _ <-
+        upsertBy
+          (UniqueOfferName offerId attrName)
+          ( PropertyOfferTextAttribute
+              time
+              offerId
+              attrName
+              newValue
+          )
+          [PropertyOfferTextAttributeValue =. newValue]
+      return ()
+    Nothing -> return ()
 
 persistOffers :: [OfferView] -> IO ()
 persistOffers offers = do
@@ -86,35 +113,41 @@ persistOffers offers = do
       let buildingFloors = details >>= _offerBuildingFloors
       let builtYear = details >>= _offerBuiltYear
       let hasEl = details >>= _offerHasElevator
-      upsertBy
-        (UniqueUrl url)
-        ( OfferInstance
-            time
-            time
-            url
-            title
-            (details >>= _offerRooms)
-            area
-            price
-            street
-            district
-            pFloor
-            buildingFloors
-            builtYear
-            hasEl
-        )
-        [ OfferInstanceUpdatedAt =. time,
-          OfferInstanceTitle =. title,
-          OfferInstanceRooms =. (details >>= _offerRooms),
-          OfferInstanceArea =. area,
-          OfferInstancePrice =. price,
-          OfferInstanceStreet =. street,
-          OfferInstanceDistrict =. district,
-          OfferInstancePropertyFloor =. pFloor,
-          OfferInstanceBuildingFloors =. buildingFloors,
-          OfferInstanceYearBuilt =. builtYear,
-          OfferInstanceHasElevator =. hasEl
-        ]
+
+      e@(Entity offerId _) <-
+        upsertBy
+          (UniqueUrl url)
+          ( OfferInstance
+              time
+              time
+              url
+              title
+              (details >>= _offerRooms)
+              area
+              price
+              street
+              district
+              pFloor
+              buildingFloors
+              builtYear
+              hasEl
+          )
+          [ OfferInstanceUpdatedAt =. time,
+            OfferInstanceTitle =. title,
+            OfferInstanceRooms =. (details >>= _offerRooms),
+            OfferInstanceArea =. area,
+            OfferInstancePrice =. price,
+            OfferInstanceStreet =. street,
+            OfferInstanceDistrict =. district,
+            OfferInstancePropertyFloor =. pFloor,
+            OfferInstanceBuildingFloors =. buildingFloors,
+            OfferInstanceYearBuilt =. builtYear,
+            OfferInstanceHasElevator =. hasEl
+          ]
+
+      _ <- upsertTextAttr offerId "street" street time
+
+      return e
 
 instance OfferStorer SQLitePersistence where
   storeOffers _ = persistOffers

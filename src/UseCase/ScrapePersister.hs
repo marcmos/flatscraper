@@ -53,7 +53,7 @@ scrapeAndStore ::
   os ->
   IO [OfferView]
 scrapeAndStore scraper detailsScraper detailsLoader storer = do
-  offers <- seedOffers scraper
+  offers <- take 1 <$> seedOffers scraper
   detailedOffers <- mapM (loadDetails detailsLoader) offers
   detailedOffers' <-
     mapM
