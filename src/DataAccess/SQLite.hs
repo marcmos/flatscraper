@@ -22,17 +22,7 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Time.Clock (getCurrentTime)
-import Database.Persist
-  ( Entity (Entity),
-    Filter,
-    SelectOpt (LimitTo),
-    selectFirst,
-    selectList,
-    upsertBy,
-    (=.),
-    (==.),
-    (>.),
-  )
+import Database.Persist (Entity (Entity), Filter, SelectOpt (Desc, LimitTo), selectFirst, selectList, upsertBy, (=.), (==.), (>.))
 import Database.Persist.Sql (runMigration)
 import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
@@ -167,7 +157,11 @@ loadRecentOffers count = do
 
 instance QueryAccess SQLitePersistence where
   getOffersCreatedAfter _ timestamp = do
-    offers <- runSqlite "flatscraper.sqlite" $ selectList [OfferInstanceCreatedAt >. timestamp] []
+    offers <-
+      runSqlite "flatscraper.sqlite" $
+        selectList
+          [OfferInstanceCreatedAt >. timestamp]
+          [Desc OfferInstanceCreatedAt]
     return $ map toOfferView offers
 
 -- Internal
