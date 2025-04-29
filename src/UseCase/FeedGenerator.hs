@@ -15,6 +15,7 @@ module UseCase.FeedGenerator
   )
 where
 
+import Data.List (sortOn)
 import Data.Text (Text)
 import qualified Data.Text as T (pack)
 import qualified Data.Text.ICU as Locale (LocaleName (Locale))
@@ -145,8 +146,16 @@ showNewSinceLastVisit queryAccess presenter viewer = do
   lastVisit <- lastVisitTime
   formatters <- defaultFormatters
   newOffers <- getOffersCreatedAfter queryAccess lastVisit
-  feedText <- present presenter (OfferFeed formatters $ map (repack formatters) newOffers)
-  let title = "Specjalnie dla Ciebie przygotowałem " <> (toText . length $ newOffers) <> " ofert mieszkań do przeglądnięcia"
+  let offers = map (repack formatters) newOffers
+  let sortedOffers =
+        sortOn
+          (\(OfferFeedItem {offerPricePerMeter = ppm}) -> ppm)
+          offers
+  feedText <- present presenter (OfferFeed formatters sortedOffers)
+  let title =
+        "Specjalnie dla Ciebie przygotowałem "
+          <> (toText . length $ newOffers)
+          <> " ofert mieszkań do przeglądnięcia"
   view viewer title feedText
   where
     repack formatters ov@OfferView {_offerURL = url} =
