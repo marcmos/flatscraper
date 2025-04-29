@@ -62,7 +62,8 @@ data OfferFeedItem = OfferFeedItem
     offerArea :: Double,
     offerPrice :: Int,
     offerPricePerMeter :: Double,
-    offerLocationText :: Maybe Text,
+    offerStreetText :: Maybe Text,
+    offerDistrictText :: Maybe Text,
     offerBuildYearText :: Maybe Text,
     offerRooms :: Maybe Int
   }
@@ -132,7 +133,7 @@ toText :: (Show a) => a -> Text
 toText = T.pack . show
 
 class FeedViewer fv where
-  view :: fv a -> a -> IO ()
+  view :: fv a -> Text -> a -> IO ()
 
 showNewSinceLastVisit ::
   (FeedViewer fv, FeedPresenter fp a, QueryAccess qa) =>
@@ -145,7 +146,8 @@ showNewSinceLastVisit queryAccess presenter viewer = do
   formatters <- defaultFormatters
   newOffers <- getOffersCreatedAfter queryAccess lastVisit
   feedText <- present presenter (OfferFeed formatters $ map (repack formatters) newOffers)
-  view viewer feedText
+  let title = "Specjalnie dla Ciebie przygotowałem " <> (toText . length $ newOffers) <> " ofert mieszkań do przeglądnięcia"
+  view viewer title feedText
   where
     repack formatters ov@OfferView {_offerURL = url} =
       let pFloor = _offerDetails ov >>= _offerPropertyFloor
@@ -172,7 +174,8 @@ showNewSinceLastVisit queryAccess presenter viewer = do
               offerPrice = _offerLatestPrice ov,
               offerArea = _offerArea ov,
               offerPricePerMeter = pricePerMeter ov,
-              offerLocationText = _offerDetails ov >>= _offerStreet,
+              offerStreetText = _offerDetails ov >>= _offerStreet,
+              offerDistrictText = _offerDetails ov >>= _offerDistrict,
               offerBuildYearText = (\yr -> "rok " <> toText yr) <$> (_offerDetails ov >>= _offerBuiltYear),
               offerRooms = _offerDetails ov >>= _offerRooms
             }

@@ -7,4 +7,4 @@ import UseCase.FeedGenerator (FeedViewer (view))
 newtype CLIView a = CLIView (a -> Text)
 
 instance FeedViewer CLIView where
-  view (CLIView showText) = T.putStrLn . showText
+  view (CLIView showText) _ = T.putStrLn . showText

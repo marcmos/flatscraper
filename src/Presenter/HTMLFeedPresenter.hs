@@ -56,7 +56,8 @@ itemMarkup
     { offerHasElevator = elevator,
       offerIsAccessible = isAccessible,
       offerFloorText = ft,
-      offerLocationText = locText,
+      offerStreetText = street,
+      offerDistrictText = district,
       offerArea = area,
       offerPrice = price,
       offerPricePerMeter = ppm,
@@ -101,7 +102,8 @@ itemMarkup
           ft
         infoSpan (offerBuildYearText ov)
       H.div ! A.class_ rowClass $ do
-        infoSpan locText
+        infoSpan street
+        infoSpan district
       H.div ! A.class_ rowClass $ do
         H.a ! A.href (H.toValue url) $ H.toHtml (offerTitle ov)
 

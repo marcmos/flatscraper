@@ -9,7 +9,7 @@ import qualified Data.Text.Lazy as TL (fromStrict)
 import Network.HaskellNet.Auth
 import Network.HaskellNet.SMTP
 import Network.HaskellNet.SMTP.SSL (doSMTPSTARTTLS)
-import Network.Mail.Mime
+import Network.Mail.Mime (Address (Address), simpleMail)
 import System.Exit (die)
 import UseCase.FeedGenerator (FeedViewer (view))
 
@@ -26,8 +26,8 @@ loadCredentialsFromFile path = do
     username : password : _ -> Just (T.unpack username, T.unpack password)
     _ -> Nothing
 
-viewViaSMTP :: SMTPView a -> a -> IO ()
-viewViaSMTP (SMTPView convert (username, password)) input = do
+viewViaSMTP :: SMTPView a -> Text -> a -> IO ()
+viewViaSMTP (SMTPView convert (username, password)) subject input = do
   doSMTPSTARTTLS "smtp.gmail.com" $ \conn -> do
     -- (1)
     authSucceed <- authenticate PLAIN username password conn
@@ -37,7 +37,7 @@ viewViaSMTP (SMTPView convert (username, password)) input = do
           simpleMail
             (Address Nothing "example@gmail.com")
             (Address Nothing $ T.pack username)
-            "This is a subject"
+            subject
             "Hello! This is the mail body!"
             (TL.fromStrict $ convert input)
             []
