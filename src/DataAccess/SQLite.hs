@@ -20,12 +20,9 @@ module DataAccess.SQLite (SQLitePersistence (SQLitePersistence)) where
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
-import Control.Monad.Zip (mzip)
-import Data.Aeson (Value (String), object)
-import Data.Aeson.Lens (AsNumber (_Integer))
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import Data.Time (UTCTime)
+import Data.Time (UTCTime, addUTCTime)
 import Data.Time.Clock (getCurrentTime)
 import Database.Persist (Entity (Entity), Filter, SelectOpt (Desc, LimitTo), selectFirst, selectList, upsertBy, (=.), (==.), (>.))
 import Database.Persist.Sql (runMigration)
@@ -47,7 +44,6 @@ import Domain.Offer
     emptyDetails,
     _offerDetails,
   )
-import Language.Haskell.TH.Lens (HasName (name))
 import UseCase.Offer (OfferSeeder (seedOffers), QueryAccess (getOffersCreatedAfter))
 import UseCase.ScrapePersister (OfferDetailsLoader (loadDetails), OfferStorer (storeOffers))
 
@@ -60,15 +56,8 @@ OfferInstance
     url Text
     UniqueUrl url
     title Text
-    rooms Int Maybe
     area Double
     price Int
-    street Text Maybe
-    district Text Maybe
-    propertyFloor Int Maybe
-    buildingFloors Int Maybe
-    yearBuilt Int Maybe
-    hasElevator Bool Maybe
     deriving Show
 
 OfferTextAttribute
@@ -149,27 +138,13 @@ persistOffers offers = do
               time
               url
               title
-              Nothing
               area
               price
-              Nothing
-              Nothing
-              Nothing
-              Nothing
-              Nothing
-              hasEl
           )
           [ OfferInstanceUpdatedAt =. time,
             OfferInstanceTitle =. title,
-            OfferInstanceRooms =. (details >>= _offerRooms),
             OfferInstanceArea =. area,
-            OfferInstancePrice =. price,
-            OfferInstanceStreet =. street,
-            OfferInstanceDistrict =. district,
-            OfferInstancePropertyFloor =. pFloor,
-            OfferInstanceBuildingFloors =. buildingFloors,
-            OfferInstanceYearBuilt =. builtYear,
-            OfferInstanceHasElevator =. hasEl
+            OfferInstancePrice =. price
           ]
 
       upsertTextAttr offerId "street" street time
@@ -180,51 +155,17 @@ persistOffers offers = do
       upsertIntAttr offerId "building_floors" buildingFloors time
       upsertIntAttr offerId "building_year" builtYear time
       upsertIntAttr offerId "property_rooms" (details >>= _offerRooms) time
+      upsertIntAttr
+        offerId
+        "building_has_elevator"
+        ( case hasEl of
+            Just True -> Just 1
+            Just False -> Just 0
+            _ -> Nothing
+        )
+        time
 
       return e
-
-instance OfferStorer SQLitePersistence where
-  storeOffers _ = persistOffers
-
-instance OfferDetailsLoader SQLitePersistence where
-  loadDetails _ offer = return offer
-
--- runSqlite "flatscraper.sqlite" $ do
---   runMigration migrateAll
---     maybe offer toOfferView <$> entityQ
---   where
---   entityQ = selectFirst [OfferInstanceUrl ==. _offerURL offer] []
-
--- entityToRecord (Entity _ ent) =
---   offer
---     { _offerURL = offerInstanceUrl ent,
---       _offerLatestPrice = offerInstancePrice ent,
---       _offerArea = offerInstanceArea ent,
---       _offerDetails =
---         Just
---           OfferDetails
---             { _offerDescription = Just $ offerInstanceTitle ent, -- FIXME
---               _offerRooms = offerInstanceRooms ent,
---               _offerStreet = offerInstanceStreet ent,
---               _offerDistrict = offerInstanceDistrict ent,
---               _offerHasElevator = offerInstanceHasElevator ent,
---               _offerPropertyFloor = offerInstancePropertyFloor ent,
---               _offerBuildingFloors = offerInstanceBuildingFloors ent,
---               _offerBuiltYear = offerInstanceYearBuilt ent
---             }
---     }
-
-instance OfferSeeder SQLitePersistence where
-  seedOffers :: SQLitePersistence -> IO [OfferView]
-  seedOffers _ = liftIO $ loadRecentOffers 20
-
-loadRecentOffers :: (MonadUnliftIO m) => Int -> m [OfferView]
-loadRecentOffers count = do
-  offers <- runSqlite "flatscraper.sqlite" $ do
-    runMigration migrateAll
-    selectList ([] :: [Filter OfferInstance]) [LimitTo count]
-  -- return $ map toOfferView offers
-  undefined
 
 loadTextAttrs ::
   OfferView ->
@@ -283,87 +224,67 @@ loadIntegralAttrs =
                     { _offerDetails =
                         Just (details {_offerBuiltYear = Just value})
                     }
+                "building_has_elevator" ->
+                  acc
+                    { _offerDetails =
+                        Just (details {_offerHasElevator = Just $ value > 0})
+                    }
                 _ -> acc
     )
 
+toOfferView :: OfferInstance -> OfferView
+toOfferView
+  ( OfferInstance
+      { offerInstanceUrl = url,
+        offerInstancePrice = price,
+        offerInstanceArea = area,
+        offerInstanceTitle = title
+      }
+    ) =
+    OfferView url price area title (Just emptyDetails)
+
+-- loadAttributes :: Entity OfferInstance -> OfferView
+loadAttributes (Entity offerId offerInstance) = do
+  let offer = toOfferView offerInstance
+  textAttrs <- selectList [OfferTextAttributeOfferId ==. offerId] []
+  let offer' = loadTextAttrs offer textAttrs
+  intAttrs <- selectList [OfferIntegralAttributeOfferId ==. offerId] []
+  let offer'' = loadIntegralAttrs offer' intAttrs
+  return offer''
+
+getCreatedAfter timestamp limit =
+  runSqlite "flatscraper.sqlite" $ do
+    offers <-
+      selectList
+        -- [OfferInstanceCreatedAt >. timestamp]
+        []
+        [Desc OfferInstanceCreatedAt, LimitTo limit]
+
+    mapM loadAttributes offers
+
+instance OfferSeeder SQLitePersistence where
+  seedOffers :: SQLitePersistence -> IO [OfferView]
+  seedOffers _ = do
+    let limit = 20
+    yesterday <- addUTCTime (-(24 * 3600)) <$> getCurrentTime
+    getCreatedAfter yesterday limit
+
 instance QueryAccess SQLitePersistence where
   getOffersCreatedAfter :: SQLitePersistence -> UTCTime -> IO [OfferView]
-  getOffersCreatedAfter _ timestamp = do
+  getOffersCreatedAfter _ timestamp =
+    let limit = 100
+     in getCreatedAfter timestamp limit
+
+instance OfferStorer SQLitePersistence where
+  storeOffers _ = persistOffers
+
+instance OfferDetailsLoader SQLitePersistence where
+  loadDetails _ offer =
     runSqlite "flatscraper.sqlite" $ do
-      o <-
-        selectList
-          -- [OfferInstanceCreatedAt >. timestamp]
-          []
-          [Desc OfferInstanceCreatedAt]
-
-      let offerViews =
-            map
-              ( \( Entity
-                     _
-                     ( OfferInstance
-                         { offerInstanceUrl = url,
-                           offerInstancePrice = price
-                         }
-                       )
-                   ) -> OfferView url price 0 "" (Just emptyDetails)
-              )
-              o
-
-      textAttrs <-
-        mapM
-          ( \(Entity offerId _) ->
-              selectList [OfferTextAttributeOfferId ==. offerId] []
-          )
-          o
-
-      let offers = zipWith loadTextAttrs offerViews textAttrs
-
-      intAttrs <-
-        mapM
-          ( \(Entity offerId _) ->
-              selectList [OfferIntegralAttributeOfferId ==. offerId] []
-          )
-          o
-
-      let offers' = zipWith loadIntegralAttrs offers intAttrs
-
-      return offers'
-
--- Internal
--- toOfferView :: Entity OfferInstance -> [Entity PropertyOfferTextAttribute] -> OfferView
--- toOfferView
---   ( Entity
---       _
---       ( OfferInstance
---           _
---           _
---           url
---           title
---           rooms
---           area
---           price
---           street
---           district
---           pFloor
---           bFloors
---           bYear
---           hasEl
---         )
---     ) =
---     OfferView
---       url
---       price
---       area
---       title
---       ( Just
---           emptyDetails
---             { _offerRooms = rooms,
---               _offerDescription = Nothing,
---               _offerStreet = street,
---               _offerDistrict = district,
---               _offerPropertyFloor = pFloor,
---               _offerBuildingFloors = bFloors,
---               _offerBuiltYear = bYear,
---               _offerHasElevator = hasEl
---             }
---       )
+      runMigration migrateAll
+      persistedOffer <- entityQ
+      case persistedOffer of
+        Nothing -> return offer
+        Just o -> loadAttributes o
+    where
+      entityQ = selectFirst [OfferInstanceUrl ==. _offerURL offer] []

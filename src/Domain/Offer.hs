@@ -6,6 +6,37 @@ module Domain.Offer where
 import Control.Lens (makeLenses)
 import Data.Text (Text)
 
+data OfferRef = OfferURLRef
+  { _offerRefURL :: Text,
+    _offerRefSource :: Maybe Text
+  }
+  deriving (Show)
+
+data PropertyLocation = PropertyAddress
+  { propertyStreet :: Text,
+    propertyDistrict :: Maybe Text
+  }
+
+data PropertyAttrs = PropertyAttrs
+  { propertyRooms :: Maybe Int,
+    propertyArea :: Maybe Double
+  }
+
+data BuildingAttrs = BuildingAttrs
+  { buildingHasElevator :: Maybe Bool,
+    buildingFloors :: Maybe Int,
+    buildingYearBuilt :: Maybe Int
+  }
+
+data OfferView2 = OfferView2
+  { _offer2Ref :: OfferRef,
+    _offer2LatestPrice :: Int,
+    _offer2Title :: Maybe Text,
+    _offer2Description :: Maybe Text,
+    _offer2Location :: Maybe PropertyLocation,
+    _offer2BuildingAttrs :: BuildingAttrs
+  }
+
 -- Offer snapshot, seen at some point in time.
 -- Minimum viable offer has 3 things: URL, some price and area.
 data OfferView = OfferView

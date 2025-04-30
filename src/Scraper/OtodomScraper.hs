@@ -11,12 +11,13 @@ import Control.Lens
     (&),
     (.~),
     (?~),
+    (^..),
     (^?),
     (^?!),
   )
 import Control.Monad ()
 import Data.Aeson (Value (), decodeStrict)
-import Data.Aeson.Lens (AsNumber (_Integer), key, _String)
+import Data.Aeson.Lens (AsNumber (_Integer), key, values, _String)
 import Data.Either.Combinators (rightToMaybe)
 import Data.List (find)
 import Data.Maybe (fromMaybe)
@@ -43,6 +44,7 @@ import Domain.Offer
     offerDescription,
     offerDetails,
     offerDistrict,
+    offerHasElevator,
     offerPropertyFloor,
     offerRooms,
     offerStreet,
@@ -88,6 +90,8 @@ fromJSON input offer =
       buildingProperties = ad >>= (^? key "property" . key "buildingProperties")
       builtYear = fromInteger <$> (buildingProperties >>= (^? key "year" . _Integer))
       buildingFloors = fromInteger <$> (buildingProperties >>= (^? key "numberOfFloors" . _Integer))
+      conveniences = (^.. values) <$> (buildingProperties >>= (^? key "conveniences"))
+      hasLift = elem "LIFT" <$> conveniences
    in -- ppm = ad >>= (^? key "target" . key "Price_per_m" . _Integer)
       -- coordinates = (^?! key "location" . key "coordinates") <$> ad
       -- lat = coordinates >>= (^? key "latitude" . _Double)
@@ -118,6 +122,7 @@ fromJSON input offer =
                 & (offerBuiltYear .~ builtYear)
                 & (offerBuildingFloors .~ buildingFloors)
                 & (offerPropertyFloor .~ propertyFloor)
+                & (offerHasElevator .~ hasLift)
 
         ( over (non defaultOffer . offerTitle) (const t)
             . over (non defaultOffer . offerArea) (const a)

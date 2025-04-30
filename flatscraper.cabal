@@ -21,11 +21,6 @@ library
       DataAccess.ScrapeLoader
       DataAccess.SQLite
       Domain.Offer
-      Legacy.Domain.Offer
-      Legacy.Domain.OfferFilter
-      Legacy.Domain.WordUtils
-      Legacy.Newsfeed
-      Legacy.SQLite
       Presenter.CLIFeedPresenter
       Presenter.HTMLFeedPresenter
       Presenter.RSSFeedPresenter
