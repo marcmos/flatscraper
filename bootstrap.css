@@ -91,3 +91,8 @@ body {
     color: #fff;
     background-color: #28a745;
 }
+
+.badge-danger {
+    color: #fff;
+    background-color: #dc3545;
+}

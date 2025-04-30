@@ -168,17 +168,26 @@ showNewSinceLastVisit queryAccess presenter viewer = do
             (Just p, Just b) -> Just $ "piętro " <> toText p <> "/" <> toText b
             (Just p, _) -> Just $ "piętro " <> toText p
             _ -> Nothing
+          isAccessibleFloor = (>=) 2 <$> pFloor
        in OfferFeedItem
             { offerURL = url,
               offerDescription = description,
               offerTitle = _offerTitle ov,
               offerHasElevator = elevator,
               offerIsAccessible =
-                if ((\(HasElevator {_hasElevator = e}) -> e) <$> elevator) == Just True
-                  then Just True
-                  else do
-                    f <- _offerDetails ov >>= _offerPropertyFloor
-                    if f <= 2 then Just True else Nothing,
+                case elevator of
+                  Just (HasElevator True Nothing) -> Just True
+                  Just (HasElevator False _)
+                    | isAccessibleFloor == Just True -> Just True
+                    | isAccessibleFloor == Just False -> Just False
+                  Just (HasElevator True (Just _)) -> Just True
+                  _ -> do
+                    f <- pFloor
+                    case f of
+                      x | x <= 2 -> Just True
+                      _ -> do
+                        bYear <- _offerDetails ov >>= _offerBuiltYear
+                        if bYear <= 1970 then Just False else Nothing,
               offerFloorText = floorText,
               offerPrice = _offerLatestPrice ov,
               offerArea = _offerArea ov,
