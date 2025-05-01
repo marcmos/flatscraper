@@ -10,6 +10,7 @@ description:    Please see the README at <https://gitlab.memleak.pl/mmos/flatscr
 author:         Marcin Moskal
 maintainer:     mmos@memleak.pl
 copyright:      2019 Marcin Moskal
+copyright:      2019-2025 Marcin Moskal
 license:        GPL-3
 license-file:   LICENSE
 build-type:     Simple
