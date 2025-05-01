@@ -10,7 +10,7 @@ import DataAccess.ScrapeLoader
     prefixWebScraper,
   )
 import Domain.Offer
-  ( OfferDetails (_offerBuiltYear, _offerHasElevator, _offerPropertyFloor),
+  ( OfferDetails (_offerBuiltYear, _offerDistrict, _offerHasElevator, _offerPropertyFloor),
     OfferView (_offerDetails),
     emptyDetails,
     newOfferView,
@@ -33,14 +33,20 @@ import Text.HTML.Scalpel
   )
 import Text.Regex.TDFA (getAllTextSubmatches, (=~))
 
+parseLocation :: Text -> (Maybe Text, Maybe Text)
+parseLocation t =
+  let locationPat = "(.+, )?(.+), +(.+)" :: Text
+      submatches = getAllTextSubmatches (t =~ locationPat) :: [Text]
+   in case reverse submatches of
+        street : "Kraków" : _ -> (Just street, Nothing)
+        street : district : _ -> (Just street, Just district)
+        _ -> (Nothing, Nothing)
+
 detailsScraper :: Maybe OfferView -> Scraper Text OfferView
 detailsScraper offer = do
   locationText <- text $ "div" @: [hasClass "location-row__second_column"]
 
-  let locationPat = "(.+, )+(.+)" :: Text
-  let locationDetailed =
-        Just $
-          last (getAllTextSubmatches (locationText =~ locationPat) :: [Text])
+  let (street, district) = parseLocation locationText
 
   -- itemValues <- texts $ "div" @: ["data-cy" @= "itemValue"]
   params <-
@@ -63,7 +69,8 @@ detailsScraper offer = do
     Just o -> do
       let updatedDetails =
             (fromMaybe emptyDetails (_offerDetails o))
-              { _offerStreet = locationDetailed,
+              { _offerStreet = street,
+                _offerDistrict = district,
                 _offerBuiltYear = bYear,
                 _offerHasElevator =
                   if isJust hasElev
