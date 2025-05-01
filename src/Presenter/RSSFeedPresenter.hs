@@ -1,14 +1,24 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter)) where
 
 import Data.Maybe (fromMaybe)
-import qualified Data.Text.Lazy as TL (Text)
-import qualified Data.Text.Lazy.IO as TL (putStrLn)
+import qualified Data.Text as T (Text)
+import qualified Data.Text.Lazy as TL (Text, toStrict)
 import Text.RSS.Export (textRSS)
-import Text.RSS.Syntax (RSSChannel (rssItems), RSSItem (rssItemLink), nullChannel, nullItem, nullRSS, rssChannel)
+import Text.RSS.Syntax
+  ( RSS,
+    RSSChannel (rssItems),
+    RSSItem (rssItemLink),
+    nullChannel,
+    nullItem,
+    nullRSS,
+    rssChannel,
+  )
 import UseCase.FeedGenerator
-  ( OfferFeed (OfferFeed),
+  ( FeedPresenter (present),
+    OfferFeed (OfferFeed),
     OfferFeedItem (offerDescription, offerURL),
   )
 
@@ -20,19 +30,24 @@ renderOffer offer =
   where
     title = offerDescription offer
 
+rss :: [OfferFeedItem] -> RSS
+rss offers =
+  (nullRSS "" "")
+    { rssChannel =
+        (nullChannel "flatscraper" "")
+          { rssItems = renderOffer <$> offers
+          }
+    }
+
 renderFeed :: OfferFeed -> Maybe TL.Text
-renderFeed (OfferFeed _ offers) =
-  textRSS $
-    (nullRSS "" "")
-      { rssChannel = (nullChannel "flatscraper" "") {rssItems = renderOffer <$> offers}
-      }
+renderFeed (OfferFeed _ offers) = textRSS $ rss offers
 
-data RSSFeedPresenter = RSSFeedPresenter
+data RSSFeedPresenter a = RSSFeedPresenter
 
--- instance FeedPresenter RSSFeedPresenter where
---   present RSSFeedPresenter offers = do
---     let feed =
---           fromMaybe
---             "Failed to generate feed"
---             (renderFeed offers)
---     TL.putStrLn feed
+instance FeedPresenter RSSFeedPresenter RSS where
+  present RSSFeedPresenter (OfferFeed _ offers) = do
+    return $ rss offers
+
+instance FeedPresenter RSSFeedPresenter T.Text where
+  present RSSFeedPresenter feed =
+    return $ maybe "Failed to generate feed" TL.toStrict (renderFeed feed)

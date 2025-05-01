@@ -4,6 +4,7 @@ module Main where
 
 import Data.CaseInsensitive (mk)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.Lazy as TL (Text, toStrict)
 import Data.Time (getCurrentTime)
@@ -89,8 +90,6 @@ main = do
         viewer
     Nothing -> return ()
   where
-    -- _ <- emailTest "test"
-
     -- testOfflineListScraper
 
     -- showNewSinceLastVisit sqlite cliPresenter
@@ -105,4 +104,4 @@ main = do
 
     -- print detailedOffers
 
-    cliPresenter = CLIPresenter 1 2
+    cliPresenter = CLIPresenter

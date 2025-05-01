@@ -1,14 +1,18 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter)) where
 
-import Control.Monad (forM_)
+import Data.Text (Text)
+import qualified Data.Text as T
 import UseCase.FeedGenerator
   ( FeedPresenter (present),
     OfferFeed (OfferFeed),
     OfferFeedItem (offerURL),
   )
 
-data CLIPresenter = CLIPresenter Int Double
+data CLIPresenter a = CLIPresenter
 
--- instance FeedPresenter CLIPresenter where
---   present (CLIPresenter i d) (OfferFeed _ offers) = do
---     forM_ offers (print . offerURL)
+instance FeedPresenter CLIPresenter Text where
+  present CLIPresenter (OfferFeed _ offers) = do
+    let o = offerURL <$> offers
+    return $ T.intercalate (T.pack "\n") o

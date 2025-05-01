@@ -24,7 +24,16 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time (UTCTime, addUTCTime)
 import Data.Time.Clock (getCurrentTime)
-import Database.Persist (Entity (Entity), Filter, SelectOpt (Desc, LimitTo), selectFirst, selectList, upsertBy, (=.), (==.), (>.))
+import Database.Persist
+  ( Entity (Entity),
+    SelectOpt (Desc, LimitTo),
+    selectFirst,
+    selectList,
+    upsertBy,
+    (=.),
+    (==.),
+    (>.),
+  )
 import Database.Persist.Sql (runMigration)
 import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
@@ -256,8 +265,7 @@ getCreatedAfter timestamp limit =
   runSqlite "flatscraper.sqlite" $ do
     offers <-
       selectList
-        -- [OfferInstanceCreatedAt >. timestamp]
-        []
+        [OfferInstanceCreatedAt >. timestamp]
         [Desc OfferInstanceCreatedAt, LimitTo limit]
 
     mapM loadAttributes offers
