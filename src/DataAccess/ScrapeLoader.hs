@@ -12,7 +12,14 @@ import Data.Maybe (fromMaybe, maybeToList)
 import Data.Text (Text, unpack)
 import qualified Data.Text.IO as T (readFile)
 import Domain.Offer (OfferView (_offerURL))
-import Text.HTML.Scalpel (Config, Scraper, URL, scrapeStringLike, scrapeURL, scrapeURLWithConfig)
+import Text.HTML.Scalpel
+  ( Config,
+    Scraper,
+    URL,
+    scrapeStringLike,
+    scrapeURL,
+    scrapeURLWithConfig,
+  )
 import UseCase.Offer (OfferSeeder (seedOffers))
 import UseCase.ScrapePersister (OfferDetailsLoader (loadDetails))
 
@@ -42,14 +49,33 @@ instance OfferSeeder ScrapeSource where
     let offers = scrapeStringLike htmlContent listScraper
     case offers of
       Just (x : xs) -> return (x : xs)
-      _ -> maybe (return []) (\dSc -> return . maybeToList $ scrapeStringLike htmlContent (dSc Nothing)) detailsScraper
+      _ ->
+        maybe
+          (return [])
+          ( \dSc ->
+              return . maybeToList $
+                scrapeStringLike
+                  htmlContent
+                  (dSc Nothing)
+          )
+          detailsScraper
   seedOffers (WebSource (WebScrapers config scrapers) url) = do
     case findPack url scrapers of
       Just (WebScraper (ScraperPack listScraper offerScraper) _) -> do
         offerList <- scrapeLog "offers" url listScraper
         case offerList of
           Just offers -> return offers
-          Nothing -> maybe (return []) (\dSc -> maybeToList <$> scrapeLog "fallback" url (dSc Nothing)) offerScraper
+          Nothing ->
+            maybe
+              (return [])
+              ( \dSc ->
+                  maybeToList
+                    <$> scrapeLog
+                      "fallback"
+                      url
+                      (dSc Nothing)
+              )
+              offerScraper
       Nothing -> return []
     where
       scrape = do

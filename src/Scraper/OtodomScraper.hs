@@ -24,7 +24,11 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T (encodeUtf8)
 import Data.Text.Lens ()
 import qualified Data.Text.Read as T (decimal, double)
-import DataAccess.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
+import DataAccess.ScrapeLoader
+  ( ScraperPack (ScraperPack),
+    WebScraper,
+    prefixWebScraper,
+  )
 import Domain.Offer
   ( OfferView
       ( OfferView,
@@ -54,7 +58,9 @@ import Text.HTML.Scalpel (Scraper, attr, chroots, text, texts, (//), (@:), (@=))
 offerScraper :: Scraper Text OfferView
 offerScraper = do
   name <- text ("p" @: ["data-cy" @= "listing-item-title"])
-  price <- parsePrice . fromMaybe "0 zł" . find (T.isSuffixOf "zł") <$> texts "span"
+  price <-
+    parsePrice . fromMaybe "0 zł" . find (T.isSuffixOf "zł")
+      <$> texts "span"
   url <- ("https://www.otodom.pl" <>) <$> attr "href" "a"
   return $ newOfferView url price 0.0 name
 
@@ -75,8 +81,24 @@ fromJSON input offer =
       json = decodeStrict bs :: Maybe Value
       ad = (^?! key "props" . key "pageProps" . key "ad") <$> json
       price = ad >>= (^? key "target" . key "Price" . _Integer)
-      street = ad >>= (^? key "location" . key "address" . key "street" . key "name" . _String)
-      district = ad >>= (^? key "location" . key "address" . key "district" . key "name" . _String)
+      street =
+        ad
+          >>= ( ^?
+                  key "location"
+                    . key "address"
+                    . key "street"
+                    . key "name"
+                    . _String
+              )
+      district =
+        ad
+          >>= ( ^?
+                  key "location"
+                    . key "address"
+                    . key "district"
+                    . key "name"
+                    . _String
+              )
       area = (^?! key "target" . key "Area" . _String) <$> ad
       properties = ad >>= (^? key "property" . key "properties")
       rooms = fromInteger <$> (properties >>= (^? key "numberOfRooms" . _Integer))
@@ -86,9 +108,24 @@ fromJSON input offer =
         Nothing -> Nothing
       title = (^?! key "title" . _String) <$> ad
       buildingProperties = ad >>= (^? key "property" . key "buildingProperties")
-      builtYear = fromInteger <$> (buildingProperties >>= (^? key "year" . _Integer))
-      buildingFloors = fromInteger <$> (buildingProperties >>= (^? key "numberOfFloors" . _Integer))
-      conveniences = (^.. values) <$> (buildingProperties >>= (^? key "conveniences"))
+      builtYear =
+        fromInteger
+          <$> ( buildingProperties
+                  >>= ( ^?
+                          key "year"
+                            . _Integer
+                      )
+              )
+      buildingFloors =
+        fromInteger
+          <$> ( buildingProperties
+                  >>= (^? key "numberOfFloors" . _Integer)
+              )
+      conveniences =
+        (^.. values)
+          <$> ( buildingProperties
+                  >>= (^? key "conveniences")
+              )
       hasLift = elem "LIFT" <$> conveniences
    in -- ppm = ad >>= (^? key "target" . key "Price_per_m" . _Integer)
       -- coordinates = (^?! key "location" . key "coordinates") <$> ad
@@ -124,7 +161,9 @@ fromJSON input offer =
 
         ( over (non defaultOffer . offerTitle) (const t)
             . over (non defaultOffer . offerArea) (const a)
-            . over (non defaultOffer . offerDetails . non defaultDetails) updateDetails
+            . over
+              (non defaultOffer . offerDetails . non defaultDetails)
+              updateDetails
           )
           offer
 
@@ -137,8 +176,18 @@ detailsScraper offer = do
     Nothing -> fail "parsing failed"
 
 offersScraper :: Scraper Text [OfferView]
-offersScraper = chroots ("div" @: ["data-cy" @= "search.listing.organic"] // "article") offerScraper
+offersScraper =
+  chroots
+    ( "div" @: ["data-cy" @= "search.listing.organic"]
+        // "article"
+    )
+    offerScraper
 
 scraper :: WebScraper
--- scraper = prefixWebScraper "https://www.otodom.pl" (ScraperPack offersScraper Nothing)
-scraper = prefixWebScraper "https://www.otodom.pl" (ScraperPack offersScraper (Just detailsScraper))
+scraper =
+  prefixWebScraper
+    "https://www.otodom.pl"
+    ( ScraperPack
+        offersScraper
+        (Just detailsScraper)
+    )

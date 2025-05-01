@@ -2,7 +2,6 @@
 
 module Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter)) where
 
-import Data.Maybe (fromMaybe)
 import qualified Data.Text as T (Text)
 import qualified Data.Text.Lazy as TL (Text, toStrict)
 import Text.RSS.Export (textRSS)

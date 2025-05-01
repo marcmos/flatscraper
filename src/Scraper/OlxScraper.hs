@@ -9,7 +9,11 @@ import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T (isPrefixOf, replace, takeWhile)
 import qualified Data.Text.Read as T (double)
-import DataAccess.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
+import DataAccess.ScrapeLoader
+  ( ScraperPack (ScraperPack),
+    WebScraper,
+    prefixWebScraper,
+  )
 import Domain.Offer
   ( OfferDetails
       ( _offerPropertyFloor,
@@ -33,12 +37,14 @@ detailsScraper :: Maybe OfferView -> Scraper Text OfferView
 detailsScraper (Just ov) = do
   attrsTexts <- texts $ "div" @: ["data-testid" @= "ad-parameters-container"] // "p"
   let findLevel :: Text -> Maybe Int
-      findLevel t = case getAllTextSubmatches (t =~ ("Poziom: (Parter|[1-9])" :: Text)) of
+      findLevel t = case getAllTextSubmatches
+        (t =~ ("Poziom: (Parter|[1-9])" :: Text)) of
         [_, "Parter"] -> Just 0
         [_, levelText] -> parseDecimal levelText
         _ -> Nothing
       findRooms :: Text -> Maybe Int
-      findRooms t = case getAllTextSubmatches (t =~ ("Liczba pokoi: ([1-9])" :: Text)) of
+      findRooms t = case getAllTextSubmatches
+        (t =~ ("Liczba pokoi: ([1-9])" :: Text)) of
         [_, roomsText] -> parseDecimal roomsText
         _ -> Nothing
       updatedDetails =
@@ -52,14 +58,22 @@ detailsScraper Nothing = fail ""
 listOfferScraper :: Scraper Text OfferView
 listOfferScraper = do
   url <- attr "href" "a"
-  let parsedUrl = if "https://www.otodom.pl" `T.isPrefixOf` url then url else "https://www.olx.pl" <> url
+  let parsedUrl =
+        if "https://www.otodom.pl" `T.isPrefixOf` url
+          then url
+          else "https://www.olx.pl" <> url
   rawPrice <- listToMaybe <$> texts ("p" @: ["data-testid" @= "ad-price"])
   title <- text "h4"
   area <- (^? element 2) <$> texts "span"
   let offer = do
         p <- rawPrice
         price <- parsePrice' p
-        area' <- rightToMaybe . T.double . T.replace "," "." . T.takeWhile (/= ' ') <$> area
+        area' <-
+          rightToMaybe
+            . T.double
+            . T.replace "," "."
+            . T.takeWhile (/= ' ')
+            <$> area
         area'' <- fst <$> area'
         return $ newOfferView parsedUrl price area'' title
   case offer of
@@ -68,7 +82,18 @@ listOfferScraper = do
 
 offersScraper :: Scraper Text [OfferView]
 offersScraper = do
-  chroots ("div" @: ["data-testid" @= "listing-grid"] // "div" @: ["data-testid" @= "l-card"]) listOfferScraper
+  chroots
+    ( "div" @: ["data-testid" @= "listing-grid"]
+        // "div"
+          @: ["data-testid" @= "l-card"]
+    )
+    listOfferScraper
 
 scraper :: WebScraper
-scraper = prefixWebScraper "https://www.olx.pl" (ScraperPack offersScraper (Just detailsScraper))
+scraper =
+  prefixWebScraper
+    "https://www.olx.pl"
+    ( ScraperPack
+        offersScraper
+        (Just detailsScraper)
+    )

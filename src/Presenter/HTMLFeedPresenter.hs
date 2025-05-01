@@ -11,7 +11,13 @@ where
 
 import Data.Text (Text)
 import qualified Data.Text.IO as T (readFile)
-import Domain.Offer (ElevatorGuess (..), HasElevator (HasElevator, _hasElevatorGuess))
+import Domain.Offer
+  ( ElevatorGuess (..),
+    HasElevator
+      ( HasElevator,
+        _hasElevatorGuess
+      ),
+  )
 import qualified Text.Blaze.Html as A
 import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
@@ -73,16 +79,24 @@ itemMarkup
                     HasElevator True Nothing -> Just $ H.toHtml ("winda" :: Text)
                     HasElevator True (Just _) -> do
                       explanation <- elevatorText
-                      Just $ H.abbr ! A.title explanation $ H.toHtml ("winda" :: Text)
+                      Just $
+                        H.abbr ! A.title explanation $
+                          H.toHtml ("winda" :: Text)
                     HasElevator False _ -> Nothing
                 )
         url = offerURL ov
         rowClass = "p-2"
     H.div ! A.class_ "border" $ do
       H.div ! A.class_ rowClass $ do
-        badge (Just $ areaText' formatters area) ((colorMapper >>= cmArea) <*> Just area)
-        badge (Just $ priceText formatters price) ((colorMapper >>= cmPrice) <*> Just price)
-        badge (Just $ ppmText' formatters ppm) ((colorMapper >>= cmPricePerMeter) <*> Just ppm)
+        badge
+          (Just $ areaText' formatters area)
+          ((colorMapper >>= cmArea) <*> Just area)
+        badge
+          (Just $ priceText formatters price)
+          ((colorMapper >>= cmPrice) <*> Just price)
+        badge
+          (Just $ ppmText' formatters ppm)
+          ((colorMapper >>= cmPricePerMeter) <*> Just ppm)
         infoSpan (roomsText <$> rooms)
 
       H.div ! A.class_ rowClass $ do

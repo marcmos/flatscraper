@@ -4,7 +4,11 @@ import Control.Lens (element, (^?))
 import Data.List (find)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
-import DataAccess.ScrapeLoader (ScraperPack (ScraperPack), WebScraper, prefixWebScraper)
+import DataAccess.ScrapeLoader
+  ( ScraperPack (ScraperPack),
+    WebScraper,
+    prefixWebScraper,
+  )
 import Domain.Offer
   ( OfferDetails (_offerBuiltYear, _offerHasElevator, _offerPropertyFloor),
     OfferView (_offerDetails),
@@ -16,7 +20,17 @@ import Domain.Offer
     _offerStreet,
   )
 import Scraper.Common (parseDecimal, parseDouble, parsePrice)
-import Text.HTML.Scalpel (Scraper, attr, chroots, hasClass, text, texts, (//), (@:), (@=))
+import Text.HTML.Scalpel
+  ( Scraper,
+    attr,
+    chroots,
+    hasClass,
+    text,
+    texts,
+    (//),
+    (@:),
+    (@=),
+  )
 import Text.Regex.TDFA (getAllTextSubmatches, (=~))
 
 detailsScraper :: Maybe OfferView -> Scraper Text OfferView
@@ -24,7 +38,9 @@ detailsScraper offer = do
   locationText <- text $ "div" @: [hasClass "location-row__second_column"]
 
   let locationPat = "(.+, )+(.+)" :: Text
-  let locationDetailed = Just $ last (getAllTextSubmatches (locationText =~ locationPat) :: [Text])
+  let locationDetailed =
+        Just $
+          last (getAllTextSubmatches (locationText =~ locationPat) :: [Text])
 
   -- itemValues <- texts $ "div" @: ["data-cy" @= "itemValue"]
   params <-
@@ -49,7 +65,10 @@ detailsScraper offer = do
             (fromMaybe emptyDetails (_offerDetails o))
               { _offerStreet = locationDetailed,
                 _offerBuiltYear = bYear,
-                _offerHasElevator = if isJust hasElev then Just True else Nothing
+                _offerHasElevator =
+                  if isJust hasElev
+                    then Just True
+                    else Nothing
               }
       return $ o {_offerDetails = Just updatedDetails}
     Nothing -> fail "FIXME: implement scrape details based only on direct details page scrape"
@@ -89,7 +108,9 @@ listOfferScraper :: Scraper Text OfferView
 listOfferScraper = do
   url <- attr "href" $ "a" @: ["data-cy" @= "propertyUrl"]
   let parsedUrl = "https://www.morizon.pl" <> url
-  rawPrice <- (^? element 2) <$> texts ("div" @: ["data-cy" @= "cardPropertyTopRight"] // "div")
+  rawPrice <-
+    (^? element 2)
+      <$> texts ("div" @: ["data-cy" @= "cardPropertyTopRight"] // "div")
   let price = parsePrice <$> rawPrice
   -- title <- text "h4"
   detailsTexts <- text ("div" @: [hasClass "property-info"])
@@ -101,8 +122,7 @@ listOfferScraper = do
         let floorInfo = parseFloors detailsTexts
         return $
           (newOfferView parsedUrl p area detailsTexts)
-            { -- (newOfferView parsedUrl p area $ T.pack . T.show $ detailsMatch)
-              _offerDetails =
+            { _offerDetails =
                 Just
                   ( emptyDetails
                       { _offerRooms = rooms,
@@ -120,4 +140,10 @@ offersScraper = do
   chroots ("div" @: ["data-cy" @= "card"]) listOfferScraper
 
 scraper :: WebScraper
-scraper = prefixWebScraper "https://www.morizon.pl" (ScraperPack offersScraper (Just detailsScraper))
+scraper =
+  prefixWebScraper
+    "https://www.morizon.pl"
+    ( ScraperPack
+        offersScraper
+        (Just detailsScraper)
+    )

@@ -17,8 +17,6 @@
 module DataAccess.SQLite (SQLitePersistence (SQLitePersistence)) where
 
 import Control.Monad (forM_)
-import Control.Monad.IO.Class (MonadIO (liftIO))
-import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time (UTCTime, addUTCTime)
@@ -35,25 +33,35 @@ import Database.Persist
   )
 import Database.Persist.Sql (runMigration)
 import Database.Persist.Sqlite (runSqlite)
-import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
+import Database.Persist.TH
+  ( mkMigrate,
+    mkPersist,
+    persistLowerCase,
+    share,
+    sqlSettings,
+  )
 import Domain.Offer
   ( OfferDetails
-      ( OfferDetails,
-        _offerBuildingFloors,
+      ( _offerBuildingFloors,
         _offerBuiltYear,
-        _offerDescription,
         _offerDistrict,
         _offerHasElevator,
         _offerPropertyFloor,
         _offerRooms,
         _offerStreet
       ),
-    OfferView (OfferView, _offerArea, _offerLatestPrice, _offerURL),
+    OfferView (OfferView, _offerLatestPrice, _offerURL),
     emptyDetails,
     _offerDetails,
   )
-import UseCase.Offer (OfferSeeder (seedOffers), QueryAccess (getOffersCreatedAfter))
-import UseCase.ScrapePersister (OfferDetailsLoader (loadDetails), OfferStorer (storeOffers))
+import UseCase.Offer
+  ( OfferSeeder (seedOffers),
+    QueryAccess (getOffersCreatedAfter),
+  )
+import UseCase.ScrapePersister
+  ( OfferDetailsLoader (loadDetails),
+    OfferStorer (storeOffers),
+  )
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]

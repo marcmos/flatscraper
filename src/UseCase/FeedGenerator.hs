@@ -193,7 +193,9 @@ showNewSinceLastVisit queryAccess presenter viewer = do
               offerPricePerMeter = pricePerMeter ov,
               offerStreetText = _offerDetails ov >>= _offerStreet,
               offerDistrictText = _offerDetails ov >>= _offerDistrict,
-              offerBuildYearText = (\yr -> "rok " <> toText yr) <$> (_offerDetails ov >>= _offerBuiltYear),
+              offerBuildYearText =
+                (\yr -> "rok " <> toText yr)
+                  <$> (_offerDetails ov >>= _offerBuiltYear),
               offerRooms = _offerDetails ov >>= _offerRooms
             }
       where
