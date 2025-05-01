@@ -25,9 +25,6 @@ library
       Legacy.Domain.OfferFilter
       Legacy.Domain.WordUtils
       Legacy.Newsfeed
-      Legacy.Scraper.GratkaScraper
-      Legacy.Scraper.OlxScraper
-      Legacy.Scraper.OtodomScraper
       Legacy.SQLite
       Presenter.CLIFeedPresenter
       Presenter.HTMLFeedPresenter
@@ -56,41 +53,6 @@ library
     , case-insensitive
     , either
     , feed
-    , http-client
-    , http-client-tls
-    , lens
-    , lens-aeson
-    , persistent
-    , persistent-sqlite
-    , persistent-template
-    , regex
-    , regex-tdfa
-    , scalpel ==0.6.*
-    , tagsoup
-    , text
-    , text-icu
-    , time
-    , unliftio-core
-  default-language: Haskell2010
-
-executable flatscraper
-  main-is: Main.hs
-  other-modules:
-      Paths_flatscraper
-  hs-source-dirs:
-      app
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      HaskellNet
-    , HaskellNet-SSL
-    , aeson
-    , base >=4.10 && <5
-    , blaze-html
-    , bytestring
-    , case-insensitive
-    , either
-    , feed
-    , flatscraper
     , http-client
     , http-client-tls
     , lens

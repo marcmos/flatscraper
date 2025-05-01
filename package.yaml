@@ -42,17 +42,6 @@ library:
     - -Wall
 
 executables:
-  flatscraper:
-    main:                Main.hs
-    source-dirs:         app
-    ghc-options:
-    - -Wall
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - flatscraper
-
   new-cli:
     main:                Main.hs
     source-dirs:         new-cli
