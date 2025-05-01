@@ -11,7 +11,7 @@ import Network.Mail.Mime (Address (Address), simpleMail)
 import System.Exit (die)
 import UseCase.FeedGenerator (FeedViewer (view))
 
-data SMTPView a = SMTPView (a -> Text) (UserName, Password)
+data SMTPView a = SMTPView (a -> Text) (UserName, Password) Text
 
 instance FeedViewer SMTPView where
   view = viewViaSMTP
@@ -25,7 +25,7 @@ loadCredentialsFromFile path = do
     _ -> Nothing
 
 viewViaSMTP :: SMTPView a -> Text -> a -> IO ()
-viewViaSMTP (SMTPView convert (username, password)) subject input = do
+viewViaSMTP (SMTPView convert (username, password) recipient) subject input = do
   doSMTPSTARTTLS "smtp.gmail.com" $ \conn -> do
     -- (1)
     authSucceed <- authenticate PLAIN username password conn
@@ -33,7 +33,7 @@ viewViaSMTP (SMTPView convert (username, password)) subject input = do
       then do
         mail <-
           simpleMail
-            (Address Nothing "example@gmail.com")
+            (Address Nothing recipient)
             (Address Nothing $ T.pack username)
             subject
             "Hello! This is the mail body!"

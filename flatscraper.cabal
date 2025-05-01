@@ -24,6 +24,7 @@ library
       Presenter.CLIFeedPresenter
       Presenter.HTMLFeedPresenter
       Presenter.RSSFeedPresenter
+      Presenter.UserPrefs
       Scraper.Common
       Scraper.MorizonScraper
       Scraper.OlxScraper
@@ -110,6 +111,43 @@ executable flatscraper-scrape
       Paths_flatscraper
   hs-source-dirs:
       cli/scrape
+  default-extensions:
+      OverloadedStrings
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      HaskellNet
+    , HaskellNet-SSL
+    , aeson
+    , base >=4.10 && <5
+    , blaze-html
+    , bytestring
+    , case-insensitive
+    , either
+    , feed
+    , flatscraper
+    , http-client
+    , http-client-tls
+    , lens
+    , lens-aeson
+    , persistent
+    , persistent-sqlite
+    , persistent-template
+    , regex
+    , regex-tdfa
+    , scalpel ==0.6.*
+    , tagsoup
+    , text
+    , text-icu
+    , time
+    , unliftio-core
+  default-language: Haskell2010
+
+executable flatscraper-send-digest
+  main-is: Main.hs
+  other-modules:
+      Paths_flatscraper
+  hs-source-dirs:
+      cli/send-digest
   default-extensions:
       OverloadedStrings
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N

@@ -216,4 +216,4 @@ lastVisitTime :: IO UTCTime
 lastVisitTime =
   -- addUTCTime (-(7 * 3600)) <$> getTodayMidnightUTC
   -- addUTCTime (-(24 * 3600)) <$> getCurrentTime
-  getTodayMidnightUTC
+  addUTCTime (1 * 3600) <$> getTodayMidnightUTC

@@ -11,13 +11,9 @@ import DataAccess.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
-import Presenter.HTMLFeedPresenter
-  ( BadgeColorMapper (BadgeColorMapper, cmPricePerMeter),
-    HTMLFeedPresenter (HTMLFeedPresenter),
-    cmArea,
-    defaultColorMapper,
-  )
+import Presenter.HTMLFeedPresenter (HTMLFeedPresenter (HTMLFeedPresenter))
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
+import Presenter.UserPrefs (badgeColorMapper)
 import qualified Scraper.MorizonScraper
 import qualified Scraper.OlxScraper
 import qualified Text.Blaze.Html as H
@@ -27,7 +23,6 @@ import UseCase.FeedGenerator (FeedViewer (view), present, showNewSinceLastVisit)
 import UseCase.Offer (QueryAccess (getOffersCreatedAfter))
 import UseCase.ScrapePersister (OfferStorer (storeOffers), loadDetails, seedOffers)
 import View.CLIView (CLIView (CLIView))
-import View.SMTPView (SMTPView (SMTPView), loadCredentialsFromFile)
 
 addLegitHeadersNoScam100 :: Request -> IO Request
 addLegitHeadersNoScam100 req =
@@ -67,39 +62,8 @@ main = do
   -- let testOfferURL = "https://www.otodom.pl/pl/oferta/2-pokojowe-mieszkanie-38m2-loggia-bezposrednio-ID4umfy"
   -- let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
   let sqlite = SQLitePersistence
-
-  -- offers <- take 3 <$> seedOffers sqlite
-  -- detailedOffers <- mapM (loadDetails sqlite) offers
-
-  let badgeColorMapper =
-        defaultColorMapper
-          { cmArea = Just $ \area -> if area >= 70 then "success" else "info",
-            cmPricePerMeter = Just $ \ppm -> if ppm <= 12000 then "success" else "info"
-          }
-
-  smtpCreds <- loadCredentialsFromFile "smtp-creds"
-  case smtpCreds of
-    Just creds -> do
-      let viewer = SMTPView (TL.toStrict . H.renderHtml) creds
-      -- let viewer = htmlCliView
-      showNewSinceLastVisit
-        sqlite
-        (HTMLFeedPresenter (Just badgeColorMapper))
-        viewer
-    Nothing -> return ()
-  where
-    -- testOfflineListScraper
-
-    -- showNewSinceLastVisit sqlite cliPresenter
-
-    -- testOfflineListScraper
-
-    -- offers <- seedOffers ss
-    -- offers <- scrapeAndStore ss detailsScrapers dbPersistence dbPersistence
-    -- print offers
-
-    -- testOfflineListScraper
-
-    -- print detailedOffers
-
-    cliPresenter = CLIPresenter
+  let viewer = htmlCliView
+  showNewSinceLastVisit
+    sqlite
+    (HTMLFeedPresenter (Just badgeColorMapper))
+    viewer

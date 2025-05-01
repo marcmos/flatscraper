@@ -77,3 +77,15 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - flatscraper
+
+  flatscraper-send-digest:
+    main:                Main.hs
+    source-dirs:         cli/send-digest
+    ghc-options:
+    - -Wall
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - flatscraper
+
