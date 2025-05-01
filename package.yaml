@@ -3,7 +3,7 @@ version:             0.2.0.0
 license:             GPL-3
 author:              "Marcin Moskal"
 maintainer:          "mmos@memleak.pl"
-copyright:           "2019 Marcin Moskal"
+copyright:           "2019-2025 Marcin Moskal"
 
 extra-source-files:
 - README.md
@@ -40,6 +40,9 @@ library:
   source-dirs: src
   ghc-options:
     - -Wall
+
+default-extensions:
+  - OverloadedStrings
 
 executables:
   new-cli:

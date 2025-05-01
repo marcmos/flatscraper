@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter)) where
 

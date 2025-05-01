@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Presenter.HTMLFeedPresenter
   ( BadgeColorMapper (BadgeColorMapper, cmArea, cmPrice, cmPricePerMeter),

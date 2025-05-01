@@ -9,7 +9,6 @@ version:        0.2.0.0
 description:    Please see the README at <https://gitlab.memleak.pl/mmos/flatscraper#readme>
 author:         Marcin Moskal
 maintainer:     mmos@memleak.pl
-copyright:      2019 Marcin Moskal
 copyright:      2019-2025 Marcin Moskal
 license:        GPL-3
 license-file:   LICENSE
@@ -38,6 +37,8 @@ library
       Paths_flatscraper
   hs-source-dirs:
       src
+  default-extensions:
+      OverloadedStrings
   ghc-options: -Wall
   build-depends:
       HaskellNet
@@ -72,6 +73,8 @@ executable flatscraper-gen-feed
       Paths_flatscraper
   hs-source-dirs:
       cli/gen-feed
+  default-extensions:
+      OverloadedStrings
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HaskellNet
@@ -107,6 +110,8 @@ executable flatscraper-scrape
       Paths_flatscraper
   hs-source-dirs:
       cli/scrape
+  default-extensions:
+      OverloadedStrings
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HaskellNet
@@ -142,6 +147,8 @@ executable new-cli
       Paths_flatscraper
   hs-source-dirs:
       new-cli
+  default-extensions:
+      OverloadedStrings
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HaskellNet

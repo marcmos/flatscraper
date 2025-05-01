@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module UseCase.ScrapePersister
   ( seedOffers,
     storeDetailedOffers,

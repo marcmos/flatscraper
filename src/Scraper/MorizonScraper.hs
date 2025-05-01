@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Scraper.MorizonScraper (scraper) where
 
 import Control.Lens (element, (^?))

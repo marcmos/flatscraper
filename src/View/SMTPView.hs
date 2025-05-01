@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module View.SMTPView (SMTPView (SMTPView), loadCredentialsFromFile) where
 
 import Data.Text (Text)
