@@ -140,11 +140,13 @@ showNewSinceLastVisit ::
   qa ->
   fp a ->
   fv a ->
+  Maybe (OfferView -> Bool) ->
   IO ()
-showNewSinceLastVisit queryAccess presenter viewer = do
+showNewSinceLastVisit queryAccess presenter viewer offerFilter = do
   lastVisit <- lastVisitTime
   formatters <- defaultFormatters
-  newOffers <- getOffersCreatedAfter queryAccess lastVisit
+  allOffers <- getOffersCreatedAfter queryAccess lastVisit
+  let newOffers = maybe allOffers (`filter` allOffers) offerFilter
   let offers = map (repack formatters) newOffers
   let sortedOffers =
         sortOn

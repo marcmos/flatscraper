@@ -67,3 +67,4 @@ main = do
     sqlite
     (HTMLFeedPresenter (Just badgeColorMapper))
     viewer
+    Nothing

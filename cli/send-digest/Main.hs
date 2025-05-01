@@ -9,7 +9,7 @@ import Presenter.HTMLFeedPresenter
     cmArea,
     defaultColorMapper,
   )
-import Presenter.UserPrefs (badgeColorMapper)
+import Presenter.UserPrefs (badgeColorMapper, offerFilter)
 import System.Environment (getArgs)
 import qualified Text.Blaze.Html.Renderer.Text as H
 import UseCase.FeedGenerator (showNewSinceLastVisit)
@@ -32,6 +32,7 @@ main = do
         sqlite
         (HTMLFeedPresenter (Just badgeColorMapper))
         viewer
+        (Just offerFilter)
     Nothing -> return ()
   where
     sqlite = SQLitePersistence
