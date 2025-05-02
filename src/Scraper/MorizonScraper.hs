@@ -4,6 +4,7 @@ import Control.Lens (element, (^?))
 import Data.List (find)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
+import qualified Data.Text as T
 import DataAccess.ScrapeLoader
   ( ScraperPack (ScraperPack),
     WebScraper,
@@ -63,7 +64,7 @@ detailsScraper offer = do
       text ("li" // "span")
 
   let bYear = find (\(k, _) -> k == "Rok budowy") params >>= parseDecimal . snd
-  let hasElev = find (== "Winda") boolAttrs
+  let hasElev = find ("Winda" `T.isPrefixOf`) boolAttrs
 
   case offer of
     Just o -> do

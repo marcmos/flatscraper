@@ -13,7 +13,6 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
 import Presenter.HTMLFeedPresenter (HTMLFeedPresenter (HTMLFeedPresenter))
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
-import Presenter.UserPrefs (badgeColorMapper)
 import qualified Scraper.MorizonScraper
 import qualified Scraper.OlxScraper
 import qualified Text.Blaze.Html as H
@@ -53,18 +52,16 @@ testOfflineListScraper = do
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   print offers'
 
-htmlCliView :: CLIView H.Html
-htmlCliView = CLIView (TL.toStrict . H.renderHtml)
-
 main :: IO ()
 main = do
   -- let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/malopolskie/krakow/krakow/krakow?limit=36&ownerTypeSingleSelect=ALL&areaMin=58&areaMax=65&pricePerMeterMax=16000&buildYearMin=2014&floors=%5BFIRST%2CSECOND%2CTHIRD%2CFOURTH%2CFIFTH%2CSIXTH%2CSEVENTH%2CEIGHTH%2CNINTH%2CTENTH%2CABOVE_TENTH%5D&buildingType=%5BBLOCK%2CTENEMENT%2CAPARTMENT%2CLOFT%5D&extras=%5BBALCONY%2CLIFT%2CHAS_PHOTOS%5D&by=LATEST&direction=DESC&viewType=listing"
   -- let testOfferURL = "https://www.otodom.pl/pl/oferta/2-pokojowe-mieszkanie-38m2-loggia-bezposrednio-ID4umfy"
   -- let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
   let sqlite = SQLitePersistence
-  let viewer = htmlCliView
-  showNewSinceLastVisit
-    sqlite
-    (HTMLFeedPresenter (Just badgeColorMapper))
-    viewer
-    Nothing
+  return ()
+
+-- showNewSinceLastVisit
+--   sqlite
+--   (HTMLFeedPresenter (Just badgeColorMapper))
+--   viewer
+--   Nothing

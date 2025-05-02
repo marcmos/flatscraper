@@ -24,7 +24,7 @@ library
       Presenter.CLIFeedPresenter
       Presenter.HTMLFeedPresenter
       Presenter.RSSFeedPresenter
-      Presenter.UserPrefs
+      Presenter.SMTPView
       Scraper.Common
       Scraper.MorizonScraper
       Scraper.OlxScraper
