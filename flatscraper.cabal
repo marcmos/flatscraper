@@ -24,7 +24,6 @@ library
       Presenter.CLIFeedPresenter
       Presenter.HTMLFeedPresenter
       Presenter.RSSFeedPresenter
-      Presenter.SMTPView
       Scraper.Common
       Scraper.MorizonScraper
       Scraper.OlxScraper
@@ -66,6 +65,7 @@ library
     , text-icu
     , time
     , unliftio-core
+    , vector
   default-language: Haskell2010
 
 executable flatscraper-gen-feed
@@ -103,6 +103,7 @@ executable flatscraper-gen-feed
     , text-icu
     , time
     , unliftio-core
+    , vector
   default-language: Haskell2010
 
 executable flatscraper-scrape
@@ -140,6 +141,7 @@ executable flatscraper-scrape
     , text-icu
     , time
     , unliftio-core
+    , vector
   default-language: Haskell2010
 
 executable flatscraper-send-digest
@@ -177,6 +179,7 @@ executable flatscraper-send-digest
     , text-icu
     , time
     , unliftio-core
+    , vector
   default-language: Haskell2010
 
 executable new-cli
@@ -214,4 +217,5 @@ executable new-cli
     , text-icu
     , time
     , unliftio-core
+    , vector
   default-language: Haskell2010

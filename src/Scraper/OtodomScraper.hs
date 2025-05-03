@@ -13,17 +13,26 @@ import Control.Lens
     (^?),
     (^?!),
   )
+import Control.Lens.Lens ((<&>))
 import Control.Monad ()
 import Data.Aeson (Value (), decodeStrict)
-import Data.Aeson.Lens (AsNumber (_Integer), key, values, _String)
+import Data.Aeson.Lens
+  ( AsNumber (_Integer),
+    AsValue (_Array),
+    key,
+    values,
+    _JSON,
+    _String,
+  )
 import Data.Either.Combinators (rightToMaybe)
 import Data.List (find)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T (encodeUtf8)
 import Data.Text.Lens ()
 import qualified Data.Text.Read as T (decimal, double)
+import Data.Vector (toList)
 import DataAccess.ScrapeLoader
   ( ScraperPack (ScraperPack),
     WebScraper,
@@ -47,6 +56,7 @@ import Domain.Offer
     offerDetails,
     offerDistrict,
     offerHasElevator,
+    offerMunicipalityArea,
     offerPropertyFloor,
     offerRooms,
     offerStreet,
@@ -75,6 +85,18 @@ parseInt t = do
   i <- rightToMaybe $ T.decimal t
   return $ fst i
 
+parseLocation :: Value -> Maybe [Text]
+parseLocation locationObj = do
+  obj <-
+    locationObj
+      ^? key "reverseGeocoding"
+        . key "locations"
+        . _Array
+  let reversed = reverse (toList obj)
+  detailed <- listToMaybe reversed
+  fullNameItems <- detailed ^? key "fullNameItems" . _Array
+  traverse (^? _String) (toList fullNameItems)
+
 fromJSON :: Text -> Maybe OfferView -> Maybe OfferView
 fromJSON input offer =
   let bs = T.encodeUtf8 input
@@ -90,15 +112,15 @@ fromJSON input offer =
                     . key "name"
                     . _String
               )
-      district =
-        ad
-          >>= ( ^?
-                  key "location"
-                    . key "address"
-                    . key "district"
-                    . key "name"
-                    . _String
-              )
+      -- district =
+      --   ad
+      --     >>= ( ^?
+      --             key "location"
+      --               . key "address"
+      --               . key "district"
+      --               . key "name"
+      --               . _String
+      --         )
       area = (^?! key "target" . key "Area" . _String) <$> ad
       properties = ad >>= (^? key "property" . key "properties")
       rooms = fromInteger <$> (properties >>= (^? key "numberOfRooms" . _Integer))
@@ -127,6 +149,11 @@ fromJSON input offer =
                   >>= (^? key "conveniences")
               )
       hasLift = elem "LIFT" <$> conveniences
+      location = ad >>= (^? key "location")
+      (muniArea, district) = case location >>= parseLocation of
+        Just [a, d, "Kraków", "małopolskie"] ->
+          (Just a, Just d)
+        _ -> (Nothing, Nothing)
    in -- ppm = ad >>= (^? key "target" . key "Price_per_m" . _Integer)
       -- coordinates = (^?! key "location" . key "coordinates") <$> ad
       -- lat = coordinates >>= (^? key "latitude" . _Double)
@@ -158,6 +185,7 @@ fromJSON input offer =
                 & (offerBuildingFloors .~ buildingFloors)
                 & (offerPropertyFloor .~ propertyFloor)
                 & (offerHasElevator .~ hasLift)
+                & (offerMunicipalityArea .~ muniArea)
 
         ( over (non defaultOffer . offerTitle) (const t)
             . over (non defaultOffer . offerArea) (const a)

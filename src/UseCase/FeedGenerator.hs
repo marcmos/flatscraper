@@ -65,7 +65,8 @@ data OfferFeedItem = OfferFeedItem
     offerStreetText :: Maybe Text,
     offerDistrictText :: Maybe Text,
     offerBuildYearText :: Maybe Text,
-    offerRooms :: Maybe Int
+    offerRooms :: Maybe Int,
+    offerMunicipalityArea :: Maybe Text
   }
 
 data Formatters = Formatters
@@ -163,6 +164,7 @@ showNewSinceLastVisit queryAccess presenter viewer offerFilter = do
       let pFloor = _offerDetails ov >>= _offerPropertyFloor
           bFloors = _offerDetails ov >>= _offerBuildingFloors
           elevator = hasElevator ov
+          municipalityArea = _offerDetails ov >>= _offerMunicipalityArea
           floorText = case (pFloor, bFloors) of
             (Just 0, Just b) -> Just $ "parter/" <> toText b
             (Just 0, Nothing) -> Just "parter"
@@ -198,7 +200,8 @@ showNewSinceLastVisit queryAccess presenter viewer offerFilter = do
               offerBuildYearText =
                 (\yr -> "rok " <> toText yr)
                   <$> (_offerDetails ov >>= _offerBuiltYear),
-              offerRooms = _offerDetails ov >>= _offerRooms
+              offerRooms = _offerDetails ov >>= _offerRooms,
+              offerMunicipalityArea = municipalityArea
             }
       where
         description = genTitle formatters ov

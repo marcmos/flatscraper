@@ -41,6 +41,3 @@ parseDecimal t = fst <$> rightToMaybe (T.decimal t)
 
 parseDouble :: Text -> Maybe Double
 parseDouble t = fst <$> (rightToMaybe . T.double . T.replace "," ".") t
-
--- defaultDetails :: Maybe OfferDetails -> OfferDetails
--- defaultDetails = fromMaybe emptyDetails (_offerDetails emptyOffer)

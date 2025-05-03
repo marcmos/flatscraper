@@ -66,7 +66,8 @@ itemMarkup
       offerArea = area,
       offerPrice = price,
       offerPricePerMeter = ppm,
-      offerRooms = rooms
+      offerRooms = rooms,
+      offerMunicipalityArea = municipalityArea
     } = do
     let emptyNode = H.toHtml ("" :: Text)
         elevatorText = case elevator >>= _hasElevatorGuess of
@@ -117,6 +118,7 @@ itemMarkup
       H.div ! A.class_ rowClass $ do
         infoSpan street
         infoSpan district
+        infoSpan municipalityArea
       H.div ! A.class_ rowClass $ do
         H.a ! A.href (H.toValue url) $ H.toHtml (offerTitle ov)
 

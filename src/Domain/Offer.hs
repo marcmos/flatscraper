@@ -52,6 +52,7 @@ data OfferDetails = OfferDetails
     _offerRooms :: Maybe Int,
     _offerStreet :: Maybe Text,
     _offerDistrict :: Maybe Text,
+    _offerMunicipalityArea :: Maybe Text,
     _offerHasElevator :: Maybe Bool,
     _offerPropertyFloor :: Maybe Int,
     _offerBuildingFloors :: Maybe Int,
@@ -69,7 +70,7 @@ emptyOffer :: OfferView
 emptyOffer = OfferView "" 0 0.0 "" Nothing
 
 emptyDetails :: OfferDetails
-emptyDetails = OfferDetails Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyDetails = OfferDetails Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 pricePerMeter :: OfferView -> Double
 pricePerMeter offer = fromIntegral (_offerLatestPrice offer) / _offerArea offer

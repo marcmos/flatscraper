@@ -82,4 +82,5 @@ main = do
   where
     sqlite = SQLitePersistence
     offFilter = Just offerFilter
+    -- offFilter = Nothing
     presenter = HTMLFeedPresenter (Just badgeColorMapper)

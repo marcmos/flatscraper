@@ -11,7 +11,7 @@ import DataAccess.ScrapeLoader
     prefixWebScraper,
   )
 import Domain.Offer
-  ( OfferDetails (_offerBuiltYear, _offerDistrict, _offerHasElevator, _offerPropertyFloor),
+  ( OfferDetails (_offerBuiltYear, _offerDistrict, _offerHasElevator, _offerMunicipalityArea, _offerPropertyFloor),
     OfferView (_offerDetails),
     emptyDetails,
     newOfferView,

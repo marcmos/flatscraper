@@ -46,6 +46,7 @@ import Domain.Offer
         _offerBuiltYear,
         _offerDistrict,
         _offerHasElevator,
+        _offerMunicipalityArea,
         _offerPropertyFloor,
         _offerRooms,
         _offerStreet
@@ -141,6 +142,7 @@ persistOffers offers = do
     forM_ offers $ \(OfferView url price area title details) -> do
       let street = details >>= _offerStreet
       let district = details >>= _offerDistrict
+      let muniArea = details >>= _offerMunicipalityArea
       let pFloor = details >>= _offerPropertyFloor
       let buildingFloors = details >>= _offerBuildingFloors
       let builtYear = details >>= _offerBuiltYear
@@ -165,6 +167,7 @@ persistOffers offers = do
 
       upsertTextAttr offerId "street" street time
       upsertTextAttr offerId "district" district time
+      upsertTextAttr offerId "municipality_area" muniArea time
 
       upsertIntAttr offerId "price" (Just price) time
       upsertIntAttr offerId "property_floor" pFloor time
@@ -202,6 +205,11 @@ loadTextAttrs =
                   acc
                     { _offerDetails =
                         Just (details {_offerDistrict = Just value})
+                    }
+                "municipality_area" ->
+                  acc
+                    { _offerDetails =
+                        Just (details {_offerMunicipalityArea = Just value})
                     }
                 _ -> acc
     )
@@ -270,6 +278,7 @@ loadAttributes (Entity offerId offerInstance) = do
 
 getCreatedAfter timestamp limit =
   runSqlite "flatscraper.sqlite" $ do
+    runMigration migrateAll
     offers <-
       selectList
         [OfferInstanceCreatedAt >. timestamp]

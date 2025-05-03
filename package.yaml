@@ -35,6 +35,7 @@ dependencies:
 - text-icu
 - unliftio-core
 - time
+- vector
 
 library:
   source-dirs: src

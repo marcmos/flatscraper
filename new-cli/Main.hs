@@ -15,6 +15,7 @@ import Presenter.HTMLFeedPresenter (HTMLFeedPresenter (HTMLFeedPresenter))
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
 import qualified Scraper.MorizonScraper
 import qualified Scraper.OlxScraper
+import qualified Scraper.OtodomScraper
 import qualified Text.Blaze.Html as H
 import qualified Text.Blaze.Html.Renderer.Text as H
 import Text.HTML.Scalpel (Config (Config), utf8Decoder)
@@ -42,11 +43,11 @@ instance OfferStorer NoOpStorer where
 
 testOfflineListScraper :: IO ()
 testOfflineListScraper = do
-  let scraper@(WebScraper scraperPack _) = Scraper.OlxScraper.scraper
+  let scraper@(WebScraper scraperPack _) = Scraper.OtodomScraper.scraper
   httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
   let config = Config utf8Decoder (Just httpManager)
   let scrapers = WebScrapers (Just config) [scraper]
-  let fs = FileSource scraperPack "testfiles/olx-list.html"
+  let fs = FileSource scraperPack "testfiles/otodom-offer.html"
   offers <- take 10 <$> seedOffers fs
   offers' <- mapM (loadDetails scrapers) offers
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
@@ -58,6 +59,7 @@ main = do
   -- let testOfferURL = "https://www.otodom.pl/pl/oferta/2-pokojowe-mieszkanie-38m2-loggia-bezposrednio-ID4umfy"
   -- let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
   let sqlite = SQLitePersistence
+  testOfflineListScraper
   return ()
 
 -- showNewSinceLastVisit
