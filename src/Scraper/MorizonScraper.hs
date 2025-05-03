@@ -48,6 +48,8 @@ detailsScraper offer = do
   locationText <- text $ "div" @: [hasClass "location-row__second_column"]
 
   let (street, district) = parseLocation locationText
+  -- FIXME city specific
+  let cleanDistrict = district >>= T.stripPrefix "Kraków-"
 
   -- itemValues <- texts $ "div" @: ["data-cy" @= "itemValue"]
   params <-
@@ -71,7 +73,7 @@ detailsScraper offer = do
       let updatedDetails =
             (fromMaybe emptyDetails (_offerDetails o))
               { _offerStreet = street,
-                _offerDistrict = district,
+                _offerDistrict = cleanDistrict,
                 _offerBuiltYear = bYear,
                 _offerHasElevator =
                   if isJust hasElev

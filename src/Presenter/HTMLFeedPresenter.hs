@@ -118,7 +118,7 @@ itemMarkup
       H.div ! A.class_ rowClass $ do
         infoSpan street
         infoSpan district
-        infoSpan municipalityArea
+        badge municipalityArea (Just "success")
       H.div ! A.class_ rowClass $ do
         H.a ! A.href (H.toValue url) $ H.toHtml (offerTitle ov)
 
