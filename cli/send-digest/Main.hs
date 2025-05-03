@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Main where
 
 import Data.Maybe (isNothing)
@@ -31,7 +33,10 @@ badgeColorMapper :: BadgeColorMapper
 badgeColorMapper =
   defaultColorMapper
     { cmArea = Just $ \area -> if area >= 70 then "success" else "info",
-      cmPricePerMeter = Just $ \ppm -> if ppm <= 12000 then "success" else "info"
+      cmPricePerMeter = Just $ \case
+        x | x < 10000 -> "danger"
+        x | x <= 12000 -> "success"
+        _ -> "info"
     }
 
 knownDistricts :: [Text]
