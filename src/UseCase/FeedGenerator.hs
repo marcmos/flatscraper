@@ -20,6 +20,7 @@ import qualified Data.Text as T (pack)
 import qualified Data.Text.ICU as Locale (LocaleName (Locale))
 import Data.Text.ICU.NumberFormatter (formatDouble, formatIntegral, numberFormatter)
 import qualified Data.Text.ICU.NumberFormatter as ICU
+import Data.Text.IO (hPutStrLn)
 import Data.Time (LocalTime (..), UTCTime, getCurrentTime, localDay, localTimeToUTC, midnight, utcToLocalTime)
 import Data.Time.Clock (addUTCTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
@@ -47,6 +48,7 @@ import Domain.Offer
     hasElevator,
     pricePerMeter,
   )
+import System.IO (stderr)
 import UseCase.Offer (QueryAccess (getOffersCreatedAfter))
 
 class FeedPresenter fp a where
@@ -148,17 +150,21 @@ showNewSinceLastVisit queryAccess presenter viewer offerFilter = do
   formatters <- defaultFormatters
   allOffers <- getOffersCreatedAfter queryAccess lastVisit
   let newOffers = maybe allOffers (`filter` allOffers) offerFilter
-  let offers = map (repack formatters) newOffers
-  let sortedOffers =
-        sortOn
-          (\(OfferFeedItem {offerPricePerMeter = ppm}) -> ppm)
-          offers
-  feedText <- present presenter (OfferFeed formatters sortedOffers)
-  let title =
-        "Specjalnie dla Ciebie przygotowałem "
-          <> (toText . length $ newOffers)
-          <> " ofert mieszkań do przeglądnięcia"
-  view viewer title feedText
+  if null newOffers
+    then hPutStrLn stderr "No offers to show"
+    else do
+      let offers = map (repack formatters) newOffers
+      let sortedOffers =
+            sortOn
+              (\(OfferFeedItem {offerPricePerMeter = ppm}) -> ppm)
+              offers
+      feedText <- present presenter (OfferFeed formatters sortedOffers)
+      let title =
+            "Specjalnie dla Ciebie przygotowałem "
+              <> (toText . length $ newOffers)
+              <> " ofert mieszkań do przeglądnięcia"
+      view viewer title feedText
+      hPutStrLn stderr $ "Displayed " <> toText (length newOffers) <> " offers"
   where
     repack formatters ov@OfferView {_offerURL = url} =
       let pFloor = _offerDetails ov >>= _offerPropertyFloor
