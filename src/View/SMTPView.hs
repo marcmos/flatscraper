@@ -7,8 +7,8 @@ import qualified Data.Text.Lazy as TL (fromStrict)
 import Network.HaskellNet.Auth
 import Network.HaskellNet.SMTP
 import Network.HaskellNet.SMTP.SSL (doSMTPSTARTTLS)
-import Network.Mail.Mime (Address (Address), simpleMail)
-import System.Exit (die)
+import Network.Mail.Mime (Address (Address), mailCc, simpleMail)
+import System.IO (hPutStrLn, stderr)
 import UseCase.FeedGenerator (FeedViewer (view))
 
 data SMTPView a = SMTPView (a -> Text) (UserName, Password) Text
@@ -39,5 +39,6 @@ viewViaSMTP (SMTPView convert (username, password) recipient) subject input = do
             "Hello! This is the mail body!"
             (TL.fromStrict $ convert input)
             []
-        sendMail mail conn -- (3)
-      else die "Authentication failed."
+        let mailWithCC = mail {mailCc = [Address Nothing $ T.pack username]}
+        sendMail mailWithCC conn -- (3)
+      else hPutStrLn stderr "Authentication failed."
