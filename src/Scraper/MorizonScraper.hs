@@ -1,8 +1,11 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Scraper.MorizonScraper (scraper) where
 
 import Control.Lens (element, (^?))
+import Control.Monad (when)
 import Data.List (find)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import DataAccess.ScrapeLoader
@@ -21,6 +24,7 @@ import Domain.Offer
     _offerStreet,
   )
 import Scraper.Common (parseDecimal, parseDouble, parsePrice)
+import Scraper.Dictionary (artificialDistricts, knownDistricts, knownMunicipalityAreas)
 import Text.HTML.Scalpel
   ( Scraper,
     attr,
@@ -34,22 +38,49 @@ import Text.HTML.Scalpel
   )
 import Text.Regex.TDFA (getAllTextSubmatches, (=~))
 
-parseLocation :: Text -> (Maybe Text, Maybe Text)
+-- Kraków, Prądnik Biały, Henryka Pachońskiego
+-- Kraków, Kraków-Krowodrza, Prądnik Biały, Władysława Łokietka
+-- Kraków, Kraków-Nowa Huta, Mistrzejowice
+-- Kraków, Ruczaj, Prof. Władysława Konopczyńskiego
+-- Kraków, Kraków-Krowodrza, Bielany
+-- Kraków, Kraków-Krowodrza, Sosnowiecka
+-- Kraków M., Kraków, Bronowice, Armii Krajowej
+-- Kraków, Borek Fałęcki, Kraków
+-- FIXME city specific
+parseLocation :: Text -> (Maybe Text, Maybe Text, Maybe Text)
 parseLocation t =
-  let locationPat = "(.+, )?(.+), +(.+)" :: Text
-      submatches = getAllTextSubmatches (t =~ locationPat) :: [Text]
-   in case reverse submatches of
-        street : "Kraków" : _ -> (Just street, Nothing)
-        street : district : _ -> (Just street, Just district)
-        _ -> (Nothing, Nothing)
+  let parts =
+        reverse
+          . filter (\x -> x `notElem` ["Kraków", "Kraków M.", "małopolskie"])
+          . T.splitOn ", "
+          $ t
+      stripped = map (\x -> fromMaybe x $ T.stripPrefix "Kraków-" x) parts
+      lookupDict dict x = (T.toLower x `elem` dict)
+      knownDistrict x =
+        lookupDict knownDistricts x
+          || lookupDict artificialDistricts x
+      knownMuni = lookupDict knownMunicipalityAreas
+      probablyStreet s = (not . knownDistrict $ s) && (not . knownMuni $ s)
+      tryMatch x [] = x
+      tryMatch (Nothing, Nothing, Nothing) [x]
+        | knownMuni x =
+            (Nothing, Just x, Nothing)
+      tryMatch (Nothing, Nothing, Nothing) [x]
+        | knownDistrict x =
+            (Nothing, Nothing, Nothing)
+      tryMatch (Nothing, Nothing, Nothing) [x] =
+        (Just x, Nothing, Nothing)
+      tryMatch (a, Nothing, c) (x : xs) | knownMuni x = tryMatch (a, Just x, c) xs
+      tryMatch (a, b, Nothing) (x : xs) | knownDistrict x = tryMatch (a, b, Just x) xs
+      tryMatch (Nothing, b, c) (x : xs) | probablyStreet x = tryMatch (Just x, b, c) xs
+      tryMatch _ _ = (Nothing, Nothing, Nothing)
+   in tryMatch (Nothing, Nothing, Nothing) stripped
 
 detailsScraper :: Maybe OfferView -> Scraper Text OfferView
 detailsScraper offer = do
   locationText <- text $ "div" @: [hasClass "location-row__second_column"]
 
-  let (street, district) = parseLocation locationText
-  -- FIXME city specific
-  let cleanDistrict = district >>= T.stripPrefix "Kraków-"
+  let (street, municipality, district) = parseLocation locationText
 
   -- itemValues <- texts $ "div" @: ["data-cy" @= "itemValue"]
   params <-
@@ -73,7 +104,8 @@ detailsScraper offer = do
       let updatedDetails =
             (fromMaybe emptyDetails (_offerDetails o))
               { _offerStreet = street,
-                _offerDistrict = cleanDistrict,
+                _offerDistrict = district,
+                _offerMunicipalityArea = municipality,
                 _offerBuiltYear = bYear,
                 _offerHasElevator =
                   if isJust hasElev

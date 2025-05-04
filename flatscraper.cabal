@@ -25,6 +25,7 @@ library
       Presenter.HTMLFeedPresenter
       Presenter.RSSFeedPresenter
       Scraper.Common
+      Scraper.Dictionary
       Scraper.MorizonScraper
       Scraper.OlxScraper
       Scraper.OtodomScraper

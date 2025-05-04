@@ -39,28 +39,6 @@ badgeColorMapper =
         _ -> "info"
     }
 
-knownDistricts :: [Text]
-knownDistricts =
-  [ "stare miasto",
-    "grzegórzki",
-    "prądnik czerwony",
-    "prądnik biały",
-    "krowodrza",
-    "bronowice",
-    "zwierzyniec",
-    "dębniki",
-    "łagiewniki-borek fałęcki",
-    "swoszowice",
-    "podgórze duchackie",
-    "bieżanów-prokocim",
-    "podgórze",
-    "czyżyny",
-    "mistrzejowice",
-    "bieńczyce",
-    "wzgórza krzesławickie",
-    "nowa huta"
-  ]
-
 interestingDistricts :: [Text]
 interestingDistricts =
   [ "stare miasto",
@@ -180,6 +158,7 @@ main = do
         offFilter
   where
     sqlite = SQLitePersistence
-    offFilter = Just offerFilter
+    -- offFilter = Just offerFilter
+    offFilter = Just (offerFilter)
     -- offFilter = Nothing
     presenter = HTMLFeedPresenter (Just badgeColorMapper)

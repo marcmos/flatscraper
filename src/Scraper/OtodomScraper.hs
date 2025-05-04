@@ -154,6 +154,8 @@ fromJSON input offer =
         Just [a, d, "Kraków", "małopolskie"] ->
           (Just a, Just d)
         _ -> (Nothing, Nothing)
+      equipment = (^.. values) <$> (properties >>= (^? key "equipment"))
+      hasAirConditioning = elem "air_conditioning" <$> equipment
    in -- ppm = ad >>= (^? key "target" . key "Price_per_m" . _Integer)
       -- coordinates = (^?! key "location" . key "coordinates") <$> ad
       -- lat = coordinates >>= (^? key "latitude" . _Double)
