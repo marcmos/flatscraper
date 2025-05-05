@@ -2,7 +2,7 @@
 
 module Main where
 
-import Data.Maybe (isNothing)
+import Data.Maybe (isNothing, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T (isInfixOf, isSuffixOf, pack, toLower)
 import qualified Data.Text.Lazy as TL
@@ -135,13 +135,21 @@ main = do
   smtpCreds <- loadCredentialsFromFile "smtp-creds"
   args <- getArgs
 
+  let fallbackAddr = "marcmospl@gmail.com"
   let conf = do
         r <- case args of
           ["preview"] -> Nothing
+          [_, "preview"] -> Nothing
+          ["filtered"] -> Just fallbackAddr
+          ["filtered", r] -> Just $ T.pack r
           [r] -> Just $ T.pack r
-          _ -> Just "example@gmail.com"
+          _ -> Just fallbackAddr
         creds <- smtpCreds
         Just (r, creds)
+
+  let selectedFilter = case args of
+        "filtered" : _ -> not . offerFilter
+        _ -> offerFilter
 
   case conf of
     Just (recipient, creds) ->
@@ -149,16 +157,13 @@ main = do
         sqlite
         presenter
         (SMTPView (TL.toStrict . H.renderHtml) creds recipient)
-        offFilter
+        (Just selectedFilter)
     _ ->
       showNewSinceLastVisit
         sqlite
         presenter
         htmlCliView
-        offFilter
+        (Just selectedFilter)
   where
     sqlite = SQLitePersistence
-    -- offFilter = Just offerFilter
-    offFilter = Just (offerFilter)
-    -- offFilter = Nothing
     presenter = HTMLFeedPresenter (Just badgeColorMapper)
