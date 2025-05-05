@@ -90,3 +90,10 @@ executables:
     dependencies:
     - flatscraper
 
+tests:
+  spec:
+    source-dirs: test
+    main: Test.hs
+    dependencies:
+    - hspec
+    - flatscraper

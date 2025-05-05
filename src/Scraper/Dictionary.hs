@@ -1,6 +1,8 @@
 module Scraper.Dictionary where
 
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import qualified Data.Text as T (splitOn, stripPrefix, toLower)
 
 knownDistricts :: [Text]
 knownDistricts =
@@ -153,3 +155,35 @@ knownMunicipalityAreas =
     "wróżenice",
     "wyciąże"
   ]
+
+-- FIXME city specific
+parseLocationText :: Text -> (Maybe Text, Maybe Text, Maybe Text)
+parseLocationText =
+  parseLocationParts
+    . reverse
+    . map (\x -> fromMaybe x $ T.stripPrefix "Kraków-" x)
+    . filter (\x -> x `notElem` ["Kraków", "Kraków M.", "małopolskie"])
+    . T.splitOn ", "
+
+parseLocationParts :: [Text] -> (Maybe Text, Maybe Text, Maybe Text)
+parseLocationParts parts =
+  let lookupDict dict x = (T.toLower x `elem` dict)
+      knownDistrict x =
+        lookupDict knownDistricts x
+          || lookupDict artificialDistricts x
+      knownMuni = lookupDict knownMunicipalityAreas
+      probablyStreet s = (not . knownDistrict $ s) && (not . knownMuni $ s)
+      tryMatch x [] = x
+      tryMatch (Nothing, Nothing, Nothing) [x]
+        | knownDistrict x =
+            (Nothing, Nothing, Just x)
+      tryMatch (Nothing, Nothing, Nothing) [x]
+        | knownMuni x =
+            (Nothing, Just x, Nothing)
+      tryMatch (Nothing, Nothing, Nothing) [x] =
+        (Just x, Nothing, Nothing)
+      tryMatch (a, b, Nothing) (x : xs) | knownDistrict x = tryMatch (a, b, Just x) xs
+      tryMatch (a, Nothing, c) (x : xs) | knownMuni x = tryMatch (a, Just x, c) xs
+      tryMatch (Nothing, b, c) (x : xs) | probablyStreet x = tryMatch (Just x, b, c) xs
+      tryMatch _ _ = (Nothing, Nothing, Nothing)
+   in tryMatch (Nothing, Nothing, Nothing) parts

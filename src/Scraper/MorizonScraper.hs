@@ -26,7 +26,7 @@ import Domain.Offer
     _offerStreet,
   )
 import Scraper.Common (parseDecimal, parseDouble, parsePrice)
-import Scraper.Dictionary (artificialDistricts, knownDistricts, knownMunicipalityAreas)
+import Scraper.Dictionary (parseLocationText)
 import Text.HTML.Scalpel
   ( Scraper,
     attr,
@@ -40,50 +40,12 @@ import Text.HTML.Scalpel
   )
 import Text.Regex.TDFA (getAllTextSubmatches, (=~))
 
--- Kraków, Prądnik Biały, Henryka Pachońskiego
--- Kraków, Kraków-Krowodrza, Prądnik Biały, Władysława Łokietka
--- Kraków, Kraków-Nowa Huta, Mistrzejowice
--- Kraków, Ruczaj, Prof. Władysława Konopczyńskiego
--- Kraków, Kraków-Krowodrza, Bielany
--- Kraków, Kraków-Krowodrza, Sosnowiecka
--- Kraków M., Kraków, Bronowice, Armii Krajowej
--- Kraków, Borek Fałęcki, Kraków
--- FIXME city specific
-parseLocation :: Text -> (Maybe Text, Maybe Text, Maybe Text)
-parseLocation t =
-  let parts =
-        reverse
-          . filter (\x -> x `notElem` ["Kraków", "Kraków M.", "małopolskie"])
-          . T.splitOn ", "
-          $ t
-      stripped = map (\x -> fromMaybe x $ T.stripPrefix "Kraków-" x) parts
-      lookupDict dict x = (T.toLower x `elem` dict)
-      knownDistrict x =
-        lookupDict knownDistricts x
-          || lookupDict artificialDistricts x
-      knownMuni = lookupDict knownMunicipalityAreas
-      probablyStreet s = (not . knownDistrict $ s) && (not . knownMuni $ s)
-      tryMatch x [] = x
-      tryMatch (Nothing, Nothing, Nothing) [x]
-        | knownMuni x =
-            (Nothing, Just x, Nothing)
-      tryMatch (Nothing, Nothing, Nothing) [x]
-        | knownDistrict x =
-            (Nothing, Nothing, Nothing)
-      tryMatch (Nothing, Nothing, Nothing) [x] =
-        (Just x, Nothing, Nothing)
-      tryMatch (a, Nothing, c) (x : xs) | knownMuni x = tryMatch (a, Just x, c) xs
-      tryMatch (a, b, Nothing) (x : xs) | knownDistrict x = tryMatch (a, b, Just x) xs
-      tryMatch (Nothing, b, c) (x : xs) | probablyStreet x = tryMatch (Just x, b, c) xs
-      tryMatch _ _ = (Nothing, Nothing, Nothing)
-   in tryMatch (Nothing, Nothing, Nothing) stripped
-
 detailsScraper :: Maybe OfferView -> Scraper Text OfferView
 detailsScraper offer = do
   title <- text $ "section" // "h1"
   locationText <- text $ "div" @: [hasClass "location-row__second_column"]
 
-  let (street, municipality, district) = parseLocation locationText
+  let (street, municipality, district) = parseLocationText locationText
 
   -- itemValues <- texts $ "div" @: ["data-cy" @= "itemValue"]
   params <-
