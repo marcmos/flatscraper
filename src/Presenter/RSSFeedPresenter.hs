@@ -38,13 +38,14 @@ rss offers =
     }
 
 renderFeed :: OfferFeed -> Maybe TL.Text
-renderFeed (OfferFeed _ offers) = textRSS $ rss offers
+renderFeed (OfferFeed _ offers) =
+  textRSS $ rss (concatMap snd offers)
 
 data RSSFeedPresenter a = RSSFeedPresenter
 
 instance FeedPresenter RSSFeedPresenter RSS where
   present RSSFeedPresenter (OfferFeed _ offers) = do
-    return $ rss offers
+    return $ rss (concatMap snd offers)
 
 instance FeedPresenter RSSFeedPresenter T.Text where
   present RSSFeedPresenter feed =

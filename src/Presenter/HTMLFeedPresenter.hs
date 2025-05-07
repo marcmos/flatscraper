@@ -10,6 +10,7 @@ module Presenter.HTMLFeedPresenter
 where
 
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import Domain.Offer
   ( ElevatorGuess (..),
@@ -27,6 +28,7 @@ import qualified Text.Blaze.Html5 as H
     abbr,
     body,
     div,
+    h4,
     head,
     html,
     span,
@@ -134,10 +136,15 @@ defaultColorMapper = BadgeColorMapper Nothing Nothing Nothing
 newtype HTMLFeedPresenter a = HTMLFeedPresenter (Maybe BadgeColorMapper)
 
 instance FeedPresenter HTMLFeedPresenter H.Html where
-  present (HTMLFeedPresenter colorMapper) (OfferFeed formatters items) = do
+  present (HTMLFeedPresenter colorMapper) (OfferFeed formatters itemGroups) = do
     css <- T.readFile "bootstrap.css"
     return $ H.html $ do
       H.head $ H.style (H.toHtml css)
       H.body $
         H.div ! A.class_ "container" $
-          mapM_ (\x -> do itemMarkup formatters colorMapper x) items
+          mapM_
+            ( \(groupTitle, offers) -> do
+                H.h4 . H.toHtml $ groupTitle <> " (" <> (T.pack . show . length $ offers) <> ")"
+                mapM_ (itemMarkup formatters colorMapper) offers
+            )
+            itemGroups

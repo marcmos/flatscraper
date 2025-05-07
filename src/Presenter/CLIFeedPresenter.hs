@@ -14,5 +14,5 @@ data CLIPresenter a = CLIPresenter
 
 instance FeedPresenter CLIPresenter Text where
   present CLIPresenter (OfferFeed _ offers) = do
-    let o = offerURL <$> offers
+    let o = offers >>= (\(_, items) -> map offerURL items)
     return $ T.intercalate (T.pack "\n") o

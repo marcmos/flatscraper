@@ -15,6 +15,7 @@ module UseCase.FeedGenerator
   )
 where
 
+import Data.Bifunctor (Bifunctor (second))
 import Data.List (sortOn)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -78,7 +79,7 @@ data Formatters = Formatters
     numFormatter :: ICU.NumberFormatter
   }
 
-data OfferFeed = OfferFeed Formatters [OfferFeedItem]
+data OfferFeed = OfferFeed Formatters [(Text, [OfferFeedItem])]
 
 priceText :: Formatters -> Int -> Text
 priceText (Formatters {numFormatter = formatter}) price =
@@ -149,32 +150,36 @@ showNewSinceLastVisit ::
   qa ->
   fp a ->
   fv a ->
-  Maybe (OfferView -> Bool) ->
   IO (Maybe UTCTime) ->
+  ([OfferView] -> [(Text, [OfferView])]) ->
+  ([(Text, [OfferView])] -> Text) ->
   IO ()
-showNewSinceLastVisit queryAccess presenter viewer offerFilter fetchLastVisit = do
+showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper title = do
   visitTimeFallback <- lastVisitTime
   lastVisit <- fetchLastVisit
 
   formatters <- defaultFormatters
 
   allOffers <- getOffersCreatedAfter queryAccess (fromMaybe visitTimeFallback lastVisit)
-  let newOffers = maybe allOffers (`filter` allOffers) offerFilter
-  if null newOffers
+  let sortedOffers = sortOn pricePerMeter allOffers
+
+  let grouppedOffers = offerGroupper sortedOffers
+
+  if null grouppedOffers
     then hPutStrLn stderr "No offers to show"
     else do
-      let offers = map (repack formatters) newOffers
-      let sortedOffers =
-            sortOn
-              (\(OfferFeedItem {offerPricePerMeter = ppm}) -> ppm)
+      let offers = map (second (map $ repack formatters)) grouppedOffers
+
+      feedText <-
+        present
+          presenter
+          ( OfferFeed
+              formatters
               offers
-      feedText <- present presenter (OfferFeed formatters sortedOffers)
-      let title =
-            "Specjalnie dla Ciebie przygotowałem "
-              <> (toText . length $ newOffers)
-              <> " ofert mieszkań do przeglądnięcia"
-      view viewer title feedText
-      hPutStrLn stderr $ "Displayed " <> toText (length newOffers) <> " offers"
+          )
+
+      view viewer (title grouppedOffers) feedText
+      hPutStrLn stderr $ "Displayed " <> toText (length allOffers) <> " offers"
   where
     repack formatters ov@OfferView {_offerURL = url} =
       let pFloor = _offerDetails ov >>= _offerPropertyFloor
