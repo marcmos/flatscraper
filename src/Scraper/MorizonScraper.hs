@@ -4,6 +4,7 @@ module Scraper.MorizonScraper (scraper) where
 
 import Control.Lens (element, (^?))
 import Control.Monad (when)
+import Data.IntMap.CharMap2 (update)
 import Data.List (find)
 import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Text (Text)
@@ -15,8 +16,9 @@ import DataAccess.ScrapeLoader
   )
 import Domain.Offer
   ( OfferDetails (_offerBuiltYear, _offerDistrict, _offerHasElevator, _offerMunicipalityArea, _offerPropertyFloor),
-    OfferView (_offerDetails),
+    OfferView (_offerDetails, _offerTitle),
     emptyDetails,
+    emptyOffer,
     newOfferView,
     _offerBuildingFloors,
     _offerPropertyFloor,
@@ -78,6 +80,7 @@ parseLocation t =
 
 detailsScraper :: Maybe OfferView -> Scraper Text OfferView
 detailsScraper offer = do
+  title <- text $ "section" // "h1"
   locationText <- text $ "div" @: [hasClass "location-row__second_column"]
 
   let (street, municipality, district) = parseLocation locationText
@@ -99,21 +102,24 @@ detailsScraper offer = do
   let bYear = find (\(k, _) -> k == "Rok budowy") params >>= parseDecimal . snd
   let hasElev = find ("Winda" `T.isPrefixOf`) boolAttrs
 
-  case offer of
-    Just o -> do
-      let updatedDetails =
-            (fromMaybe emptyDetails (_offerDetails o))
-              { _offerStreet = street,
-                _offerDistrict = district,
-                _offerMunicipalityArea = municipality,
-                _offerBuiltYear = bYear,
-                _offerHasElevator =
-                  if isJust hasElev
-                    then Just True
-                    else Nothing
-              }
-      return $ o {_offerDetails = Just updatedDetails}
-    Nothing -> fail "FIXME: implement scrape details based only on direct details page scrape"
+  let newOffer = fromMaybe emptyOffer offer
+  let updatedDetails =
+        (fromMaybe emptyDetails (_offerDetails newOffer))
+          { _offerStreet = street,
+            _offerDistrict = district,
+            _offerMunicipalityArea = municipality,
+            _offerBuiltYear = bYear,
+            _offerHasElevator =
+              if isJust hasElev
+                then Just True
+                else Nothing
+          }
+
+  return $
+    newOffer
+      { _offerTitle = title,
+        _offerDetails = Just updatedDetails
+      }
 
 parseFloors :: Text -> Maybe (Int, Maybe Int)
 parseFloors t =

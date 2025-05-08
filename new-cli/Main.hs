@@ -43,12 +43,12 @@ instance OfferStorer NoOpStorer where
 
 testOfflineListScraper :: IO ()
 testOfflineListScraper = do
-  let scraper@(WebScraper scraperPack _) = Scraper.OtodomScraper.scraper
+  let scraper@(WebScraper scraperPack _) = Scraper.MorizonScraper.scraper
   httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
   let config = Config utf8Decoder (Just httpManager)
   let scrapers = WebScrapers (Just config) [scraper]
-  let fs = FileSource scraperPack "testfiles/otodom-offer.html"
-  offers <- take 10 <$> seedOffers fs
+  let fs = FileSource scraperPack "testfiles/morizon-offer.html"
+  offers <- take 3 <$> seedOffers fs
   offers' <- mapM (loadDetails scrapers) offers
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   print offers'
