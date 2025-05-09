@@ -103,6 +103,83 @@ interestingMunicipalityAreas =
     "nowa huta"
   ]
 
+uninterestingMunicipalityAreas :: [Text]
+uninterestingMunicipalityAreas =
+  [ "bronowice wielkie",
+    "tonie",
+    "witkowice",
+    "bronowice małe",
+    "mydlniki",
+    "bielany",
+    "chełm",
+    "las wolski",
+    "olszanica",
+    "przegorzały",
+    "wola justowska",
+    "zakamycze",
+    "bodzów",
+    "kobierzyn",
+    "kostrze",
+    "olszyny",
+    "pychowice",
+    "ruczaj",
+    "sidzina",
+    "skotniki",
+    "tyniec",
+    "zakrzówek",
+    "białe morza",
+    "bowek fałęcki",
+    "cegielniana",
+    "łagiewniki",
+    "jugowice",
+    "kliny",
+    "kosocice",
+    "opatkowice",
+    "rajsko",
+    "sobniowice",
+    "swoszowice",
+    "wróblewice",
+    "zbydniowice",
+    "kurdwanów",
+    "piaski wielkie",
+    "wola duchacka",
+    "bieżanów",
+    "kozłówka",
+    "prokocim",
+    "rżąka",
+    "złocień",
+    "rybitwy",
+    "grębałów",
+    "kantorowice",
+    "krzesławice",
+    "lubocza",
+    "łuczanowice",
+    "wadów",
+    "węgrzynowice",
+    "wzgórza krzesławickie",
+    "zesławice",
+    "branice",
+    "kombinat",
+    "kościelniki",
+    "kujawy",
+    "mogiła",
+    "pleszów",
+    "przylasek rusiecki",
+    "ruszcza",
+    "wolica",
+    "wyróżenice",
+    "wyciąże"
+  ]
+
+uninterestingDistricts :: [Text]
+uninterestingDistricts =
+  [ "łagiewniki-borek fałęcki",
+    "swoszowice",
+    "podgórze duchackie",
+    "bieżanów-prokocim",
+    "wzgórza krzesławickie"
+  ]
+
 isPreferredDistrict :: Text -> Bool
 isPreferredDistrict input =
   any
@@ -121,11 +198,21 @@ isPreferredArea input =
 
 offerFilter :: OfferView -> Bool
 offerFilter o =
-  maybe False isPreferredDistrict district
-    || maybe False isPreferredArea muniArea
-    -- include offers that have no district and muni area info
-    -- because of fomo
-    || (isNothing district && isNothing muniArea)
+  ( ( case muniArea of
+        Just ma -> T.toLower ma `notElem` uninterestingMunicipalityAreas
+        Nothing -> True
+    )
+      && ( case district of
+             Just d -> T.toLower d `notElem` uninterestingDistricts
+             Nothing -> True
+         )
+  )
+    && ( maybe False isPreferredDistrict district
+           || maybe False isPreferredArea muniArea
+           -- include offers that have no district and muni area info
+           -- because of fomo
+           || (isNothing district && isNothing muniArea)
+       )
   where
     district = _offerDetails o >>= _offerDistrict
     muniArea = _offerDetails o >>= _offerMunicipalityArea
