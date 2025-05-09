@@ -206,12 +206,20 @@ detailsScraper offer = do
     Nothing -> fail "parsing failed"
 
 offersScraper :: Scraper Text [OfferView]
-offersScraper =
-  chroots
-    ( "div" @: ["data-cy" @= "search.listing.organic"]
-        // "article"
-    )
-    offerScraper
+offersScraper = do
+  offers <-
+    chroots
+      ( "div" @: ["data-cy" @= "search.listing.organic"]
+          // "article"
+      )
+      offerScraper
+  -- Sometimes it returns duplicated offers prefixed with "/hpr/". It looks like
+  -- that when it happens, there's a second offer with the same URL but without
+  -- the prefix. Let's filter them out.
+  return $
+    filter
+      (not . T.isPrefixOf "https://www.otodom.pl/hpr/" . _offerURL)
+      offers
 
 scraper :: WebScraper
 scraper =

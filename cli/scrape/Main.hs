@@ -38,12 +38,14 @@ main = do
         xs -> (xs, False)
 
   let olxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Border%5D=created_at:desc&search%5Bfilter_float_price:to%5D=1000000&search%5Bfilter_float_m:from%5D=60"
-  let morizonUrl = "https://www.morizon.pl/mieszkania/najnowsze/krakow/?ps%5Bliving_area_from%5D=60&ps%5Blocation%5D%5Bmap%5D=1&ps%5Blocation%5D%5Bmap_bounds%5D=50.212671292491,20.186952058559:49.880416226457,19.822794041442&ps%5Bowner%5D%5B0%5D=3&ps%5Bowner%5D%5B1%5D=1&ps%5Bowner%5D%5B2%5D=2&ps%5Bprice_to%5D=1000000&ps%5Bwith_price%5D=1"
+  let morizonUrl = "https://www.morizon.pl/mieszkania/najnowsze/krakow/?ps%5Bliving_area_from%5D=60&ps%5Blocation%5D%5Bmap%5D=1&ps%5Blocation%5D%5Bmap_bounds%5D=50.435095053953,20.273921561471:49.655401073385,19.735824538529&ps%5Bowner%5D%5B0%5D=3&ps%5Bowner%5D%5B1%5D=1&ps%5Bprice_to%5D=1000000&ps%5Bwith_price%5D=1"
+  let otodomUrl = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/wiele-lokalizacji?areaMin=60&priceMax=1000000&pricePerMeterMax=16000&ownerTypeSingleSelect=ALL&__typename=SavedFilterAttributes&locations=%5Bmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fpradnik-bialy%2Fzabiniec%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fpradnik-czerwony%2Frakowice%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fbienczyce%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fstare-miasto%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fpradnik-bialy%2Fkrowodrza-gorka%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fgrzegorzki%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fkrowodrza%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fbronowice%2Fbronowice%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fmistrzejowice%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fpodgorze%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fnowa-huta%2Fnowa-huta%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fpradnik-czerwony%2Folsza%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fdebniki%2Fludwinow%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fczyzyny%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fzwierzyniec%2Fzwierzyniec%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fdebniki%2Fdebniki%2Cmalopolskie%2Fkrakow%2Fkrakow%2Fkrakow%2Fpradnik-bialy%2Fpradnik-bialy%5D&by=LATEST&direction=DESC"
   let args =
         if null urls
           then
             [ morizonUrl,
-              olxUrl
+              olxUrl,
+              otodomUrl
             ]
           else urls
 
