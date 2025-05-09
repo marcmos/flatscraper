@@ -22,7 +22,7 @@ import Presenter.HTMLFeedPresenter
 import System.Environment (getArgs)
 import qualified Text.Blaze.Html.Renderer.Text as H
 import qualified Text.Blaze.Html5 as H
-import UseCase.FeedGenerator (showNewSinceLastVisit)
+import UseCase.FeedGenerator (getLastVisit, showNewSinceLastVisit)
 import View.CLIView (CLIView (CLIView))
 import View.SMTPView (SMTPView (SMTPView), loadCredentialsFromFile)
 
@@ -158,12 +158,14 @@ main = do
         presenter
         (SMTPView (TL.toStrict . H.renderHtml) creds recipient)
         (Just selectedFilter)
+        (getLastVisit sqlite recipient)
     _ ->
       showNewSinceLastVisit
         sqlite
         presenter
         htmlCliView
         (Just selectedFilter)
+        (return Nothing)
   where
     sqlite = SQLitePersistence
     presenter = HTMLFeedPresenter (Just badgeColorMapper)

@@ -11,10 +11,12 @@ module UseCase.FeedGenerator
     ppmText',
     toText,
     FeedViewer (view),
+    LastVisitStorer (storeLastVisit, getLastVisit),
   )
 where
 
 import Data.List (sortOn)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T (pack)
 import qualified Data.Text.ICU as Locale (LocaleName (Locale))
@@ -138,17 +140,25 @@ toText = T.pack . show
 class FeedViewer fv where
   view :: fv a -> Text -> a -> IO ()
 
+class LastVisitStorer vs u where
+  storeLastVisit :: vs -> u -> UTCTime -> IO ()
+  getLastVisit :: vs -> u -> IO (Maybe UTCTime)
+
 showNewSinceLastVisit ::
   (FeedViewer fv, FeedPresenter fp a, QueryAccess qa) =>
   qa ->
   fp a ->
   fv a ->
   Maybe (OfferView -> Bool) ->
+  IO (Maybe UTCTime) ->
   IO ()
-showNewSinceLastVisit queryAccess presenter viewer offerFilter = do
-  lastVisit <- lastVisitTime
+showNewSinceLastVisit queryAccess presenter viewer offerFilter fetchLastVisit = do
+  visitTimeFallback <- lastVisitTime
+  lastVisit <- fetchLastVisit
+
   formatters <- defaultFormatters
-  allOffers <- getOffersCreatedAfter queryAccess lastVisit
+
+  allOffers <- getOffersCreatedAfter queryAccess (fromMaybe visitTimeFallback lastVisit)
   let newOffers = maybe allOffers (`filter` allOffers) offerFilter
   if null newOffers
     then hPutStrLn stderr "No offers to show"

@@ -55,6 +55,9 @@ import Domain.Offer
     emptyDetails,
     _offerDetails,
   )
+import UseCase.FeedGenerator
+  ( LastVisitStorer (getLastVisit, storeLastVisit),
+  )
 import UseCase.Offer
   ( OfferSeeder (seedOffers),
     QueryAccess (getOffersCreatedAfter),
@@ -98,6 +101,12 @@ OfferIntegralAttribute
 --   created UTCTime
 --   price Int
 --   deriving Show
+
+Visit
+  user Text
+  UniqueUserVisit user
+  time UTCTime
+  deriving Show
 |]
 
 data SQLitePersistence = SQLitePersistence
@@ -312,3 +321,21 @@ instance OfferDetailsLoader SQLitePersistence where
         Just o -> loadAttributes o
     where
       entityQ = selectFirst [OfferInstanceUrl ==. _offerURL offer] []
+
+instance LastVisitStorer SQLitePersistence Text where
+  storeLastVisit _ user time =
+    runSqlite "flatscraper.sqlite" $ do
+      runMigration migrateAll
+      _ <-
+        upsertBy
+          (UniqueUserVisit user)
+          (Visit user time)
+          [VisitTime =. time]
+      return ()
+  getLastVisit _ user =
+    runSqlite "flatscraper.sqlite" $ do
+      runMigration migrateAll
+      visit <- selectFirst [VisitUser ==. user] []
+      case visit of
+        Nothing -> return Nothing
+        Just (Entity _ (Visit _ time)) -> return $ Just time
