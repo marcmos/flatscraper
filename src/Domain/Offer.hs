@@ -47,6 +47,12 @@ data OfferView = OfferView
   }
   deriving (Eq, Show)
 
+data OfferCoordinates = OfferExactCoordinates
+  { _latitude :: Double,
+    _longitude :: Double
+  }
+  deriving (Eq, Show)
+
 data OfferDetails = OfferDetails
   { _offerDescription :: Maybe Text,
     _offerRooms :: Maybe Int,
@@ -56,7 +62,8 @@ data OfferDetails = OfferDetails
     _offerHasElevator :: Maybe Bool,
     _offerPropertyFloor :: Maybe Int,
     _offerBuildingFloors :: Maybe Int,
-    _offerBuiltYear :: Maybe Int
+    _offerBuiltYear :: Maybe Int,
+    _offerCoordinates :: Maybe OfferCoordinates
   }
   deriving (Eq, Show)
 
@@ -70,7 +77,18 @@ emptyOffer :: OfferView
 emptyOffer = OfferView "" 0 0.0 "" Nothing
 
 emptyDetails :: OfferDetails
-emptyDetails = OfferDetails Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyDetails =
+  OfferDetails
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
 
 pricePerMeter :: OfferView -> Double
 pricePerMeter offer = fromIntegral (_offerLatestPrice offer) / _offerArea offer

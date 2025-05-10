@@ -16,7 +16,7 @@
 
 module DataAccess.SQLite (SQLitePersistence (SQLitePersistence)) where
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, (<=<))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time (UTCTime, addUTCTime)
@@ -41,9 +41,11 @@ import Database.Persist.TH
     sqlSettings,
   )
 import Domain.Offer
-  ( OfferDetails
+  ( OfferCoordinates (OfferExactCoordinates, _latitude, _longitude),
+    OfferDetails
       ( _offerBuildingFloors,
         _offerBuiltYear,
+        _offerCoordinates,
         _offerDistrict,
         _offerHasElevator,
         _offerMunicipalityArea,
@@ -96,6 +98,14 @@ OfferIntegralAttribute
   value Int
   deriving Show
 
+OfferFloatingAttribute
+  createdAt UTCTime
+  offerId OfferInstanceId
+  name Text
+  UniqueOfferName3 offerId name
+  value Double
+  deriving Show
+
 -- OfferPrice
 --   offerInstanceId OfferInstanceId
 --   created UTCTime
@@ -140,6 +150,22 @@ upsertIntAttr offerId attrName attrValue time =
               newValue
           )
           [OfferIntegralAttributeValue =. newValue]
+      return ()
+    Nothing -> return ()
+
+upsertFloatingAttr offerId attrName attrValue time =
+  case attrValue of
+    Just newValue -> do
+      _ <-
+        upsertBy
+          (UniqueOfferName3 offerId attrName)
+          ( OfferFloatingAttribute
+              time
+              offerId
+              attrName
+              newValue
+          )
+          [OfferFloatingAttributeValue =. newValue]
       return ()
     Nothing -> return ()
 
@@ -192,6 +218,9 @@ persistOffers offers = do
             _ -> Nothing
         )
         time
+
+      upsertFloatingAttr offerId "location_lat" (_latitude <$> (details >>= _offerCoordinates)) time
+      upsertFloatingAttr offerId "location_lon" (_longitude <$> (details >>= _offerCoordinates)) time
 
       return e
 

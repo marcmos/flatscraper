@@ -17,10 +17,11 @@ import Control.Lens.Lens ((<&>))
 import Control.Monad ()
 import Data.Aeson (Value (), decodeStrict)
 import Data.Aeson.Lens
-  ( AsNumber (_Integer),
+  ( AsNumber (_Double, _Integer),
     AsValue (_Array),
     key,
     values,
+    _Double,
     _JSON,
     _String,
   )
@@ -39,7 +40,8 @@ import DataAccess.ScrapeLoader
     prefixWebScraper,
   )
 import Domain.Offer
-  ( OfferView
+  ( OfferCoordinates (OfferExactCoordinates),
+    OfferView
       ( OfferView,
         _offerArea,
         _offerDetails,
@@ -52,6 +54,7 @@ import Domain.Offer
     offerArea,
     offerBuildingFloors,
     offerBuiltYear,
+    offerCoordinates,
     offerDescription,
     offerDetails,
     offerDistrict,
@@ -154,12 +157,18 @@ fromJSON input offer =
         Just [a, d, "Kraków", "małopolskie"] ->
           (Just a, Just d)
         _ -> (Nothing, Nothing)
-      equipment = (^.. values) <$> (properties >>= (^? key "equipment"))
-      hasAirConditioning = elem "air_conditioning" <$> equipment
-   in -- ppm = ad >>= (^? key "target" . key "Price_per_m" . _Integer)
-      -- coordinates = (^?! key "location" . key "coordinates") <$> ad
-      -- lat = coordinates >>= (^? key "latitude" . _Double)
-      -- lon = coordinates >>= (^? key "longitude" . _Double)
+      coordinates = (^?! key "location" . key "coordinates") <$> ad
+      radius = ad >>= (^? key "location" . key "mapDetails" . key "radius" . _Double)
+      coords = case radius of
+        Just 0 -> do
+          lat <- coordinates >>= (^? key "latitude" . _Double)
+          long <- coordinates >>= (^? key "longitude" . _Double)
+          return $ OfferExactCoordinates lat long
+        _ -> Nothing
+   in -- equipment = (^.. values) <$> (properties >>= (^? key "equipment"))
+      -- hasAirConditioning = elem "air_conditioning" <$> equipment
+      -- ppm = ad >>= (^? key "target" . key "Price_per_m" . _Integer)
+
       -- radius = (^? key "mapDetails" . key "radius") <$> coordinates
       do
         t <- title
@@ -188,6 +197,7 @@ fromJSON input offer =
                 & (offerPropertyFloor .~ propertyFloor)
                 & (offerHasElevator .~ hasLift)
                 & (offerMunicipalityArea .~ muniArea)
+                & (offerCoordinates .~ coords)
 
         ( over (non defaultOffer . offerTitle) (const t)
             . over (non defaultOffer . offerArea) (const a)
