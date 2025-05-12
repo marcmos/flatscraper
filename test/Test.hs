@@ -48,3 +48,10 @@ main = hspec $ do
     it "parses location text correctly" $ do
       parseLocationText "Kraków, Dębniki, Os. Ruczaj, Zalesie"
         `shouldBe` (Just "Zalesie", Just "Ruczaj", Just "Dębniki")
+
+    it "parses case for nieruchomosci-online.pl list correctly" $ do
+      parseLocationText "Grzegórzki, Kraków"
+        `shouldBe` ( Nothing,
+                     Nothing,
+                     Just "Grzegórzki"
+                   )

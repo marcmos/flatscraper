@@ -14,6 +14,7 @@ import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
 import Presenter.HTMLFeedPresenter (HTMLFeedPresenter (HTMLFeedPresenter))
 import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
 import qualified Scraper.MorizonScraper
+import qualified Scraper.NieruchOnlineScraper
 import qualified Scraper.OlxScraper
 import qualified Scraper.OtodomScraper
 import qualified Text.Blaze.Html as H
@@ -43,12 +44,13 @@ instance OfferStorer NoOpStorer where
 
 testOfflineListScraper :: IO ()
 testOfflineListScraper = do
-  let scraper@(WebScraper scraperPack _) = Scraper.MorizonScraper.scraper
+  let scraper@(WebScraper scraperPack _) = Scraper.NieruchOnlineScraper.scraper
   httpManager <- newManager $ tlsManagerSettings {managerModifyRequest = addLegitHeadersNoScam100}
   let config = Config utf8Decoder (Just httpManager)
   let scrapers = WebScrapers (Just config) [scraper]
-  let fs = FileSource scraperPack "testfiles/morizon-offer.html"
-  offers <- take 3 <$> seedOffers fs
+  -- let fs = FileSource scraperPack "testfiles/no-list.html"
+  let fs = WebSource scrapers "https://krakow.nieruchomosci-online.pl/szukaj.html?3,mieszkanie,sprzedaz,,Krak%C3%B3w,,,,-1000000,6"
+  offers <- take 10000 <$> seedOffers fs
   offers' <- mapM (loadDetails scrapers) offers
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   print offers'

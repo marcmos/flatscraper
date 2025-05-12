@@ -27,6 +27,7 @@ library
       Scraper.Common
       Scraper.Dictionary
       Scraper.MorizonScraper
+      Scraper.NieruchOnlineScraper
       Scraper.OlxScraper
       Scraper.OtodomScraper
       UseCase.FeedGenerator
