@@ -16,14 +16,16 @@
 
 module DataAccess.SQLite (SQLitePersistence (SQLitePersistence)) where
 
-import Control.Monad (forM_, (<=<))
-import Data.Maybe (fromMaybe)
+import Control.Monad (filterM, forM_, (<=<))
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
+import qualified Data.Text as T (pack, unpack)
 import Data.Time (UTCTime, addUTCTime)
 import Data.Time.Clock (getCurrentTime)
 import Database.Persist
   ( Entity (Entity),
     SelectOpt (Desc, LimitTo),
+    insert,
     selectFirst,
     selectList,
     upsertBy,
@@ -60,9 +62,22 @@ import Domain.Offer
 import UseCase.FeedGenerator
   ( LastVisitStorer (getLastVisit, storeLastVisit),
   )
+import qualified UseCase.GenerateTripSummary as UC
+  ( TripSummary
+      ( TripSummary,
+        closestHubName,
+        lineNumbers,
+        numberOfTransfers,
+        totalTripTime,
+        totalWalkingTime,
+        tripStartStopName,
+        tripStartTime
+      ),
+    TripSummaryDataAccess (..),
+  )
 import UseCase.Offer
   ( OfferSeeder (seedOffers),
-    QueryAccess (getOffersCreatedAfter),
+    QueryAccess (fetchTripSummary, getOffersCreatedAfter),
   )
 import UseCase.ScrapePersister
   ( OfferDetailsLoader (loadDetails),
@@ -117,6 +132,17 @@ Visit
   UniqueUserVisit user
   time UTCTime
   deriving Show
+
+TripSummary
+    offerId OfferInstanceId -- Foreign key to associate with OfferInstance
+    totalWalkingTime Int -- Total walking time in seconds
+    numberOfTransfers Int -- Number of transfers
+    startTime UTCTime -- Trip start time
+    startStopName Text -- Name of the starting stop
+    lineNumbers [Text] -- List of line numbers used in the trip
+    totalTripTime Int -- Total trip time in seconds
+    destinationHubName Text -- Name of the destination hub
+    deriving Show
 |]
 
 data SQLitePersistence = SQLitePersistence
@@ -223,6 +249,26 @@ persistOffers offers = do
       upsertFloatingAttr offerId "location_lon" (_longitude <$> (details >>= _offerCoordinates)) time
 
       return e
+
+fetchRecentCoordinates :: UTCTime -> IO [(OfferInstanceId, Double, Double)]
+fetchRecentCoordinates oneDayAgo = runSqlite "flatscraper.sqlite" $ do
+  runMigration migrateAll
+
+  -- Fetch latitude and longitude attributes
+  latitudes <- selectList [OfferFloatingAttributeName ==. "location_lat", OfferFloatingAttributeCreatedAt >. oneDayAgo] []
+  longitudes <- selectList [OfferFloatingAttributeName ==. "location_lon", OfferFloatingAttributeCreatedAt >. oneDayAgo] []
+
+  -- Match latitude and longitude by offerId
+  let latMap = [(offerId, value) | Entity _ (OfferFloatingAttribute _ offerId _ value) <- latitudes]
+  let lonMap = [(offerId, value) | Entity _ (OfferFloatingAttribute _ offerId _ value) <- longitudes]
+  let matchedCoords = [(offerId, lat, lon) | (offerId, lat) <- latMap, (offerId', lon) <- lonMap, offerId == offerId']
+
+  -- Filter out offers that already have trip summaries
+  filterM hasNoTripSummary matchedCoords
+  where
+    hasNoTripSummary (offerId, _, _) = do
+      tripSummary <- selectFirst [TripSummaryOfferId ==. offerId] []
+      return $ isNothing tripSummary
 
 loadTextAttrs ::
   OfferView ->
@@ -337,6 +383,28 @@ instance QueryAccess SQLitePersistence where
     let limit = 100
      in getCreatedAfter timestamp limit
 
+  fetchTripSummary :: SQLitePersistence -> Text -> IO (Maybe UC.TripSummary)
+  fetchTripSummary _ url = runSqlite "flatscraper.sqlite" $ do
+    runMigration migrateAll
+    offer <- selectFirst [OfferInstanceUrl ==. url] []
+    case offer of
+      Nothing -> return Nothing
+      Just (Entity offerId _) -> do
+        tripSummary <- selectFirst [TripSummaryOfferId ==. offerId] []
+        return $ case tripSummary of
+          Nothing -> Nothing
+          Just (Entity _ ts) ->
+            Just $
+              UC.TripSummary
+                { UC.totalWalkingTime = tripSummaryTotalWalkingTime ts,
+                  UC.numberOfTransfers = tripSummaryNumberOfTransfers ts,
+                  UC.tripStartTime = tripSummaryStartTime ts,
+                  UC.tripStartStopName = T.unpack $ tripSummaryStartStopName ts,
+                  UC.lineNumbers = map T.unpack $ tripSummaryLineNumbers ts,
+                  UC.totalTripTime = tripSummaryTotalTripTime ts,
+                  UC.closestHubName = T.unpack $ tripSummaryDestinationHubName ts
+                }
+
 instance OfferStorer SQLitePersistence where
   storeOffers _ = persistOffers
 
@@ -368,3 +436,39 @@ instance LastVisitStorer SQLitePersistence Text where
       case visit of
         Nothing -> return Nothing
         Just (Entity _ (Visit _ time)) -> return $ Just time
+
+instance UC.TripSummaryDataAccess SQLitePersistence OfferInstanceId where
+  fetchRecentCoordinates :: SQLitePersistence -> UTCTime -> IO [(OfferInstanceId, Double, Double)]
+  fetchRecentCoordinates _ oneDayAgo = runSqlite "flatscraper.sqlite" $ do
+    runMigration migrateAll
+
+    -- Fetch recently created latitude and longitude attributes
+    latitudes <- selectList [OfferFloatingAttributeName ==. "location_lat", OfferFloatingAttributeCreatedAt >. oneDayAgo] []
+    longitudes <- selectList [OfferFloatingAttributeName ==. "location_lon", OfferFloatingAttributeCreatedAt >. oneDayAgo] []
+
+    -- Match latitude and longitude by offerId
+    let latMap = [(offerId, value) | Entity _ (OfferFloatingAttribute _ offerId _ value) <- latitudes]
+    let lonMap = [(offerId, value) | Entity _ (OfferFloatingAttribute _ offerId _ value) <- longitudes]
+    let matchedCoords = [(offerId, lat, lon) | (offerId, lat) <- latMap, (offerId', lon) <- lonMap, offerId == offerId']
+
+    -- Filter out offers that already have trip summaries
+    filterM hasNoTripSummary matchedCoords
+    where
+      hasNoTripSummary (offerId, _, _) = do
+        tripSummary <- selectFirst [TripSummaryOfferId ==. offerId] []
+        return $ isNothing tripSummary
+
+  storeTripSummary _ offerId tripSummary = runSqlite "flatscraper.sqlite" $ do
+    runMigration migrateAll
+    _ <-
+      insert $
+        TripSummary
+          offerId
+          (UC.totalWalkingTime tripSummary)
+          (UC.numberOfTransfers tripSummary)
+          (UC.tripStartTime tripSummary)
+          (T.pack . UC.tripStartStopName $ tripSummary)
+          (map T.pack $ UC.lineNumbers tripSummary)
+          (UC.totalTripTime tripSummary)
+          (T.pack . UC.closestHubName $ tripSummary)
+    return ()

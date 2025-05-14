@@ -40,6 +40,16 @@ import qualified Text.Blaze.Html5 as H
   )
 import Text.Blaze.Html5.Attributes as A (class_, href, style, title)
 import UseCase.FeedGenerator
+import UseCase.GenerateTripSummary
+  ( TripSummary
+      ( lineNumbers,
+        numberOfTransfers,
+        totalTripTime,
+        totalWalkingTime,
+        tripStartStopName
+      ),
+    closestHubName,
+  )
 
 badge' :: (H.ToMarkup a) => Maybe a -> Maybe Text -> H.Html
 badge' (Just t) (Just inlineStyle) = do
@@ -90,7 +100,8 @@ itemMarkup
       offerPrice = price,
       offerPricePerMeter = ppm,
       offerRooms = rooms,
-      offerMunicipalityArea = municipalityArea
+      offerMunicipalityArea = municipalityArea,
+      offerTripSummary = tripSummary
     } = do
     let emptyNode = H.toHtml ("" :: Text)
         elevatorText = case elevator >>= _hasElevatorGuess of
@@ -110,6 +121,24 @@ itemMarkup
                 )
         url = offerURL ov
         rowClass = "p-2"
+        tripSummaryBadge = case tripSummary of
+          Just ts ->
+            let badgeType = if totalTripTime ts < 30 * 60 then "success" else "info"
+                conciseText = toText (totalTripTime ts `div` 60) <> " min. do " <> T.pack (closestHubName ts)
+                detailedText =
+                  "Czas pieszy: "
+                    <> toText (totalWalkingTime ts `div` 60)
+                    <> " min, Przesiadki: "
+                    <> toText (numberOfTransfers ts)
+                    <> ", Czas całkowity: "
+                    <> toText (totalTripTime ts `div` 60)
+                    <> " min, Start: "
+                    <> T.pack (tripStartStopName ts)
+                    <> ", Linie: "
+                    <> T.intercalate ", " (map T.pack $ lineNumbers ts)
+             in H.abbr ! A.title (H.toValue detailedText) $
+                  badge badgeType (Just conciseText)
+          Nothing -> emptyNode
     H.div ! A.class_ "border" $ do
       H.div ! A.class_ rowClass $ do
         badge
@@ -144,6 +173,8 @@ itemMarkup
         badge "success" municipalityArea
       H.div ! A.class_ rowClass $ do
         H.a ! A.href (H.toValue url) $ H.toHtml (offerTitle ov)
+      H.div ! A.class_ rowClass $ do
+        tripSummaryBadge
 
 data BadgeColorMapper = BadgeColorMapper
   { cmArea :: Maybe (Double -> Text),

@@ -51,8 +51,9 @@ import Domain.Offer
     hasElevator,
     pricePerMeter,
   )
+import Domain.PublicTransport (TripSummary)
 import System.IO (stderr)
-import UseCase.Offer (QueryAccess (getOffersCreatedAfter))
+import UseCase.Offer (QueryAccess (fetchTripSummary, getOffersCreatedAfter))
 
 class FeedPresenter fp a where
   present :: fp a -> OfferFeed -> IO a
@@ -71,7 +72,8 @@ data OfferFeedItem = OfferFeedItem
     offerDistrictText :: Maybe Text,
     offerBuildYearText :: Maybe Text,
     offerRooms :: Maybe Int,
-    offerMunicipalityArea :: Maybe Text
+    offerMunicipalityArea :: Maybe Text,
+    offerTripSummary :: Maybe TripSummary
   }
 
 data Formatters = Formatters
@@ -168,7 +170,13 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
   if null grouppedOffers
     then hPutStrLn stderr "No offers to show"
     else do
-      let offers = map (second (map $ repack formatters)) grouppedOffers
+      offers <-
+        mapM
+          ( \(groupTitle, offerViews) -> do
+              offerFeedItems <- mapM (repack formatters queryAccess) offerViews
+              return (groupTitle, offerFeedItems)
+          )
+          grouppedOffers
 
       feedText <-
         present
@@ -181,7 +189,8 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
       view viewer (title grouppedOffers) feedText
       hPutStrLn stderr $ "Displayed " <> toText (length allOffers) <> " offers"
   where
-    repack formatters ov@OfferView {_offerURL = url} =
+    repack formatters queryAccess ov@OfferView {_offerURL = url} = do
+      tripSummary <- fetchTripSummary queryAccess url -- Fetch TripSummary
       let pFloor = _offerDetails ov >>= _offerPropertyFloor
           bFloors = _offerDetails ov >>= _offerBuildingFloors
           elevator = hasElevator ov
@@ -193,37 +202,39 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
             (Just p, _) -> Just $ "piętro " <> toText p
             _ -> Nothing
           isAccessibleFloor = (>=) 2 <$> pFloor
-       in OfferFeedItem
-            { offerURL = url,
-              offerDescription = description,
-              offerTitle = _offerTitle ov,
-              offerHasElevator = elevator,
-              offerIsAccessible =
-                case elevator of
-                  Just (HasElevator True Nothing) -> Just True
-                  Just (HasElevator False _)
-                    | isAccessibleFloor == Just True -> Just True
-                    | isAccessibleFloor == Just False -> Just False
-                  Just (HasElevator True (Just _)) -> Just True
-                  _ -> do
-                    f <- pFloor
-                    case f of
-                      x | x <= 2 -> Just True
-                      _ -> do
-                        bYear <- _offerDetails ov >>= _offerBuiltYear
-                        if bYear <= 1970 then Just False else Nothing,
-              offerFloorText = floorText,
-              offerPrice = _offerLatestPrice ov,
-              offerArea = _offerArea ov,
-              offerPricePerMeter = pricePerMeter ov,
-              offerStreetText = _offerDetails ov >>= _offerStreet,
-              offerDistrictText = _offerDetails ov >>= _offerDistrict,
-              offerBuildYearText =
-                (\yr -> "rok " <> toText yr)
-                  <$> (_offerDetails ov >>= _offerBuiltYear),
-              offerRooms = _offerDetails ov >>= _offerRooms,
-              offerMunicipalityArea = municipalityArea
-            }
+      return $
+        OfferFeedItem
+          { offerURL = url,
+            offerDescription = description,
+            offerTitle = _offerTitle ov,
+            offerHasElevator = elevator,
+            offerIsAccessible =
+              case elevator of
+                Just (HasElevator True Nothing) -> Just True
+                Just (HasElevator False _)
+                  | isAccessibleFloor == Just True -> Just True
+                  | isAccessibleFloor == Just False -> Just False
+                Just (HasElevator True (Just _)) -> Just True
+                _ -> do
+                  f <- pFloor
+                  case f of
+                    x | x <= 2 -> Just True
+                    _ -> do
+                      bYear <- _offerDetails ov >>= _offerBuiltYear
+                      if bYear <= 1970 then Just False else Nothing,
+            offerFloorText = floorText,
+            offerPrice = _offerLatestPrice ov,
+            offerArea = _offerArea ov,
+            offerPricePerMeter = pricePerMeter ov,
+            offerStreetText = _offerDetails ov >>= _offerStreet,
+            offerDistrictText = _offerDetails ov >>= _offerDistrict,
+            offerBuildYearText =
+              (\yr -> "rok " <> toText yr)
+                <$> (_offerDetails ov >>= _offerBuiltYear),
+            offerRooms = _offerDetails ov >>= _offerRooms,
+            offerMunicipalityArea = municipalityArea,
+            offerTripSummary = tripSummary -- Populate TripSummary
+          }
       where
         description = genTitle formatters ov
 
