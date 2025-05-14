@@ -9,6 +9,7 @@ module Presenter.HTMLFeedPresenter
   )
 where
 
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -36,18 +37,37 @@ import qualified Text.Blaze.Html5 as H
     toHtml,
     toValue,
   )
-import Text.Blaze.Html5.Attributes as A (class_, href, title)
+import Text.Blaze.Html5.Attributes as A (class_, href, style, title)
 import UseCase.FeedGenerator
 
-badge :: (H.ToMarkup a) => Maybe a -> Maybe Text -> H.Html
-badge (Just t) (Just tag) = do
-  H.toHtml (" " :: Text)
-  H.span ! A.class_ (A.toValue $ "badge badge-" <> tag) $ H.toHtml t
-badge (Just t) Nothing = badge (Just t) (Just "info")
-badge Nothing _ = H.toHtml ("" :: Text)
+badge' :: (H.ToMarkup a) => Maybe a -> Maybe Text -> H.Html
+badge' (Just t) (Just inlineStyle) = do
+  do
+    H.toHtml (" " :: Text)
+    H.span
+      ! A.class_ "badge"
+      ! A.style (A.toValue inlineStyle)
+      $ H.toHtml t
+badge' (Just t) Nothing = do
+  do
+    H.toHtml (" " :: Text)
+    H.span ! A.class_ "badge" $ H.toHtml t
+badge' Nothing _ = H.toHtml ("" :: Text)
 
-infoSpan :: (H.ToMarkup a) => Maybe a -> H.Html
-infoSpan t = badge t Nothing
+badge :: (H.ToMarkup a) => Text -> Maybe a -> H.Html
+badge "info" t =
+  badge'
+    t
+    (Just "color: #fff !important; background-color: #17a2b8 !important;")
+badge "success" t =
+  badge'
+    t
+    (Just "color: #fff !important; background-color: #28a745 !important;")
+badge "danger" t =
+  badge'
+    t
+    (Just "color: #fff !important; background-color: #dc3545 !important;")
+badge _ t = badge "info" t
 
 roomsText :: Int -> Text
 roomsText 0 = "0 pokoi?"
@@ -81,9 +101,8 @@ itemMarkup
             >>= ( \case
                     HasElevator True Nothing -> Just $ H.toHtml ("winda" :: Text)
                     HasElevator True (Just _) -> do
-                      explanation <- elevatorText
                       Just $
-                        H.abbr ! A.title explanation $
+                        H.abbr ! A.title "test" $
                           H.toHtml ("winda" :: Text)
                     HasElevator False _ -> Nothing
                 )
@@ -92,35 +111,32 @@ itemMarkup
     H.div ! A.class_ "border" $ do
       H.div ! A.class_ rowClass $ do
         badge
+          (fromMaybe "" ((colorMapper >>= cmArea) <*> Just area))
           (Just $ areaText' formatters area)
-          ((colorMapper >>= cmArea) <*> Just area)
         badge
+          (fromMaybe "" ((colorMapper >>= cmPrice) <*> Just price))
           (Just $ priceText formatters price)
-          ((colorMapper >>= cmPrice) <*> Just price)
         badge
+          (fromMaybe "" ((colorMapper >>= cmPricePerMeter) <*> Just ppm))
           (Just $ ppmText' formatters ppm)
-          ((colorMapper >>= cmPricePerMeter) <*> Just ppm)
-        infoSpan (roomsText <$> rooms)
+        badge "info" (roomsText <$> rooms)
 
       H.div ! A.class_ rowClass $ do
         maybe
           emptyNode
           ( \tt ->
               let cls = case isAccessible of
-                    Just True -> "badge badge-success"
-                    Just False -> "badge badge-danger"
-                    Nothing -> "badge badge-info"
-               in ( H.span ! A.class_ cls $ do
-                      H.toHtml tt
-                      maybe emptyNode (", " <>) elevatorMarkup
-                  )
+                    Just True -> "success"
+                    Just False -> "danger"
+                    Nothing -> ""
+               in badge cls (Just tt)
           )
           ft
-        infoSpan (offerBuildYearText ov)
+        badge "info" (offerBuildYearText ov)
       H.div ! A.class_ rowClass $ do
-        infoSpan street
-        infoSpan district
-        badge municipalityArea (Just "success")
+        badge "info" street
+        badge "info" district
+        badge "success" municipalityArea
       H.div ! A.class_ rowClass $ do
         H.a ! A.href (H.toValue url) $ H.toHtml (offerTitle ov)
 
