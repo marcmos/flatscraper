@@ -24,11 +24,20 @@ mobroute =
 startTime' :: IO UTCTime
 startTime' = parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" "2025-05-15T06:00:00Z"
 
+mobilisFeedId :: Int
+mobilisFeedId = 2598
+
+mpkTramFeedId :: Int
+mpkTramFeedId = 1270
+
+mpkBusFeedId :: Int
+mpkBusFeedId = 1326
+
 feedIds :: [Int]
 feedIds =
-  [ 1326,
-    1270,
-    2598
+  [ -- mpkBusFeedId,
+    -- mobilisFeedId,
+    mpkTramFeedId
   ]
 
 hubs :: [(String, (Double, Double))]
