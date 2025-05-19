@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
@@ -101,8 +102,9 @@ itemMarkup
             >>= ( \case
                     HasElevator True Nothing -> Just $ H.toHtml ("winda" :: Text)
                     HasElevator True (Just _) -> do
+                      explanation <- elevatorText
                       Just $
-                        H.abbr ! A.title "test" $
+                        H.abbr ! A.title explanation $
                           H.toHtml ("winda" :: Text)
                     HasElevator False _ -> Nothing
                 )
@@ -126,10 +128,13 @@ itemMarkup
           emptyNode
           ( \tt ->
               let cls = case isAccessible of
-                    Just True -> "success"
-                    Just False -> "danger"
-                    Nothing -> ""
-               in badge cls (Just tt)
+                    Just True -> "badge badge-success"
+                    Just False -> "badge badge-danger"
+                    Nothing -> "badge badge-info"
+               in ( H.span ! A.class_ cls $ do
+                      H.toHtml tt
+                      maybe emptyNode (", " <>) elevatorMarkup
+                  )
           )
           ft
         badge "info" (offerBuildYearText ov)
@@ -152,6 +157,7 @@ defaultColorMapper = BadgeColorMapper Nothing Nothing Nothing
 newtype HTMLFeedPresenter a = HTMLFeedPresenter (Maybe BadgeColorMapper)
 
 instance FeedPresenter HTMLFeedPresenter H.Html where
+  present :: HTMLFeedPresenter H.Html -> OfferFeed -> IO H.Html
   present (HTMLFeedPresenter colorMapper) (OfferFeed formatters itemGroups) = do
     css <- T.readFile "bootstrap.css"
     return $ H.html $ do
