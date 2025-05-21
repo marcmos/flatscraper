@@ -57,7 +57,7 @@ generateMobrouteInput
           "transfer_categories" .= transferCategories,
           "output_formats" .= outputFormats,
           "time" .= formatTime timeLocale "%Y-%m-%dT%H:%M:%SZ" startTime, -- Encode time in RFC3339 format
-          "max_walk_seconds" .= (1000 :: Int)
+          "max_walk_seconds" .= (720 :: Int)
         ]
 
 type Leg = UseCase.Leg

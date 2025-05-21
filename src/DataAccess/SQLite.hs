@@ -443,8 +443,18 @@ instance UC.TripSummaryDataAccess SQLitePersistence OfferInstanceId where
     runMigration migrateAll
 
     -- Fetch recently created latitude and longitude attributes
-    latitudes <- selectList [OfferFloatingAttributeName ==. "location_lat", OfferFloatingAttributeCreatedAt >. oneDayAgo] []
-    longitudes <- selectList [OfferFloatingAttributeName ==. "location_lon", OfferFloatingAttributeCreatedAt >. oneDayAgo] []
+    latitudes <-
+      selectList
+        [ OfferFloatingAttributeName ==. "location_lat",
+          OfferFloatingAttributeCreatedAt >. oneDayAgo
+        ]
+        [Desc OfferFloatingAttributeCreatedAt]
+    longitudes <-
+      selectList
+        [ OfferFloatingAttributeName ==. "location_lon",
+          OfferFloatingAttributeCreatedAt >. oneDayAgo
+        ]
+        [Desc OfferFloatingAttributeCreatedAt]
 
     -- Match latitude and longitude by offerId
     let latMap = [(offerId, value) | Entity _ (OfferFloatingAttribute _ offerId _ value) <- latitudes]
