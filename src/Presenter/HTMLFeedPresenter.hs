@@ -157,10 +157,10 @@ itemMarkup
           emptyNode
           ( \tt ->
               let cls = case isAccessible of
-                    Just True -> "badge badge-success"
-                    Just False -> "badge badge-danger"
-                    Nothing -> "badge badge-info"
-               in ( H.span ! A.class_ cls $ do
+                    Just True -> "success"
+                    Just False -> "danger"
+                    Nothing -> "info"
+               in ( badge cls $ Just $ do
                       H.toHtml tt
                       maybe emptyNode (", " <>) elevatorMarkup
                   )
