@@ -137,7 +137,7 @@ itemMarkup
                     <> ", Linie: "
                     <> T.intercalate ", " (map T.pack $ lineNumbers ts)
              in H.abbr ! A.title (H.toValue detailedText) $
-                  badge badgeType (Just conciseText)
+                  badge badgeType (Just $ conciseText <> " | " <> detailedText)
           Nothing -> emptyNode
     H.div ! A.class_ "border" $ do
       H.div ! A.class_ rowClass $ do
