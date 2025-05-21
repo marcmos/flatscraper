@@ -84,7 +84,7 @@ parseRooms t =
 
 offerDetailsScraper :: Maybe OfferView -> Scraper Text OfferView
 offerDetailsScraper (Just ov) = do
-  locationText <- text $ "div" @: ["id" @= "boxOffTop"] // "h2"
+  locationText <- text $ "ul" @: ["id" @= "locationUl"] // "span"
   let (street, municipality, district) = parseLocationText locationText
   attrsTable <- texts $ "div" @: ["id" @= "attributesTable"] // "div"
   let floorInfo = mapFind parseFloors attrsTable
