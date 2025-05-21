@@ -3,6 +3,7 @@ module Scraper.Common
     parsePrice',
     parseDecimal,
     parseDouble,
+    findMap,
   )
 where
 
@@ -41,3 +42,9 @@ parseDecimal t = fst <$> rightToMaybe (T.decimal t)
 
 parseDouble :: Text -> Maybe Double
 parseDouble t = fst <$> (rightToMaybe . T.double . T.replace "," ".") t
+
+findMap :: (a -> Maybe b) -> [a] -> Maybe b
+findMap _ [] = Nothing
+findMap f (x : xs) = case f x of
+  Just y -> Just y
+  Nothing -> findMap f xs

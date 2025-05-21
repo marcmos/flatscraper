@@ -2,13 +2,22 @@ module Scraper.NieruchOnlineScraper (scraper) where
 
 import Control.Lens ((^?))
 import Control.Lens.Combinators (element)
+import Data.Aeson (Value, decodeStrict)
+import Data.Aeson.Lens
+  ( AsNumber (_Integer),
+    key,
+    _String,
+  )
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T (isPrefixOf, isSuffixOf, unpack)
+import qualified Data.Text.Encoding as T (encodeUtf8)
 import DataAccess.ScrapeLoader (ScraperPack (..), WebScraper, prefixWebScraper)
 import Domain.Offer
-  ( OfferDetails
+  ( OfferCoordinates (..),
+    OfferDetails
       ( _offerBuildingFloors,
+        _offerCoordinates,
         _offerDistrict,
         _offerMunicipalityArea,
         _offerPropertyFloor,
@@ -88,6 +97,20 @@ offerDetailsScraper (Just ov) = do
   let (street, municipality, district) = parseLocationText locationText
   attrsTable <- texts $ "div" @: ["id" @= "attributesTable"] // "div"
   let floorInfo = mapFind parseFloors attrsTable
+  scripts <- texts "script"
+  let matches = map (\t -> getAllTextSubmatches (t =~ ("var mapInitData = (.+);" :: Text)) :: [Text]) scripts
+  let locationJsonText = mapFind (\t -> if null t then Nothing else t ^? element 1) matches
+  let json = (locationJsonText >>= decodeStrict . T.encodeUtf8) :: Maybe Value
+  let coordinates = do
+        obj <- json
+        latText <- obj ^? key "latitude" . _String
+        lonText <- obj ^? key "longitude" . _String
+        inaccurate <- obj ^? key "isInaccurateLocation" . _Integer
+        lat <- parseDouble latText
+        lon <- parseDouble lonText
+        if inaccurate == 0
+          then return $ OfferExactCoordinates lat lon
+          else Nothing
   let updatedDetails =
         (fromMaybe emptyDetails (_offerDetails ov))
           { _offerStreet = street,
@@ -95,10 +118,11 @@ offerDetailsScraper (Just ov) = do
             _offerMunicipalityArea = municipality,
             _offerPropertyFloor = fst <$> floorInfo,
             _offerBuildingFloors = floorInfo >>= snd,
-            _offerRooms = mapFind parseRooms attrsTable
+            _offerRooms = mapFind parseRooms attrsTable,
+            _offerCoordinates = coordinates
           }
   return $ ov {_offerDetails = Just updatedDetails}
-offerDetailsScraper Nothing = fail "not implemented"
+offerDetailsScraper Nothing = offerDetailsScraper $ Just emptyOffer
 
 offerItemScraper :: Scraper Text OfferView
 offerItemScraper = do
