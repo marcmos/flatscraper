@@ -15,11 +15,12 @@ module UseCase.FeedGenerator
   )
 where
 
+import Control.Applicative ((<|>))
 import Data.Bifunctor (Bifunctor (second))
 import Data.List (sortOn)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import qualified Data.Text as T (pack)
+import qualified Data.Text as T (isInfixOf, pack)
 import qualified Data.Text.ICU as Locale (LocaleName (Locale))
 import Data.Text.ICU.NumberFormatter (formatDouble, formatIntegral, numberFormatter)
 import qualified Data.Text.ICU.NumberFormatter as ICU
@@ -147,6 +148,41 @@ class LastVisitStorer vs u where
   storeLastVisit :: vs -> u -> UTCTime -> IO ()
   getLastVisit :: vs -> u -> IO (Maybe UTCTime)
 
+deduplicateOffers :: [OfferFeedItem] -> [OfferFeedItem]
+deduplicateOffers = foldr mergeItems []
+  where
+    mergeItems item acc =
+      case break (\x -> hasSameArea item x && hasSamePrice item x) acc of
+        (before, matching : after) ->
+          let merged =
+                matching
+                  { offerURL = offerURL item ++ offerURL matching,
+                    offerStreetText = pickFirstNonEmpty offerStreetText item matching,
+                    offerDistrictText = pickFirstNonEmpty offerDistrictText item matching,
+                    offerMunicipalityArea = pickFirstNonEmpty offerMunicipalityArea item matching,
+                    offerTripSummary = pickFirstNonEmpty offerTripSummary item matching
+                  }
+           in before ++ (merged : after)
+        _ -> item : acc
+    hasSameArea item1 item2 = offerArea item1 == offerArea item2
+    hasSamePrice item1 item2 = offerPrice item1 == offerPrice item2
+
+    -- Helper function to prioritize values based on source order
+    pickFirstNonEmpty :: (OfferFeedItem -> Maybe a) -> OfferFeedItem -> OfferFeedItem -> Maybe a
+    pickFirstNonEmpty field item1 item2 =
+      case (field item1, field item2) of
+        (Just val1, _) | isFromPreferredSource item1 -> Just val1
+        (_, Just val2) | isFromPreferredSource item2 -> Just val2
+        (val1, val2) -> val1 <|> val2
+
+    -- Helper function to determine if an item is from a preferred source
+    isFromPreferredSource :: OfferFeedItem -> Bool
+    isFromPreferredSource item
+      | any ("otodom" `T.isInfixOf`) (offerURL item) = True
+      | any ("nieruchomosci-online" `T.isInfixOf`) (offerURL item) = True
+      | any ("morizon" `T.isInfixOf`) (offerURL item) = False
+      | otherwise = False
+
 showNewSinceLastVisit ::
   (FeedViewer fv, FeedPresenter fp a, QueryAccess qa) =>
   qa ->
@@ -178,12 +214,13 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
           )
           grouppedOffers
 
+      let deduplicatedOffers = map (second deduplicateOffers) offers
       feedText <-
         present
           presenter
           ( OfferFeed
               formatters
-              offers
+              deduplicatedOffers
           )
 
       view viewer (title grouppedOffers) feedText
