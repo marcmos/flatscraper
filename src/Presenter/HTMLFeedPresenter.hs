@@ -172,7 +172,11 @@ itemMarkup
         badge "info" district
         badge "success" municipalityArea
       H.div ! A.class_ rowClass $ do
-        H.a ! A.href (H.toValue url) $ H.toHtml (offerTitle ov)
+        mapM_
+          ( \u ->
+              H.div $ H.a ! A.href (H.toValue u) $ H.toHtml (offerTitle ov)
+          )
+          url
       H.div ! A.class_ rowClass $ do
         tripSummaryBadge
 

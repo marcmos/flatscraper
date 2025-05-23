@@ -2,6 +2,7 @@
 
 module Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter)) where
 
+import Data.Maybe (listToMaybe)
 import qualified Data.Text as T (Text)
 import qualified Data.Text.Lazy as TL (Text, toStrict)
 import Text.RSS.Export (textRSS)
@@ -23,7 +24,7 @@ import UseCase.FeedGenerator
 renderOffer :: OfferFeedItem -> RSSItem
 renderOffer offer =
   (nullItem title)
-    { rssItemLink = Just $ offerURL offer
+    { rssItemLink = listToMaybe $ offerURL offer
     }
   where
     title = offerDescription offer

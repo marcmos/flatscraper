@@ -59,7 +59,7 @@ class FeedPresenter fp a where
   present :: fp a -> OfferFeed -> IO a
 
 data OfferFeedItem = OfferFeedItem
-  { offerURL :: Text,
+  { offerURL :: [Text],
     offerTitle :: Text,
     offerDescription :: Text,
     offerHasElevator :: Maybe HasElevator,
@@ -204,7 +204,7 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
           isAccessibleFloor = (>=) 2 <$> pFloor
       return $
         OfferFeedItem
-          { offerURL = url,
+          { offerURL = [url],
             offerDescription = description,
             offerTitle = _offerTitle ov,
             offerHasElevator = elevator,
