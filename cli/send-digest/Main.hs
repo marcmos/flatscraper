@@ -4,7 +4,7 @@ module Main where
 
 import Data.Maybe (isNothing, listToMaybe)
 import Data.Text (Text)
-import qualified Data.Text as T (isInfixOf, isSuffixOf, pack, toLower)
+import qualified Data.Text as T (isInfixOf, isPrefixOf, isSuffixOf, pack, toLower)
 import qualified Data.Text.Lazy as TL
 import Data.Time (getCurrentTime)
 import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
@@ -13,6 +13,7 @@ import Domain.Offer
     _offerDetails,
     _offerDistrict,
     _offerMunicipalityArea,
+    _offerURL,
   )
 import Presenter.HTMLFeedPresenter
   ( BadgeColorMapper (cmPricePerMeter),
@@ -119,11 +120,20 @@ offerFilter _paranoid o =
 
 offerGroupper :: [OfferView] -> [(Text, [OfferView])]
 offerGroupper offers =
-  let (matchingOffers, nonMatchingOffers) =
+  let (olxOffers, otherOffers) =
+        foldr
+          ( \o (olx, other) ->
+              if "https://www.olx.pl" `T.isPrefixOf` _offerURL o
+                then (o : olx, other)
+                else (olx, o : other)
+          )
+          ([], [])
+          offers
+      (matchingOffers, nonMatchingOffers) =
         foldr
           (\o (m, n) -> if offerFilter True o then (o : m, n) else (m, o : n))
           ([], [])
-          offers
+          otherOffers
       (withLocation, noLocation) =
         foldr
           ( \o (wl, nl) ->
@@ -135,7 +145,8 @@ offerGroupper offers =
           matchingOffers
    in filter
         (\(_, oList) -> not . null $ oList)
-        [ ("Oferty spełniające kryteria", withLocation),
+        [ ("Oferty z OLX", olxOffers),
+          ("Oferty spełniające kryteria", withLocation),
           ("Oferty bez dokładnej lokalizacji", noLocation),
           ("Oferty odrzucone", nonMatchingOffers)
         ]
