@@ -40,7 +40,8 @@ data TripSummary = TripSummary
     tripStartStopName :: String, -- Name of the starting stop
     lineNumbers :: [String], -- List of line numbers used in the trip
     totalTripTime :: Int, -- Total trip time in seconds
-    closestHubName :: String -- Name of the closest hub
+    closestHubName :: String, -- Name of the closest hub
+    profileName :: String
   }
   deriving (Show)
 
@@ -105,8 +106,8 @@ calculateTotalTripTime legs = do
     stripSuffix :: Char -> String -> String
     stripSuffix suffix str = if last str == suffix then init str else str
 
-generateTripSummary :: String -> [Leg] -> Either String TripSummary
-generateTripSummary closestHubName legs = do
+generateTripSummary :: String -> String -> [Leg] -> Either String TripSummary
+generateTripSummary closestHubName profileName legs = do
   let (walkingLegs, tripLegs) = partitionLegs legs
   totalWalkingTime <- calculateTotalWalkingTime walkingLegs
   numberOfTransfers <- calculateNumberOfTransfers tripLegs
@@ -114,7 +115,16 @@ generateTripSummary closestHubName legs = do
   let tripStartStopName = maybe "unknown" id (tripFrom $ head tripLegs)
   let lineNumbers = extractLineNumbers tripLegs
   totalTripTime <- calculateTotalTripTime legs
-  return $ TripSummary totalWalkingTime numberOfTransfers tripStartTime tripStartStopName lineNumbers totalTripTime closestHubName
+  return $
+    TripSummary
+      totalWalkingTime
+      numberOfTransfers
+      tripStartTime
+      tripStartStopName
+      lineNumbers
+      totalTripTime
+      closestHubName
+      profileName
   where
     partitionLegs :: [Leg] -> ([Leg], [Leg])
     partitionLegs = foldr (\leg (walks, trips) -> if legType leg == "walk" then (leg : walks, trips) else (walks, leg : trips)) ([], [])

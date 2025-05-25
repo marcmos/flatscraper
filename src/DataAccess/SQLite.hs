@@ -24,7 +24,7 @@ import Data.Time (UTCTime, addUTCTime)
 import Data.Time.Clock (getCurrentTime)
 import Database.Persist
   ( Entity (Entity),
-    SelectOpt (Desc, LimitTo),
+    SelectOpt (Asc, Desc, LimitTo),
     insert,
     selectFirst,
     selectList,
@@ -70,6 +70,7 @@ import qualified UseCase.GenerateTripSummary as UC
         closestHubName,
         lineNumbers,
         numberOfTransfers,
+        profileName,
         totalTripTime,
         totalWalkingTime,
         tripStartStopName,
@@ -144,6 +145,7 @@ TripSummary
     lineNumbers [Text] -- List of line numbers used in the trip
     totalTripTime Int -- Total trip time in seconds
     destinationHubName Text -- Name of the destination hub
+    profile Text
     deriving Show
 |]
 
@@ -414,7 +416,12 @@ instance QueryAccess SQLitePersistence where
     case offer of
       Nothing -> return Nothing
       Just (Entity offerId _) -> do
-        tripSummary <- selectFirst [TripSummaryOfferId ==. offerId] []
+        tripSummary <-
+          selectFirst
+            [TripSummaryOfferId ==. offerId]
+            [ Asc TripSummaryTotalTripTime,
+              Asc TripSummaryTotalWalkingTime
+            ]
         return $ case tripSummary of
           Nothing -> Nothing
           Just (Entity _ ts) ->
@@ -505,4 +512,5 @@ instance UC.TripSummaryDataAccess SQLitePersistence OfferInstanceId where
           (map T.pack $ UC.lineNumbers tripSummary)
           (UC.totalTripTime tripSummary)
           (T.pack . UC.closestHubName $ tripSummary)
+          (T.pack . UC.profileName $ tripSummary)
     return ()

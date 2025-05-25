@@ -16,21 +16,30 @@ import Data.Aeson
   )
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
+import Data.List (find)
+import Data.Text (Text)
 import Data.Time (TimeLocale)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (formatTime)
 import System.Exit (ExitCode (..))
 import System.Process.ByteString (readProcessWithExitCode)
-import UseCase.GenerateTripSummary hiding (Leg (Leg), Stop (Stop))
+import UseCase.GenerateTripSummary hiding (Leg (Leg), Stop (Stop), profileName)
 import qualified UseCase.GenerateTripSummary as UseCase
   ( Leg (Leg),
     Stop (Stop),
   )
 
+data MobrouteProfile = MobrouteProfile
+  { profileName :: Text,
+    profileMaxWalkSeconds :: Int,
+    profileFeedIds :: [Int]
+  }
+  deriving (Show, Eq)
+
 data MobrouteProvider = MobrouteProvider
   { moboExecutablePath :: FilePath,
-    moboFeedIds :: [Int],
-    moboTimeLocale :: TimeLocale
+    moboTimeLocale :: TimeLocale,
+    moboProfiles :: [MobrouteProfile]
   }
   deriving (Show)
 
@@ -41,24 +50,29 @@ generateMobrouteInput ::
   [String] ->
   [String] ->
   UTCTime -> -- Add start time as input
-  BL.ByteString
+  Text ->
+  Maybe BL.ByteString
 generateMobrouteInput
-  (MobrouteProvider _ feedIds timeLocale)
+  (MobrouteProvider _ timeLocale profiles)
   from
   to
   transferCategories
   outputFormats
-  startTime =
-    encode $
-      object
-        [ "feed_ids" .= feedIds,
-          "from" .= from,
-          "to" .= to,
-          "transfer_categories" .= transferCategories,
-          "output_formats" .= outputFormats,
-          "time" .= formatTime timeLocale "%Y-%m-%dT%H:%M:%SZ" startTime, -- Encode time in RFC3339 format
-          "max_walk_seconds" .= (720 :: Int)
-        ]
+  startTime
+  profile = do
+    (MobrouteProfile _ maxWalkSeconds feedIds) <-
+      find (\p -> profileName p == profile) profiles
+    return $
+      encode $
+        object
+          [ "feed_ids" .= feedIds,
+            "from" .= from,
+            "to" .= to,
+            "transfer_categories" .= transferCategories,
+            "output_formats" .= outputFormats,
+            "time" .= formatTime timeLocale "%Y-%m-%dT%H:%M:%SZ" startTime, -- Encode time in RFC3339 format
+            "max_walk_seconds" .= maxWalkSeconds
+          ]
 
 type Leg = UseCase.Leg
 
@@ -142,33 +156,46 @@ callMobroute ::
   [String] ->
   [String] ->
   UTCTime ->
+  Text ->
   Bool ->
   IO (Either String (LegsResponse, BS.ByteString))
-callMobroute provider from to transferCategories outputFormats startTime includeStderr = do
-  let input =
-        generateMobrouteInput
-          provider
-          from
-          to
-          transferCategories
-          outputFormats
-          startTime
-  let args = ["route", "-p", BL.unpack input]
-  let executablePath = moboExecutablePath provider
-  -- print args
-  (exitCode, stdout, stderr) <- readProcessWithExitCode executablePath args BS.empty
-  case exitCode of
-    ExitSuccess ->
-      case eitherDecode (BL.fromStrict stdout) of
-        Left err -> do
-          writeRawOutputToFile executablePath "/tmp/malformed_stdout.json" input
-          return $ Left $ "JSON decoding error: " ++ err
-        Right decoded ->
-          if includeStderr
-            then return $ Right (decoded, stderr)
-            else return $ Right (decoded, BS.empty)
-    ExitFailure _ ->
-      return . Left $ "Error calling mobroute: Non-zero exit code for input" ++ BL.unpack input
+callMobroute
+  provider
+  from
+  to
+  transferCategories
+  outputFormats
+  startTime
+  profile
+  includeStderr = do
+    let input =
+          generateMobrouteInput
+            provider
+            from
+            to
+            transferCategories
+            outputFormats
+            startTime
+            profile
+    case input of
+      Nothing -> return $ Left "Error generating input for mobroute"
+      Just input -> do
+        let args = ["route", "-p", BL.unpack input]
+        let executablePath = moboExecutablePath provider
+        -- print args
+        (exitCode, stdout, stderr) <- readProcessWithExitCode executablePath args BS.empty
+        case exitCode of
+          ExitSuccess ->
+            case eitherDecode (BL.fromStrict stdout) of
+              Left err -> do
+                writeRawOutputToFile executablePath "/tmp/malformed_stdout.json" input
+                return $ Left $ "JSON decoding error: " ++ err
+              Right decoded ->
+                if includeStderr
+                  then return $ Right (decoded, stderr)
+                  else return $ Right (decoded, BS.empty)
+          ExitFailure _ ->
+            return . Left $ "Error calling mobroute: Non-zero exit code for input" ++ BL.unpack input
 
 writeRawOutputToFile :: FilePath -> FilePath -> BL.ByteString -> IO ()
 writeRawOutputToFile executablePath outputFile input = do
@@ -182,9 +209,10 @@ getRouteLegs ::
   (Double, Double) ->
   (Double, Double) ->
   UTCTime ->
+  Text ->
   Bool ->
   IO (Either String [Leg])
-getRouteLegs mobroute startCoords stopCoords startTime includeStderr = do
+getRouteLegs mobroute startCoords stopCoords startTime profile includeStderr = do
   response <-
     callMobroute
       mobroute
@@ -193,14 +221,15 @@ getRouteLegs mobroute startCoords stopCoords startTime includeStderr = do
       ["f", "i", "g"]
       ["legs"]
       startTime
+      profile
       includeStderr
   return $ case response of
     Left err -> Left err
     Right (legsResponse, _) -> Right (legs legsResponse)
 
 instance RouteProvider MobrouteProvider where
-  getRoute mobroute startCoords stopCoords startTime = do
-    legs <- getRouteLegs mobroute startCoords stopCoords startTime False
+  getRoute mobroute startCoords stopCoords startTime profile = do
+    legs <- getRouteLegs mobroute startCoords stopCoords startTime profile False
     return $ case legs of
       Left err -> Left err
       Right legsList -> Right legsList

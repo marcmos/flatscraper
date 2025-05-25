@@ -1,7 +1,10 @@
 module Main where
 
 import Data.Time (UTCTime, defaultTimeLocale, parseTimeM)
-import DataAccess.Mobroute (MobrouteProvider (MobrouteProvider))
+import DataAccess.Mobroute
+  ( MobrouteProfile (MobrouteProfile, profileName),
+    MobrouteProvider (MobrouteProvider),
+  )
 import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
 import UseCase.GenerateTripSummary
   ( CityTransport (..),
@@ -12,17 +15,39 @@ main :: IO ()
 main = do
   let sqlite = SQLitePersistence
   time <- startTime'
-  generateAndStoreTripSummaries sqlite mobroute krakow time
+  generateAndStoreTripSummaries
+    sqlite
+    mobroute
+    (map profileName mobrouteProfiles)
+    krakow
+    time
+
+mobrouteProfiles :: [MobrouteProfile]
+mobrouteProfiles =
+  [ -- 6 minutes max walk
+    MobrouteProfile "tram_walk6" (6 * 60) [mpkTramFeedId],
+    -- 12 minutes max walk
+    MobrouteProfile "tram_walk12" (12 * 60) [mpkTramFeedId],
+    -- 6 minutes max walk, all feeds
+    MobrouteProfile "combined_walk6" (6 * 60) feedIds,
+    -- 12 minutes max walk, all feeds
+    MobrouteProfile "combined_walk12" (12 * 60) feedIds
+  ]
 
 mobroute :: MobrouteProvider
 mobroute =
   MobrouteProvider
     "/home/mmos/src/mobroute/mobroute"
-    feedIds
     defaultTimeLocale
+    mobrouteProfiles
 
 startTime' :: IO UTCTime
-startTime' = parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" "2025-05-15T06:00:00Z"
+startTime' =
+  parseTimeM
+    True
+    defaultTimeLocale
+    "%Y-%m-%dT%H:%M:%SZ"
+    "2025-05-15T06:00:00Z"
 
 mobilisFeedId :: Int
 mobilisFeedId = 2598
@@ -35,8 +60,8 @@ mpkBusFeedId = 1326
 
 feedIds :: [Int]
 feedIds =
-  [ -- mpkBusFeedId,
-    -- mobilisFeedId,
+  [ mpkBusFeedId,
+    mobilisFeedId,
     mpkTramFeedId
   ]
 
