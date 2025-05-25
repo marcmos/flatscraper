@@ -19,10 +19,12 @@ import Domain.Offer
       ( _offerBuildingFloors,
         _offerCoordinates,
         _offerDistrict,
+        _offerMarket,
         _offerMunicipalityArea,
         _offerPropertyFloor,
         _offerRooms
       ),
+    OfferMarket (MarketPrimary, MarketSecondary),
     OfferView
       ( _offerArea,
         _offerDetails,
@@ -97,6 +99,20 @@ offerDetailsScraper (Just ov) = do
   let (street, municipality, district) = parseLocationText locationText
   attrsTable <- texts $ "div" @: ["id" @= "attributesTable"] // "div"
   let floorInfo = mapFind parseFloors attrsTable
+  detailsTable <- texts $ "div" @: ["id" @= "detailsTable"] // "li"
+  let market =
+        mapFind
+          ( \t -> case ( getAllTextSubmatches
+                           ( t
+                               =~ ("Rynek: (pierwotny|wtórny)" :: Text)
+                           ) ::
+                           [Text]
+                       ) of
+              [_, "pierwotny"] -> Just MarketPrimary
+              [_, "wtórny"] -> Just MarketSecondary
+              _ -> Nothing
+          )
+          detailsTable
   scripts <- texts "script"
   let matches = map (\t -> getAllTextSubmatches (t =~ ("var mapInitData = (.+);" :: Text)) :: [Text]) scripts
   let locationJsonText = mapFind (\t -> if null t then Nothing else t ^? element 1) matches
@@ -119,7 +135,8 @@ offerDetailsScraper (Just ov) = do
             _offerPropertyFloor = fst <$> floorInfo,
             _offerBuildingFloors = floorInfo >>= snd,
             _offerRooms = mapFind parseRooms attrsTable,
-            _offerCoordinates = coordinates
+            _offerCoordinates = coordinates,
+            _offerMarket = market
           }
   return $ ov {_offerDetails = Just updatedDetails}
 offerDetailsScraper Nothing = offerDetailsScraper $ Just emptyOffer

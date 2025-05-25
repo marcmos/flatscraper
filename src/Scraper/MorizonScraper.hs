@@ -15,7 +15,8 @@ import DataAccess.ScrapeLoader
     prefixWebScraper,
   )
 import Domain.Offer
-  ( OfferDetails (_offerBuiltYear, _offerDistrict, _offerHasElevator, _offerMunicipalityArea, _offerPropertyFloor),
+  ( OfferDetails (_offerBuiltYear, _offerDistrict, _offerHasElevator, _offerMarket, _offerMunicipalityArea, _offerPropertyFloor),
+    OfferMarket (MarketPrimary, MarketSecondary),
     OfferView (_offerDetails, _offerTitle),
     emptyDetails,
     emptyOffer,
@@ -25,7 +26,7 @@ import Domain.Offer
     _offerRooms,
     _offerStreet,
   )
-import Scraper.Common (parseDecimal, parseDouble, parsePrice)
+import Scraper.Common (findMap, parseDecimal, parseDouble, parsePrice)
 import Scraper.Dictionary (parseLocationText)
 import Text.HTML.Scalpel
   ( Scraper,
@@ -64,6 +65,15 @@ detailsScraper offer = do
   let bYear = find (\(k, _) -> k == "Rok budowy") params >>= parseDecimal . snd
   let hasElev = find ("Winda" `T.isPrefixOf`) boolAttrs
 
+  let market =
+        findMap
+          ( \case
+              ("Rynek", "Pierwotny") -> Just MarketPrimary
+              ("Rynek", "Wtórny") -> Just MarketSecondary
+              _ -> Nothing
+          )
+          params
+
   let newOffer = fromMaybe emptyOffer offer
   let updatedDetails =
         (fromMaybe emptyDetails (_offerDetails newOffer))
@@ -74,7 +84,8 @@ detailsScraper offer = do
             _offerHasElevator =
               if isJust hasElev
                 then Just True
-                else Nothing
+                else Nothing,
+            _offerMarket = market
           }
 
   return $

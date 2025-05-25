@@ -12,6 +12,7 @@ module UseCase.FeedGenerator
     toText,
     FeedViewer (view),
     LastVisitStorer (storeLastVisit, getLastVisit),
+    OfferMarket (MarketPrimary, MarketSecondary),
   )
 where
 
@@ -30,16 +31,7 @@ import Data.Time.Clock (addUTCTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Domain.Offer
   ( HasElevator (HasElevator, _hasElevator),
-    OfferDetails
-      ( _offerBuildingFloors,
-        _offerBuiltYear,
-        _offerDistrict,
-        _offerMarket,
-        _offerMunicipalityArea,
-        _offerPropertyFloor,
-        _offerRooms,
-        _offerStreet
-      ),
+    OfferDetails (_offerBuildingFloors, _offerBuiltYear, _offerDistrict, _offerHasElevator, _offerMarket, _offerMunicipalityArea, _offerPropertyFloor, _offerRooms, _offerStreet),
     OfferMarket (MarketPrimary, MarketSecondary),
     OfferView
       ( OfferView,
@@ -74,7 +66,8 @@ data OfferFeedItem = OfferFeedItem
     offerBuildYearText :: Maybe Text,
     offerRooms :: Maybe Int,
     offerMunicipalityArea :: Maybe Text,
-    offerTripSummary :: Maybe TripSummary
+    offerTripSummary :: Maybe TripSummary,
+    offerMarket :: Maybe OfferMarket
   }
 
 data Formatters = Formatters
@@ -270,7 +263,8 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
                 <$> (_offerDetails ov >>= _offerBuiltYear),
             offerRooms = _offerDetails ov >>= _offerRooms,
             offerMunicipalityArea = municipalityArea,
-            offerTripSummary = tripSummary -- Populate TripSummary
+            offerTripSummary = tripSummary, -- Populate TripSummary
+            offerMarket = _offerDetails ov >>= _offerMarket
           }
       where
         description = genTitle formatters ov

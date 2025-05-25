@@ -53,6 +53,9 @@ data OfferCoordinates = OfferExactCoordinates
   }
   deriving (Eq, Show)
 
+data OfferMarket = MarketPrimary | MarketSecondary
+  deriving (Eq, Show)
+
 data OfferDetails = OfferDetails
   { _offerDescription :: Maybe Text,
     _offerRooms :: Maybe Int,
@@ -63,7 +66,8 @@ data OfferDetails = OfferDetails
     _offerPropertyFloor :: Maybe Int,
     _offerBuildingFloors :: Maybe Int,
     _offerBuiltYear :: Maybe Int,
-    _offerCoordinates :: Maybe OfferCoordinates
+    _offerCoordinates :: Maybe OfferCoordinates,
+    _offerMarket :: Maybe OfferMarket
   }
   deriving (Eq, Show)
 
@@ -79,6 +83,7 @@ emptyOffer = OfferView "" 0 0.0 "" Nothing
 emptyDetails :: OfferDetails
 emptyDetails =
   OfferDetails
+    Nothing
     Nothing
     Nothing
     Nothing

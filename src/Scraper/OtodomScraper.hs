@@ -41,6 +41,7 @@ import DataAccess.ScrapeLoader
   )
 import Domain.Offer
   ( OfferCoordinates (OfferExactCoordinates),
+    OfferMarket (MarketPrimary, MarketSecondary),
     OfferView
       ( OfferView,
         _offerArea,
@@ -59,6 +60,7 @@ import Domain.Offer
     offerDetails,
     offerDistrict,
     offerHasElevator,
+    offerMarket,
     offerMunicipalityArea,
     offerPropertyFloor,
     offerRooms,
@@ -106,6 +108,11 @@ fromJSON input offer =
       json = decodeStrict bs :: Maybe Value
       ad = (^?! key "props" . key "pageProps" . key "ad") <$> json
       price = ad >>= (^? key "target" . key "Price" . _Integer)
+      marketText = ad >>= (^? key "market" . _String)
+      market = case marketText of
+        Just "PRIMARY" -> Just MarketPrimary
+        Just "SECONDARY" -> Just MarketSecondary
+        _ -> Nothing
       street =
         ad
           >>= ( ^?
@@ -198,6 +205,7 @@ fromJSON input offer =
                 & (offerHasElevator .~ hasLift)
                 & (offerMunicipalityArea .~ muniArea)
                 & (offerCoordinates .~ coords)
+                & (offerMarket .~ market)
 
         ( over (non defaultOffer . offerTitle) (const t)
             . over (non defaultOffer . offerArea) (const a)

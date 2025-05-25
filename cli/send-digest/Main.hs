@@ -9,9 +9,11 @@ import qualified Data.Text.Lazy as TL
 import Data.Time (getCurrentTime)
 import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
 import Domain.Offer
-  ( OfferView,
+  ( OfferMarket (MarketPrimary),
+    OfferView,
     _offerDetails,
     _offerDistrict,
+    _offerMarket,
     _offerMunicipalityArea,
     _offerURL,
   )
@@ -134,10 +136,10 @@ offerGroupper offers =
           (\o (m, n) -> if offerFilter True o then (o : m, n) else (m, o : n))
           ([], [])
           otherOffers
-      (withLocation, noLocation) =
+      (nonPrimaryMarketOffers, primaryMarketOffers) =
         foldr
           ( \o (wl, nl) ->
-              if isNothing (_offerDetails o >>= _offerMunicipalityArea)
+              if (_offerDetails o >>= _offerMarket) == Just MarketPrimary
                 then (wl, o : nl)
                 else (o : wl, nl)
           )
@@ -146,8 +148,8 @@ offerGroupper offers =
    in filter
         (\(_, oList) -> not . null $ oList)
         [ ("Oferty z OLX", olxOffers),
-          ("Oferty spełniające kryteria", withLocation),
-          ("Oferty bez dokładnej lokalizacji", noLocation),
+          ("Oferty", nonPrimaryMarketOffers),
+          ("Oferty z rynku pierwotnego", primaryMarketOffers),
           ("Oferty odrzucone", nonMatchingOffers)
         ]
 
@@ -185,6 +187,7 @@ main = do
 
   let groupper = case conf of
         Just (addr, _) | addr == fallbackAddr -> offerGroupper
+        Nothing -> offerGroupper
         _ -> simpleGroupper
 
   case conf of

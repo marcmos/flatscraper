@@ -50,11 +50,13 @@ import Domain.Offer
         _offerCoordinates,
         _offerDistrict,
         _offerHasElevator,
+        _offerMarket,
         _offerMunicipalityArea,
         _offerPropertyFloor,
         _offerRooms,
         _offerStreet
       ),
+    OfferMarket (MarketPrimary, MarketSecondary),
     OfferView (OfferView, _offerLatestPrice, _offerURL),
     emptyDetails,
     _offerDetails,
@@ -244,6 +246,15 @@ persistOffers offers = do
             _ -> Nothing
         )
         time
+      upsertIntAttr
+        offerId
+        "market"
+        ( case details >>= _offerMarket of
+            Just MarketPrimary -> Just 0
+            Just MarketSecondary -> Just 1
+            _ -> Nothing
+        )
+        time
 
       upsertFloatingAttr offerId "location_lat" (_latitude <$> (details >>= _offerCoordinates)) time
       upsertFloatingAttr offerId "location_lon" (_longitude <$> (details >>= _offerCoordinates)) time
@@ -336,6 +347,19 @@ loadIntegralAttrs =
                   acc
                     { _offerDetails =
                         Just (details {_offerHasElevator = Just $ value > 0})
+                    }
+                "market" ->
+                  acc
+                    { _offerDetails =
+                        Just
+                          ( details
+                              { _offerMarket =
+                                  case value of
+                                    0 -> Just MarketPrimary
+                                    1 -> Just MarketSecondary
+                                    _ -> Nothing
+                              }
+                          )
                     }
                 _ -> acc
     )

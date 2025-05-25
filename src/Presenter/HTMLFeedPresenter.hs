@@ -40,6 +40,7 @@ import qualified Text.Blaze.Html5 as H
   )
 import Text.Blaze.Html5.Attributes as A (class_, href, style, title)
 import UseCase.FeedGenerator
+import UseCase.FeedGenerator (OfferMarket (MarketPrimary, MarketSecondary))
 import UseCase.GenerateTripSummary
   ( TripSummary
       ( lineNumbers,
@@ -101,7 +102,8 @@ itemMarkup
       offerPricePerMeter = ppm,
       offerRooms = rooms,
       offerMunicipalityArea = municipalityArea,
-      offerTripSummary = tripSummary
+      offerTripSummary = tripSummary,
+      offerMarket = market
     } = do
     let emptyNode = H.toHtml ("" :: Text)
         elevatorText = case elevator >>= _hasElevatorGuess of
@@ -141,6 +143,13 @@ itemMarkup
           Nothing -> emptyNode
     H.div ! A.class_ "border" $ do
       H.div ! A.class_ rowClass $ do
+        badge
+          "info"
+          ( case market of
+              Just MarketPrimary -> Just "Rynek: pierwotny" :: Maybe Text
+              Just MarketSecondary -> Just "Rynek: wtórny"
+              Nothing -> Nothing
+          )
         badge
           (fromMaybe "" ((colorMapper >>= cmArea) <*> Just area))
           (Just $ areaText' formatters area)
