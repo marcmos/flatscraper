@@ -40,76 +40,11 @@ badgeColorMapper =
         _ -> "info"
     }
 
-interestingDistricts :: [Text]
-interestingDistricts =
-  [ "stare miasto",
-    "grzegórzki",
-    "krowodrza",
-    "czyżyny",
-    "mistrzejowice",
-    "bieńczyce"
-  ]
-
-interestingMunicipalityAreas :: [Text]
-interestingMunicipalityAreas =
-  [ -- no doubt
-    -- 1st district
-    "kazimierz",
-    "nowy świat",
-    "piasek",
-    "przedmieście warszawskie",
-    "stare miasto",
-    "stradom",
-    "wesoła",
-    -- 2nd district
-    "dąbie",
-    "grzegórzki",
-    "os. oficerskie",
-    "osiedle oficerskie",
-    -- 3rd district
-    "rakowice",
-    -- 4th district
-    "krowodrza górka",
-    -- 5th district
-    "czarna wieś",
-    "krowodrza",
-    "łobzów",
-    "małe błonia",
-    "nowa wieś",
-    -- 6th district
-    "bronowice",
-    -- 7th district
-    "zwierzyniec",
-    -- 8th district
-    "dębniki",
-    "ludwinów",
-    -- 9th-12th district
-    -- nothing
-    -- 13th district
-    "kabel",
-    "płaszów",
-    "stare podgórze",
-    "zabłocie",
-    -- 14th district
-    "czyżyny",
-    "łęg",
-    -- 15th district
-    "mistrzejowice",
-    -- 16th district
-    "bieńczyce",
-    "zalew nowohucki",
-    -- 17th district
-    -- nothing
-    -- 18th district
-    "nowa huta"
-  ]
-
 uninterestingMunicipalityAreas :: [Text]
 uninterestingMunicipalityAreas =
   [ "bronowice wielkie",
     "tonie",
     "witkowice",
-    "bronowice małe",
     "mydlniki",
     "bielany",
     "chełm",
@@ -123,15 +58,11 @@ uninterestingMunicipalityAreas =
     "kostrze",
     "olszyny",
     "pychowice",
-    "ruczaj",
     "sidzina",
     "skotniki",
     "tyniec",
     "zakrzówek",
     "białe morza",
-    "bowek fałęcki",
-    "cegielniana",
-    "łagiewniki",
     "jugowice",
     "kliny",
     "kosocice",
@@ -143,21 +74,15 @@ uninterestingMunicipalityAreas =
     "zbydniowice",
     "kurdwanów",
     "piaski wielkie",
-    "wola duchacka",
-    "bieżanów",
-    "kozłówka",
-    "prokocim",
     "rżąka",
     "złocień",
     "rybitwy",
     "grębałów",
     "kantorowice",
-    "krzesławice",
     "lubocza",
     "łuczanowice",
     "wadów",
     "węgrzynowice",
-    "wzgórza krzesławickie",
     "zesławice",
     "branice",
     "kombinat",
@@ -169,50 +94,24 @@ uninterestingMunicipalityAreas =
     "ruszcza",
     "wolica",
     "wyróżenice",
-    "wyciąże"
+    "wyciąże",
+    "przewóz"
   ]
 
 uninterestingDistricts :: [Text]
 uninterestingDistricts =
-  [ "łagiewniki-borek fałęcki",
-    "swoszowice",
-    "podgórze duchackie",
-    "bieżanów-prokocim",
-    "wzgórza krzesławickie"
+  [ "swoszowice"
   ]
 
-isPreferredDistrict :: Text -> Bool
-isPreferredDistrict input =
-  any
-    (`T.isInfixOf` normInput)
-    interestingDistricts
-  where
-    normInput = T.toLower input
-
-isPreferredArea :: Text -> Bool
-isPreferredArea input =
-  any
-    (`T.isInfixOf` normInput)
-    interestingMunicipalityAreas
-  where
-    normInput = T.toLower input
-
 offerFilter :: Bool -> OfferView -> Bool
-offerFilter paranoid o =
-  ( ( case muniArea of
-        Just ma -> T.toLower ma `notElem` uninterestingMunicipalityAreas
-        Nothing -> True
-    )
-      && ( case district of
-             Just d -> T.toLower d `notElem` uninterestingDistricts
-             Nothing -> True
-         )
+offerFilter _paranoid o =
+  ( case muniArea of
+      Just ma -> T.toLower ma `notElem` uninterestingMunicipalityAreas
+      Nothing -> True
   )
-    && ( maybe False isPreferredDistrict district
-           || maybe False isPreferredArea muniArea
-           -- include offers that have no district and muni area info
-           -- because of fomo
-           || (paranoid && (isNothing district && isNothing muniArea))
+    && ( case district of
+           Just d -> T.toLower d `notElem` uninterestingDistricts
+           Nothing -> True
        )
   where
     district = _offerDetails o >>= _offerDistrict
