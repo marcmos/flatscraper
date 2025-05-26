@@ -126,20 +126,16 @@ itemMarkup
         tripSummaryBadge = case tripSummary of
           Just ts ->
             let badgeType = if totalTripTime ts < 30 * 60 then "success" else "info"
-                conciseText = toText (totalTripTime ts `div` 60) <> " min. do " <> T.pack (closestHubName ts)
-                detailedText =
-                  "Czas pieszy: "
+                badgeText =
+                  toText (totalTripTime ts `div` 60)
+                    <> " min. ("
                     <> toText (totalWalkingTime ts `div` 60)
-                    <> " min, Przesiadki: "
-                    <> toText (numberOfTransfers ts)
-                    <> ", Czas całkowity: "
-                    <> toText (totalTripTime ts `div` 60)
-                    <> " min, Start: "
-                    <> T.pack (tripStartStopName ts)
-                    <> ", Linie: "
+                    <> " min. pieszo) do"
+                    <> T.pack (closestHubName ts)
+                    <> " (linie: "
                     <> T.intercalate ", " (map T.pack $ lineNumbers ts)
-             in H.abbr ! A.title (H.toValue detailedText) $
-                  badge badgeType (Just $ conciseText <> " | " <> detailedText)
+                    <> ")"
+             in badge badgeType (Just badgeText)
           Nothing -> emptyNode
     H.div ! A.class_ "border" $ do
       H.div ! A.class_ rowClass $ do
