@@ -159,14 +159,11 @@ simpleGroupper offers =
 
 genTitle :: [(Text, [OfferView])] -> Text
 genTitle groups =
-  maybe
-    "Oferty mieszkań do przeglądnięcia"
-    ( \(_, offers) ->
-        "Kasiu, specjalnie dla Ciebie przygotowałem "
-          <> (T.pack . show . length $ offers)
-          <> " ofert mieszkań do przeglądnięcia"
-    )
-    (listToMaybe groups)
+  "Specjalnie dla Ciebie przygotowałem "
+    <> (T.pack . show . length $ offers)
+    <> " ofert mieszkań do przeglądnięcia"
+  where
+    offers = concatMap snd groups
 
 main :: IO ()
 main = do
