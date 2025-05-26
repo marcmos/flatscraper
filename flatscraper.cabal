@@ -55,6 +55,7 @@ library
     , blaze-html
     , bytestring
     , case-insensitive
+    , containers
     , either
     , feed
     , http-client
@@ -96,6 +97,7 @@ executable flatscraper-gen-feed
     , blaze-html
     , bytestring
     , case-insensitive
+    , containers
     , either
     , feed
     , flatscraper
@@ -138,6 +140,7 @@ executable flatscraper-process-location
     , blaze-html
     , bytestring
     , case-insensitive
+    , containers
     , either
     , feed
     , flatscraper
@@ -180,6 +183,7 @@ executable flatscraper-scrape
     , blaze-html
     , bytestring
     , case-insensitive
+    , containers
     , either
     , feed
     , flatscraper
@@ -222,6 +226,7 @@ executable flatscraper-send-digest
     , blaze-html
     , bytestring
     , case-insensitive
+    , containers
     , either
     , feed
     , flatscraper
@@ -264,6 +269,7 @@ executable new-cli
     , blaze-html
     , bytestring
     , case-insensitive
+    , containers
     , either
     , feed
     , flatscraper
@@ -306,6 +312,7 @@ test-suite spec
     , blaze-html
     , bytestring
     , case-insensitive
+    , containers
     , either
     , feed
     , flatscraper

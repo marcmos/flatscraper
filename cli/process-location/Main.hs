@@ -1,6 +1,7 @@
 module Main where
 
 import Data.Time (UTCTime, defaultTimeLocale, parseTimeM)
+import Data.Time.Clock (getCurrentTime)
 import DataAccess.Mobroute
   ( MobrouteProfile (MobrouteProfile, profileName),
     MobrouteProvider (MobrouteProvider),
@@ -8,17 +9,17 @@ import DataAccess.Mobroute
 import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
 import UseCase.GenerateTripSummary
   ( CityTransport (..),
-    generateAndStoreTripSummaries,
+    generateAndStoreTripSummariesWithComputationTracking,
   )
 
 main :: IO ()
 main = do
   let sqlite = SQLitePersistence
   time <- startTime'
-  generateAndStoreTripSummaries
-    sqlite
-    mobroute
-    (map profileName mobrouteProfiles)
+  generateAndStoreTripSummariesWithComputationTracking
+    sqlite -- Pass the dataAccess instance
+    mobroute -- Pass the routeProvider instance
+    (map DataAccess.Mobroute.profileName mobrouteProfiles) -- List of all profile names
     krakow
     time
 

@@ -16,7 +16,8 @@
 
 module DataAccess.SQLite (SQLitePersistence (SQLitePersistence)) where
 
-import Control.Monad (filterM, forM_, (<=<))
+import Control.Monad (filterM, forM, forM_, (<=<))
+import qualified Data.Map as Map
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T (pack, unpack)
@@ -26,6 +27,7 @@ import Database.Persist
   ( Entity (Entity),
     SelectOpt (Asc, Desc, LimitTo),
     insert,
+    insert_,
     selectFirst,
     selectList,
     upsertBy,
@@ -33,7 +35,7 @@ import Database.Persist
     (==.),
     (>.),
   )
-import Database.Persist.Sql (runMigration)
+import Database.Persist.Sql (SqlPersistM, runMigration)
 import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH
   ( mkMigrate,
@@ -146,6 +148,13 @@ TripSummary
     totalTripTime Int -- Total trip time in seconds
     destinationHubName Text -- Name of the destination hub
     profile Text
+    deriving Show
+
+TripComputation
+    offerId OfferInstanceId
+    status Text -- Can be "PENDING", "SUCCESS", "NO_ROUTE_FOUND", "ERROR"
+    timestamp UTCTime
+    UniqueComputationOffer offerId
     deriving Show
 |]
 
@@ -469,48 +478,52 @@ instance LastVisitStorer SQLitePersistence Text where
         Just (Entity _ (Visit _ time)) -> return $ Just time
 
 instance UC.TripSummaryDataAccess SQLitePersistence OfferInstanceId where
-  fetchRecentCoordinates :: SQLitePersistence -> UTCTime -> IO [(OfferInstanceId, Double, Double)]
-  fetchRecentCoordinates _ oneDayAgo = runSqlite "flatscraper.sqlite" $ do
-    runMigration migrateAll
+  fetchCoordinatesNeedingComputation _ oneDayAgo = runSqlite "flatscraper.sqlite" $ do
+    runMigration migrateAll -- Ensures Computation table exists
+    latitudes <- selectList [OfferFloatingAttributeName ==. "location_lat", OfferFloatingAttributeCreatedAt >. oneDayAgo] []
+    longitudes <- selectList [OfferFloatingAttributeName ==. "location_lon", OfferFloatingAttributeCreatedAt >. oneDayAgo] []
 
-    -- Fetch recently created latitude and longitude attributes
-    latitudes <-
-      selectList
-        [ OfferFloatingAttributeName ==. "location_lat",
-          OfferFloatingAttributeCreatedAt >. oneDayAgo
-        ]
-        [Desc OfferFloatingAttributeCreatedAt]
-    longitudes <-
-      selectList
-        [ OfferFloatingAttributeName ==. "location_lon",
-          OfferFloatingAttributeCreatedAt >. oneDayAgo
-        ]
-        [Desc OfferFloatingAttributeCreatedAt]
+    let latMap = Map.fromList [(offerFloatingAttributeOfferId attr, offerFloatingAttributeValue attr) | Entity _ attr <- latitudes]
+    let lonMap = Map.fromList [(offerFloatingAttributeOfferId attr, offerFloatingAttributeValue attr) | Entity _ attr <- longitudes]
+    let offerCoordsList = map (\(oid, (lat, lon)) -> (oid, lat, lon)) $ Map.toList $ Map.intersectionWith (,) latMap lonMap
 
-    -- Match latitude and longitude by offerId
-    let latMap = [(offerId, value) | Entity _ (OfferFloatingAttribute _ offerId _ value) <- latitudes]
-    let lonMap = [(offerId, value) | Entity _ (OfferFloatingAttribute _ offerId _ value) <- longitudes]
-    let matchedCoords = [(offerId, lat, lon) | (offerId, lat) <- latMap, (offerId', lon) <- lonMap, offerId == offerId']
-
-    -- Filter out offers that already have trip summaries
-    filterM hasNoTripSummary matchedCoords
+    filterM needsProcessing offerCoordsList
     where
-      hasNoTripSummary (offerId, _, _) = do
-        tripSummary <- selectFirst [TripSummaryOfferId ==. offerId] []
-        return $ isNothing tripSummary
+      needsProcessing :: (OfferInstanceId, Double, Double) -> SqlPersistM Bool
+      needsProcessing (offerId, _, _) = do
+        computation <- selectFirst [TripComputationOfferId ==. offerId] []
+        case computation of
+          Just (Entity _ c) -> return $ tripComputationStatus c `notElem` ["SUCCESS", "NO_ROUTE_FOUND"] -- Reprocess PENDING or ERROR
+          Nothing -> return True -- Not attempted yet
+
+  markComputationAttempt :: SQLitePersistence -> OfferInstanceId -> Text -> UTCTime -> IO ()
+  markComputationAttempt _ offerId status time = runSqlite "flatscraper.sqlite" $ do
+    runMigration migrateAll
+    markComputationStatusDB offerId status time
 
   storeTripSummary _ offerId tripSummary = runSqlite "flatscraper.sqlite" $ do
     runMigration migrateAll
-    _ <-
-      insert $
-        TripSummary
-          offerId
-          (UC.totalWalkingTime tripSummary)
-          (UC.numberOfTransfers tripSummary)
-          (UC.tripStartTime tripSummary)
-          (T.pack . UC.tripStartStopName $ tripSummary)
-          (map T.pack $ UC.lineNumbers tripSummary)
-          (UC.totalTripTime tripSummary)
-          (T.pack . UC.closestHubName $ tripSummary)
-          (T.pack . UC.profileName $ tripSummary)
-    return ()
+    insert_ $
+      TripSummary
+        offerId
+        (UC.totalWalkingTime tripSummary)
+        (UC.numberOfTransfers tripSummary)
+        (UC.tripStartTime tripSummary)
+        (T.pack . UC.tripStartStopName $ tripSummary)
+        (map T.pack $ UC.lineNumbers tripSummary)
+        (UC.totalTripTime tripSummary)
+        (T.pack . UC.closestHubName $ tripSummary)
+        (T.pack . UC.profileName $ tripSummary)
+
+  markSuccess _ offerId computationTimestamp = runSqlite "flatscraper.sqlite" $ do
+    runMigration migrateAll
+    markComputationStatusDB offerId "SUCCESS" computationTimestamp
+
+markComputationStatusDB :: OfferInstanceId -> Text -> UTCTime -> SqlPersistM ()
+markComputationStatusDB offerId newStatus time = do
+  _ <-
+    upsertBy
+      (UniqueComputationOffer offerId)
+      (TripComputation offerId newStatus time)
+      [TripComputationStatus =. newStatus, TripComputationTimestamp =. time]
+  return ()
