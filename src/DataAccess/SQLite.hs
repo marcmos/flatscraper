@@ -272,26 +272,6 @@ persistOffers offers = do
 
       return e
 
-fetchRecentCoordinates :: UTCTime -> IO [(OfferInstanceId, Double, Double)]
-fetchRecentCoordinates oneDayAgo = runSqlite "flatscraper.sqlite" $ do
-  runMigration migrateAll
-
-  -- Fetch latitude and longitude attributes
-  latitudes <- selectList [OfferFloatingAttributeName ==. "location_lat", OfferFloatingAttributeCreatedAt >. oneDayAgo] []
-  longitudes <- selectList [OfferFloatingAttributeName ==. "location_lon", OfferFloatingAttributeCreatedAt >. oneDayAgo] []
-
-  -- Match latitude and longitude by offerId
-  let latMap = [(offerId, value) | Entity _ (OfferFloatingAttribute _ offerId _ value) <- latitudes]
-  let lonMap = [(offerId, value) | Entity _ (OfferFloatingAttribute _ offerId _ value) <- longitudes]
-  let matchedCoords = [(offerId, lat, lon) | (offerId, lat) <- latMap, (offerId', lon) <- lonMap, offerId == offerId']
-
-  -- Filter out offers that already have trip summaries
-  filterM hasNoTripSummary matchedCoords
-  where
-    hasNoTripSummary (offerId, _, _) = do
-      tripSummary <- selectFirst [TripSummaryOfferId ==. offerId] []
-      return $ isNothing tripSummary
-
 loadTextAttrs ::
   OfferView ->
   [Entity OfferTextAttribute] ->
