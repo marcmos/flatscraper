@@ -18,10 +18,10 @@ where
 
 import Control.Applicative ((<|>))
 import Data.Bifunctor (Bifunctor (second))
-import Data.List (sortOn)
-import Data.Maybe (fromMaybe)
+import Data.List (find, nub, sortOn)
+import Data.Maybe (catMaybes, fromMaybe, listToMaybe)
 import Data.Text (Text)
-import qualified Data.Text as T (isInfixOf, pack)
+import qualified Data.Text as T (isInfixOf, isPrefixOf, pack)
 import qualified Data.Text.ICU as Locale (LocaleName (Locale))
 import Data.Text.ICU.NumberFormatter (formatDouble, formatIntegral, numberFormatter)
 import qualified Data.Text.ICU.NumberFormatter as ICU
@@ -44,7 +44,12 @@ import Domain.Offer
     hasElevator,
     pricePerMeter,
   )
-import Domain.PublicTransport (TripSummary)
+import Domain.PublicTransport
+  ( TripSummary,
+    profileName,
+    totalTripTime,
+    totalWalkingTime,
+  )
 import System.IO (stderr)
 import UseCase.Offer (QueryAccess (fetchTripSummaries, getOffersCreatedAfter))
 
@@ -153,7 +158,9 @@ deduplicateOffers = foldr mergeItems []
                     offerStreetText = pickFirstNonEmpty offerStreetText item matching,
                     offerDistrictText = pickFirstNonEmpty offerDistrictText item matching,
                     offerMunicipalityArea = pickFirstNonEmpty offerMunicipalityArea item matching,
-                    offerTripSummaries = nub $ offerTripSummaries item ++ offerTripSummaries matching
+                    offerTripSummaries =
+                      nub $
+                        offerTripSummaries item ++ offerTripSummaries matching
                   }
            in before ++ (merged : after)
         _ -> item : acc
@@ -175,6 +182,48 @@ deduplicateOffers = foldr mergeItems []
       | any ("nieruchomosci-online" `T.isInfixOf`) (offerURL item) = True
       | any ("morizon" `T.isInfixOf`) (offerURL item) = False
       | otherwise = False
+
+selectInterestingTrips :: [TripSummary] -> [TripSummary]
+selectInterestingTrips summaries =
+  if null summaries
+    then []
+    else
+      let -- Attempt to find a tram trip
+          tramTripM =
+            find
+              ( \ts ->
+                  "tram_"
+                    `T.isPrefixOf` (T.pack $ profileName ts)
+              )
+              summaries
+
+          -- Attempt to find the trip with the minimum total time
+          minTotalTimeTripM = listToMaybe $ sortOn totalTripTime summaries
+
+          -- Initial selection of candidates
+          initialCandidates = catMaybes [tramTripM, minTotalTimeTripM]
+
+          longWalkThreshold = 6 * 60
+
+          -- Conditionally add the trip with the minimum walking time
+          finalCandidates = case minTotalTimeTripM of
+            Just minTotalTrip
+              | totalWalkingTime minTotalTrip > longWalkThreshold ->
+                  -- If shortest total time trip's walk time is > 6min, find
+                  -- the overall shortest walking time trip
+                  let minWalkingTimeTripM =
+                        listToMaybe $
+                          sortOn totalWalkingTime $
+                            -- ...but do not propose walk, that isn't better
+                            -- than the first one
+                            filter
+                              (\ts -> totalWalkingTime ts <= longWalkThreshold)
+                              summaries
+                   in initialCandidates ++ catMaybes [minWalkingTimeTripM]
+            -- Otherwise, stick with the initial candidates
+            _ -> initialCandidates
+       in -- Remove duplicates from the final selection
+          nub finalCandidates
 
 showNewSinceLastVisit ::
   (FeedViewer fv, FeedPresenter fp a, QueryAccess qa) =>
@@ -202,8 +251,20 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
       offers <-
         mapM
           ( \(groupTitle, offerViews) -> do
-              offerFeedItems <- mapM (repack formatters queryAccess) offerViews
-              return (groupTitle, offerFeedItems)
+              initialOfferFeedItems <- mapM (repack formatters queryAccess) offerViews
+              let deduplicatedGroupItems = deduplicateOffers initialOfferFeedItems
+              -- Apply selectInterestingTrips to *all* items in the deduplicated list
+              -- to ensure non-merged items also have their summaries refined.
+              let finalOfferFeedItems =
+                    map
+                      ( \item ->
+                          item
+                            { offerTripSummaries =
+                                selectInterestingTrips (offerTripSummaries item)
+                            }
+                      )
+                      deduplicatedGroupItems
+              return (groupTitle, finalOfferFeedItems)
           )
           grouppedOffers
 

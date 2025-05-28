@@ -43,7 +43,7 @@ data TripSummary = TripSummary
     closestHubName :: String, -- Name of the closest hub
     profileName :: String
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- Function to calculate total trip time from all legs
 calculateTotalTripTime :: [Leg] -> Either String Int
