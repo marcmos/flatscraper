@@ -82,7 +82,7 @@ import qualified UseCase.GenerateTripSummary as UC
   )
 import UseCase.Offer
   ( OfferSeeder (seedOffers),
-    QueryAccess (fetchTripSummary, getOffersCreatedAfter),
+    QueryAccess (fetchTripSummaries, getOffersCreatedAfter),
   )
 import UseCase.ScrapePersister
   ( OfferDetailsLoader (loadDetails),
@@ -398,32 +398,33 @@ instance QueryAccess SQLitePersistence where
     let limit = 100
      in getCreatedAfter timestamp limit
 
-  fetchTripSummary :: SQLitePersistence -> Text -> IO (Maybe UC.TripSummary)
-  fetchTripSummary _ url = runSqlite "flatscraper.sqlite" $ do
+  fetchTripSummaries _ url = runSqlite "flatscraper.sqlite" $ do
     runMigration migrateAll
     offer <- selectFirst [OfferInstanceUrl ==. url] []
     case offer of
-      Nothing -> return Nothing
+      Nothing -> return []
       Just (Entity offerId _) -> do
-        tripSummary <-
-          selectFirst
+        tripSummaries <-
+          selectList
             [TripSummaryOfferId ==. offerId]
             [ Asc TripSummaryTotalTripTime,
               Asc TripSummaryTotalWalkingTime
             ]
-        return $ case tripSummary of
-          Nothing -> Nothing
-          Just (Entity _ ts) ->
-            Just $
-              UC.TripSummary
-                { UC.totalWalkingTime = tripSummaryTotalWalkingTime ts,
-                  UC.numberOfTransfers = tripSummaryNumberOfTransfers ts,
-                  UC.tripStartTime = tripSummaryStartTime ts,
-                  UC.tripStartStopName = T.unpack $ tripSummaryStartStopName ts,
-                  UC.lineNumbers = map T.unpack $ tripSummaryLineNumbers ts,
-                  UC.totalTripTime = tripSummaryTotalTripTime ts,
-                  UC.closestHubName = T.unpack $ tripSummaryDestinationHubName ts
-                }
+        return $
+          map
+            ( \(Entity _ ts) ->
+                UC.TripSummary
+                  { UC.totalWalkingTime = tripSummaryTotalWalkingTime ts,
+                    UC.numberOfTransfers = tripSummaryNumberOfTransfers ts,
+                    UC.tripStartTime = tripSummaryStartTime ts,
+                    UC.tripStartStopName = T.unpack $ tripSummaryStartStopName ts,
+                    UC.lineNumbers = map T.unpack $ tripSummaryLineNumbers ts,
+                    UC.totalTripTime = tripSummaryTotalTripTime ts,
+                    UC.closestHubName = T.unpack $ tripSummaryDestinationHubName ts,
+                    UC.profileName = T.unpack $ tripSummaryProfile ts
+                  }
+            )
+            tripSummaries
 
 instance OfferStorer SQLitePersistence where
   storeOffers _ = persistOffers

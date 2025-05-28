@@ -10,4 +10,4 @@ class OfferSeeder os where
 
 class QueryAccess a where
   getOffersCreatedAfter :: a -> UTCTime -> IO [OfferView]
-  fetchTripSummary :: a -> Text -> IO (Maybe TripSummary)
+  fetchTripSummaries :: a -> Text -> IO [TripSummary]

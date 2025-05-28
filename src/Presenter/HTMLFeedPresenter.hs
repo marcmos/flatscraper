@@ -50,6 +50,7 @@ import UseCase.GenerateTripSummary
         tripStartStopName
       ),
     closestHubName,
+    profileName,
   )
 
 badge' :: (H.ToMarkup a) => Maybe a -> Maybe Text -> H.Html
@@ -102,7 +103,7 @@ itemMarkup
       offerPricePerMeter = ppm,
       offerRooms = rooms,
       offerMunicipalityArea = municipalityArea,
-      offerTripSummary = tripSummary,
+      offerTripSummaries = tripSummaries,
       offerMarket = market
     } = do
     let emptyNode = H.toHtml ("" :: Text)
@@ -123,20 +124,25 @@ itemMarkup
                 )
         url = offerURL ov
         rowClass = "p-2"
-        tripSummaryBadge = case tripSummary of
-          Just ts ->
-            let badgeType = if totalTripTime ts < 30 * 60 then "success" else "info"
-                badgeText =
-                  toText (totalTripTime ts `div` 60)
-                    <> " min. ("
-                    <> toText (totalWalkingTime ts `div` 60)
-                    <> " min. pieszo) do"
-                    <> T.pack (closestHubName ts)
-                    <> " (linie: "
-                    <> T.intercalate ", " (map T.pack $ lineNumbers ts)
-                    <> ")"
-             in badge badgeType (Just badgeText)
-          Nothing -> emptyNode
+        tripSummariesBadges = case tripSummaries of
+          [] -> emptyNode
+          summaries ->
+            H.div $ mapM_ renderTripSummaryBadge summaries
+          where
+            renderTripSummaryBadge ts =
+              let badgeType = if totalTripTime ts < 30 * 60 then "success" else "info"
+                  badgeText =
+                    toText (totalTripTime ts `div` 60)
+                      <> " min. ("
+                      <> toText (totalWalkingTime ts `div` 60)
+                      <> " min. pieszo) do "
+                      <> T.pack (closestHubName ts)
+                      <> " z "
+                      <> T.pack (tripStartStopName ts)
+                      <> " (linie: "
+                      <> T.intercalate ", " (map T.pack $ lineNumbers ts)
+                      <> ")"
+               in badge badgeType (Just badgeText)
     H.div ! A.class_ "border" $ do
       H.div ! A.class_ rowClass $ do
         badge
@@ -182,8 +188,7 @@ itemMarkup
               H.div $ H.a ! A.href (H.toValue u) $ H.toHtml (offerTitle ov)
           )
           url
-      H.div ! A.class_ rowClass $ do
-        tripSummaryBadge
+      H.div ! A.class_ rowClass $ tripSummariesBadges
 
 data BadgeColorMapper = BadgeColorMapper
   { cmArea :: Maybe (Double -> Text),

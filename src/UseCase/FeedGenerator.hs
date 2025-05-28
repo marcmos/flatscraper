@@ -46,7 +46,7 @@ import Domain.Offer
   )
 import Domain.PublicTransport (TripSummary)
 import System.IO (stderr)
-import UseCase.Offer (QueryAccess (fetchTripSummary, getOffersCreatedAfter))
+import UseCase.Offer (QueryAccess (fetchTripSummaries, getOffersCreatedAfter))
 
 class FeedPresenter fp a where
   present :: fp a -> OfferFeed -> IO a
@@ -66,7 +66,7 @@ data OfferFeedItem = OfferFeedItem
     offerBuildYearText :: Maybe Text,
     offerRooms :: Maybe Int,
     offerMunicipalityArea :: Maybe Text,
-    offerTripSummary :: Maybe TripSummary,
+    offerTripSummaries :: [TripSummary],
     offerMarket :: Maybe OfferMarket
   }
 
@@ -153,7 +153,7 @@ deduplicateOffers = foldr mergeItems []
                     offerStreetText = pickFirstNonEmpty offerStreetText item matching,
                     offerDistrictText = pickFirstNonEmpty offerDistrictText item matching,
                     offerMunicipalityArea = pickFirstNonEmpty offerMunicipalityArea item matching,
-                    offerTripSummary = pickFirstNonEmpty offerTripSummary item matching
+                    offerTripSummaries = nub $ offerTripSummaries item ++ offerTripSummaries matching
                   }
            in before ++ (merged : after)
         _ -> item : acc
@@ -220,7 +220,7 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
       hPutStrLn stderr $ "Displayed " <> toText (length allOffers) <> " offers"
   where
     repack formatters queryAccess ov@OfferView {_offerURL = url} = do
-      tripSummary <- fetchTripSummary queryAccess url -- Fetch TripSummary
+      tripSummaries <- fetchTripSummaries queryAccess url -- Fetch TripSummary
       let pFloor = _offerDetails ov >>= _offerPropertyFloor
           bFloors = _offerDetails ov >>= _offerBuildingFloors
           elevator = hasElevator ov
@@ -263,7 +263,7 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
                 <$> (_offerDetails ov >>= _offerBuiltYear),
             offerRooms = _offerDetails ov >>= _offerRooms,
             offerMunicipalityArea = municipalityArea,
-            offerTripSummary = tripSummary, -- Populate TripSummary
+            offerTripSummaries = tripSummaries, -- Populate TripSummary
             offerMarket = _offerDetails ov >>= _offerMarket
           }
       where
