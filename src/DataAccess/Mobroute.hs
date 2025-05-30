@@ -18,7 +18,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.List (find)
 import Data.Text (Text)
-import Data.Time (TimeLocale)
+import Data.Time (TimeLocale, hoursToTimeZone, utcToZonedTime)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (formatTime)
 import System.Exit (ExitCode (..))
@@ -70,9 +70,12 @@ generateMobrouteInput
             "to" .= to,
             "transfer_categories" .= transferCategories,
             "output_formats" .= outputFormats,
-            "time" .= formatTime timeLocale "%Y-%m-%dT%H:%M:%SZ" startTime, -- Encode time in RFC3339 format
+            "time" .= formatTime timeLocale "%Y-%m-%dT%H:%M:%S%Ez" localTime, -- Encode time in RFC3339 format
             "max_walk_seconds" .= maxWalkSeconds
           ]
+    where
+      quirkTimeZoneTime = hoursToTimeZone 2
+      localTime = utcToZonedTime quirkTimeZoneTime startTime
 
 type Leg = UseCase.Leg
 

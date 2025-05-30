@@ -47,8 +47,8 @@ startTime' =
   parseTimeM
     True
     defaultTimeLocale
-    "%Y-%m-%dT%H:%M:%SZ"
-    "2025-05-15T06:00:00Z"
+    "%Y-%m-%dT%H:%M:%S%Ez"
+    "2025-05-30T08:00:00+02:00"
 
 mobilisFeedId :: Int
 mobilisFeedId = 2598
