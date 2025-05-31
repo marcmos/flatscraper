@@ -75,8 +75,6 @@ uninterestingMunicipalityAreas =
     "swoszowice",
     "wróblewice",
     "zbydniowice",
-    "kurdwanów",
-    "piaski wielkie",
     "rżąka",
     "złocień",
     "rybitwy",
