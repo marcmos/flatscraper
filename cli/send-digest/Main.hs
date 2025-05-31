@@ -151,10 +151,6 @@ offerGroupper offers =
           ("Oferty odrzucone", nonMatchingOffers)
         ]
 
-simpleGroupper :: [OfferView] -> [(Text, [OfferView])]
-simpleGroupper offers =
-  [("Oferty spełniające kryteria", filter (offerFilter False) offers)]
-
 genTitle :: [(Text, [OfferView])] -> Text
 genTitle groups =
   "Specjalnie dla Ciebie przygotowałem "
@@ -180,11 +176,6 @@ main = do
         creds <- smtpCreds
         Just (r, creds)
 
-  let groupper = case conf of
-        Just (addr, _) | addr == fallbackAddr -> offerGroupper
-        Nothing -> offerGroupper
-        _ -> simpleGroupper
-
   case conf of
     Just (recipient, creds) -> do
       currentTime <- getCurrentTime
@@ -194,7 +185,7 @@ main = do
         presenter
         (SMTPView (TL.toStrict . H.renderHtml) creds recipient)
         (getLastVisit sqlite recipient)
-        groupper
+        offerGroupper
         genTitle
 
       storeLastVisit sqlite recipient currentTime
@@ -204,7 +195,7 @@ main = do
         presenter
         htmlCliView
         (return Nothing)
-        groupper
+        offerGroupper
         genTitle
   where
     sqlite = SQLitePersistence
