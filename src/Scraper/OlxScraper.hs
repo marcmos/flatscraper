@@ -7,7 +7,7 @@ import Control.Lens (element, (^?))
 import Data.Either.Combinators (rightToMaybe)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
-import qualified Data.Text as T (isPrefixOf, replace, takeWhile)
+import qualified Data.Text as T (isPrefixOf, replace, stripSuffix, takeWhile)
 import qualified Data.Text.Read as T (double)
 import DataAccess.ScrapeLoader
   ( ScraperPack (ScraperPack),
@@ -60,7 +60,10 @@ listOfferScraper = do
   url <- attr "href" "a"
   let parsedUrl =
         if "https://www.otodom.pl" `T.isPrefixOf` url
-          then url
+          then -- otodom urls on the olx side are ending with ".html" whereas on the
+          -- otodom site they are not; let's normalize them by stripping the
+          -- ".html" suffix to avoid duplicates at the later stage
+            fromMaybe url $ T.stripSuffix ".html" url
           else "https://www.olx.pl" <> url
   rawPrice <- listToMaybe <$> texts ("p" @: ["data-testid" @= "ad-price"])
   title <- text "h4"
