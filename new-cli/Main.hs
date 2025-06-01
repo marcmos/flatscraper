@@ -10,6 +10,9 @@ import Data.Time (getCurrentTime)
 import DataAccess.Mobroute (MobrouteProvider (MobrouteProvider))
 import DataAccess.SQLite (SQLiteOfferQuery (SQLiteOfferQuery), SQLitePersistence (SQLitePersistence))
 import DataAccess.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper (WebScraper), WebScrapers (WebScrapers))
+import Database.Persist (PersistValue)
+import Database.Persist.Sqlite (runSqlite)
+import Domain.Offer (OfferView (OfferView, _offerInstanceId))
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
@@ -20,9 +23,11 @@ import qualified Scraper.NieruchOnlineScraper
 import qualified Scraper.OlxScraper
 import qualified Scraper.OtodomScraper
 import System.Environment (getArgs)
+import System.IO (hPutStrLn, stderr)
 import qualified Text.Blaze.Html as H
 import qualified Text.Blaze.Html.Renderer.Text as H
 import Text.HTML.Scalpel (Config (Config), utf8Decoder)
+import UseCase.EmergingOffer (EmergingOfferSelector (markAsRssPublished), selectEmergingOfferForRss)
 import UseCase.FeedGenerator (FeedPresenter (present), Formatters, OfferFeed (OfferFeed), OfferFeedItem, showNewSinceLastVisit)
 import UseCase.Offer (QueryAccess (getOffersCreatedAfter))
 import UseCase.ScrapePersister (OfferStorer (storeOffers), loadDetails, seedOffers)
@@ -58,23 +63,62 @@ testOfflineListScraper = do
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   print offers'
 
-query :: Text -> Text
-query profile =
-  "select id, score from scoreboard_"
-    <> profile
-    <> " order by score desc \
-       \limit 6"
-
 main :: IO ()
 main = do
   let rssPresenter = RSSFeedPresenter
   let cliViewer = CLIView id
 
-  args <- getArgs
-  let scoreboardTable = maybe "tram" T.pack (listToMaybe args)
-  let scoreboardQuery = query scoreboardTable
+  let tramQuery =
+        "select id \
+        \from score_offer_tram_v1 \
+        \natural join offer_instance \
+        \where date(created_at) >= date('now', '-1 day') \
+        \order by total_score desc"
+  let combinedQuery =
+        "select id \
+        \from score_offer_combined_v1 \
+        \natural join offer_instance \
+        \where date(created_at) >= date('now', '-1 day') \
+        \order by total_score desc"
+  let joinedQuery =
+        "select id \
+        \from scoreboard_boosted \
+        \natural join offer_instance \
+        \where date(created_at) >= date('now', '-1 day') \
+        \order by score desc"
 
-  let sqliteQuery = SQLiteOfferQuery SQLitePersistence scoreboardQuery
+  args <- getArgs
+
+  let (feedId, queries) = case args of
+        ["v1"] -> do
+          ("v1", [(tramQuery, []), (combinedQuery, [])])
+        ["v2"] -> do
+          ("v2", [(joinedQuery, [])])
+        _ -> do
+          ("none", []) :: (Text, [(Text, [PersistValue])])
+
+  o <- runSqlite "flatscraper.sqlite" $ selectEmergingOfferForRss feedId queries
+
+  now <- getCurrentTime
+  case o of
+    Nothing -> hPutStrLn stderr "No offers found."
+    Just (OfferView {_offerInstanceId = offerId}) -> do
+      case offerId of
+        Nothing -> hPutStrLn stderr "Offer ID is missing."
+        Just offerId' ->
+          runSqlite "flatscraper.sqlite" $
+            markAsRssPublished offerId' now "scoreboard_boosted" feedId
+
+  let sqliteQuery =
+        SQLiteOfferQuery
+          SQLitePersistence
+          $ "select offer_id, score \
+            \from published_offer \
+            \where feed_id = '"
+            <> feedId
+            <> "'\
+               \order by id desc \
+               \limit 10"
 
   showNewSinceLastVisit
     sqliteQuery
@@ -82,4 +126,4 @@ main = do
     cliViewer
     (return Nothing) -- No last visit time
     (\offers -> [("Offers", offers)]) -- Group all offers under a single category
-    (\_ -> "Flatscraper RSS Feed") -- Title for the feed
+    (const "Flatscraper RSS Feed") -- Title for the feed

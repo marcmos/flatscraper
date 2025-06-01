@@ -8,7 +8,7 @@ import Data.Text (Text)
 import qualified Data.Text as T (isInfixOf, isPrefixOf, isSuffixOf, pack, toLower)
 import qualified Data.Text.Lazy as TL
 import Data.Time (getCurrentTime)
-import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
+import DataAccess.SQLite (SQLiteOfferQuery, SQLitePersistence (SQLitePersistence))
 import Domain.Offer
   ( OfferMarket (MarketPrimary),
     OfferView,
@@ -28,7 +28,7 @@ import Presenter.HTMLFeedPresenter
 import System.Environment (getArgs)
 import qualified Text.Blaze.Html.Renderer.Text as H
 import qualified Text.Blaze.Html5 as H
-import UseCase.FeedGenerator (LastVisitStorer (storeLastVisit), getLastVisit, showNewSinceLastVisit)
+import UseCase.FeedGenerator (LastVisitStorer (storeLastVisit), OfferFeedItem, getLastVisit, showNewSinceLastVisit)
 import View.CLIView (CLIView (CLIView))
 import View.SMTPView (SMTPView (SMTPView), loadCredentialsFromFile)
 

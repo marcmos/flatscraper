@@ -33,6 +33,7 @@ library
       Scraper.NieruchOnlineScraper
       Scraper.OlxScraper
       Scraper.OtodomScraper
+      UseCase.EmergingOffer
       UseCase.FeedGenerator
       UseCase.GenerateTripSummary
       UseCase.Offer

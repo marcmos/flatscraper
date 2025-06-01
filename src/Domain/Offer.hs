@@ -3,6 +3,7 @@
 module Domain.Offer where
 
 import Control.Lens (makeLenses)
+import Data.Int (Int64)
 import Data.Text (Text)
 
 data OfferRef = OfferURLRef
@@ -36,10 +37,14 @@ data OfferView2 = OfferView2
     _offer2BuildingAttrs :: BuildingAttrs
   }
 
+newtype OfferInstanceId = OfferInstanceId {unOfferInstanceId :: Int64}
+  deriving (Show, Eq, Ord)
+
 -- Offer snapshot, seen at some point in time.
 -- Minimum viable offer has 3 things: URL, some price and area.
 data OfferView = OfferView
-  { _offerURL :: Text, -- detailed offer URL
+  { _offerInstanceId :: Maybe OfferInstanceId,
+    _offerURL :: Text, -- detailed offer URL
     _offerLatestPrice :: Int,
     _offerArea :: Double,
     _offerTitle :: Text,
@@ -75,10 +80,17 @@ makeLenses ''OfferView
 makeLenses ''OfferDetails
 
 newOfferView :: Text -> Int -> Double -> Text -> OfferView
-newOfferView url price area title = OfferView url price area title Nothing
+newOfferView url price area title =
+  OfferView
+    Nothing
+    url
+    price
+    area
+    title
+    Nothing
 
 emptyOffer :: OfferView
-emptyOffer = OfferView "" 0 0.0 "" Nothing
+emptyOffer = OfferView Nothing "" 0 0.0 "" Nothing
 
 emptyDetails :: OfferDetails
 emptyDetails =
