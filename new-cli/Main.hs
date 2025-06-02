@@ -7,7 +7,7 @@ import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.Lazy as TL (Text, toStrict)
 import Data.Time (getCurrentTime)
 import DataAccess.Mobroute (MobrouteProvider (MobrouteProvider))
-import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
+import DataAccess.SQLite (SQLiteOfferQuery (SQLiteOfferQuery), SQLitePersistence (SQLitePersistence))
 import DataAccess.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper (WebScraper), WebScrapers (WebScrapers))
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
@@ -21,7 +21,7 @@ import qualified Scraper.OtodomScraper
 import qualified Text.Blaze.Html as H
 import qualified Text.Blaze.Html.Renderer.Text as H
 import Text.HTML.Scalpel (Config (Config), utf8Decoder)
-import UseCase.FeedGenerator (FeedViewer (view), present, showNewSinceLastVisit)
+import UseCase.FeedGenerator (FeedPresenter (present), Formatters, OfferFeed (OfferFeed), OfferFeedItem, showNewSinceLastVisit)
 import UseCase.Offer (QueryAccess (getOffersCreatedAfter))
 import UseCase.ScrapePersister (OfferStorer (storeOffers), loadDetails, seedOffers)
 import View.CLIView (CLIView (CLIView))
@@ -56,17 +56,24 @@ testOfflineListScraper = do
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   print offers'
 
+sampleQuery :: Text
+sampleQuery =
+  "select id, total_score from score_offer \
+  \natural join offer_instance \
+  \where datetime(created_at) >= datetime('now', '-1 day') \
+  \order by total_score desc \
+  \limit 6"
+
 main :: IO ()
 main = do
-  -- let testURL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/malopolskie/krakow/krakow/krakow?limit=36&ownerTypeSingleSelect=ALL&areaMin=58&areaMax=65&pricePerMeterMax=16000&buildYearMin=2014&floors=%5BFIRST%2CSECOND%2CTHIRD%2CFOURTH%2CFIFTH%2CSIXTH%2CSEVENTH%2CEIGHTH%2CNINTH%2CTENTH%2CABOVE_TENTH%5D&buildingType=%5BBLOCK%2CTENEMENT%2CAPARTMENT%2CLOFT%5D&extras=%5BBALCONY%2CLIFT%2CHAS_PHOTOS%5D&by=LATEST&direction=DESC&viewType=listing"
-  -- let testOfferURL = "https://www.otodom.pl/pl/oferta/2-pokojowe-mieszkanie-38m2-loggia-bezposrednio-ID4umfy"
-  -- let testOlxUrl = "https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/krakow/?search%5Bfilter_float_m%3Afrom%5D=60&search%5Bfilter_float_price%3Ato%5D=1000000&search%5Border%5D=created_at%3Adesc&search%5Bprivate_business%5D=private"
-  let sqlite = SQLitePersistence
-  testOfflineListScraper
-  return ()
+  let sqliteQuery = SQLiteOfferQuery SQLitePersistence sampleQuery
+  let rssPresenter = RSSFeedPresenter
+  let cliViewer = CLIView (id)
 
--- showNewSinceLastVisit
---   sqlite
---   (HTMLFeedPresenter (Just badgeColorMapper))
---   viewer
---   Nothing
+  showNewSinceLastVisit
+    sqliteQuery
+    rssPresenter
+    cliViewer
+    (return Nothing) -- No last visit time
+    (\offers -> [("Offers", offers)]) -- Group all offers under a single category
+    (\_ -> "Flatscraper RSS Feed") -- Title for the feed

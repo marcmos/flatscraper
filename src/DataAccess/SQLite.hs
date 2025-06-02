@@ -14,11 +14,17 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module DataAccess.SQLite (SQLitePersistence (SQLitePersistence)) where
+module DataAccess.SQLite
+  ( SQLitePersistence (SQLitePersistence),
+    SQLiteOfferQuery (SQLiteOfferQuery),
+  )
+where
 
 import Control.Monad (filterM, forM, forM_, (<=<))
+import Data.Functor ((<&>))
+import qualified Data.Functor
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (catMaybes, fromMaybe, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T (pack, unpack)
 import Data.Time (UTCTime, addUTCTime)
@@ -30,12 +36,13 @@ import Database.Persist
     insert_,
     selectFirst,
     selectList,
+    toPersistValue,
     upsertBy,
     (=.),
     (==.),
     (>.),
   )
-import Database.Persist.Sql (SqlPersistM, runMigration)
+import Database.Persist.Sql (Single (Single), SqlPersistM, rawSql, runMigration)
 import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH
   ( mkMigrate,
@@ -508,3 +515,30 @@ markComputationStatusDB offerId newStatus time = do
       (TripComputation offerId newStatus time)
       [TripComputationStatus =. newStatus, TripComputationTimestamp =. time]
   return ()
+
+data SQLiteOfferQuery = SQLiteOfferQuery
+  { persistence :: SQLitePersistence,
+    query :: Text
+  }
+
+instance QueryAccess SQLiteOfferQuery where
+  getOffersCreatedAfter (SQLiteOfferQuery _ query) timestamp = do
+    runSqlite "flatscraper.sqlite" $
+      ( ( do
+            runMigration migrateAll
+            rawQuery <-
+              rawSql query [] ::
+                SqlPersistM [(Single OfferInstanceId, Single Double)]
+            forM rawQuery $ \(Single offerId, Single _) -> do
+              offerEntity <- selectFirst [OfferInstanceId ==. offerId] []
+              case offerEntity of
+                Nothing -> return Nothing
+                Just entity -> do
+                  offer <- loadAttributes entity
+                  return $ Just offer
+        )
+          <&> catMaybes
+      )
+
+  fetchTripSummaries (SQLiteOfferQuery persistence _) url = do
+    fetchTripSummaries persistence url

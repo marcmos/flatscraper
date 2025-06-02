@@ -34,6 +34,7 @@ resolver: lts-22.6
 #  - wai
 packages:
 - .
+
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
@@ -42,7 +43,9 @@ extra-deps:
   - HaskellNet-SSL-0.4.0.2
 
 # Override default flag values for local packages and extra-deps
-# flags: {}
+flags:
+  persistent-sqlite:
+    systemlib: true
 
 # Extra package databases containing global packages
 # extra-package-dbs: []
