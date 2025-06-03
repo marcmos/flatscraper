@@ -1,6 +1,7 @@
 module Main where
 
 import Data.CaseInsensitive (mk)
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -18,6 +19,7 @@ import qualified Scraper.MorizonScraper
 import qualified Scraper.NieruchOnlineScraper
 import qualified Scraper.OlxScraper
 import qualified Scraper.OtodomScraper
+import System.Environment (getArgs)
 import qualified Text.Blaze.Html as H
 import qualified Text.Blaze.Html.Renderer.Text as H
 import Text.HTML.Scalpel (Config (Config), utf8Decoder)
@@ -56,19 +58,23 @@ testOfflineListScraper = do
   -- offers <- take 2 . fromJust <$> scrapeFile "testfiles/otodom-list.html" offersScraper
   print offers'
 
-sampleQuery :: Text
-sampleQuery =
-  "select id, total_score from score_offer \
-  \natural join offer_instance \
-  \where datetime(created_at) >= datetime('now', '-1 day') \
-  \order by total_score desc \
-  \limit 6"
+query :: Text -> Text
+query profile =
+  "select id, score from scoreboard_"
+    <> profile
+    <> " order by score desc \
+       \limit 6"
 
 main :: IO ()
 main = do
-  let sqliteQuery = SQLiteOfferQuery SQLitePersistence sampleQuery
   let rssPresenter = RSSFeedPresenter
-  let cliViewer = CLIView (id)
+  let cliViewer = CLIView id
+
+  args <- getArgs
+  let scoreboardTable = maybe "tram" T.pack (listToMaybe args)
+  let scoreboardQuery = query scoreboardTable
+
+  let sqliteQuery = SQLiteOfferQuery SQLitePersistence scoreboardQuery
 
   showNewSinceLastVisit
     sqliteQuery
