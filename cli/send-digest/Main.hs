@@ -2,6 +2,7 @@
 
 module Main where
 
+import Control.Monad ((>=>))
 import Data.Maybe (isNothing, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T (isInfixOf, isPrefixOf, isSuffixOf, pack, toLower)
@@ -17,6 +18,7 @@ import Domain.Offer
     _offerMunicipalityArea,
     _offerURL,
   )
+import Prefs.Location (offerFilter)
 import Presenter.HTMLFeedPresenter
   ( BadgeColorMapper (cmPricePerMeter),
     HTMLFeedPresenter (HTMLFeedPresenter),
@@ -43,81 +45,6 @@ badgeColorMapper =
         _ -> "info"
     }
 
-uninterestingMunicipalityAreas :: [Text]
-uninterestingMunicipalityAreas =
-  [ "bronowice wielkie",
-    "tonie",
-    "witkowice",
-    "mydlniki",
-    "bielany",
-    "chełm",
-    "las wolski",
-    "olszanica",
-    "przegorzały",
-    "wola justowska",
-    "zakamycze",
-    "bodzów",
-    "kobierzyn",
-    "kostrze",
-    "olszyny",
-    "pychowice",
-    "sidzina",
-    "skotniki",
-    "tyniec",
-    "zakrzówek",
-    "białe morza",
-    "jugowice",
-    "kliny",
-    "kosocice",
-    "opatkowice",
-    "rajsko",
-    "sobniowice",
-    "swoszowice",
-    "wróblewice",
-    "zbydniowice",
-    "rżąka",
-    "złocień",
-    "rybitwy",
-    "grębałów",
-    "kantorowice",
-    "lubocza",
-    "łuczanowice",
-    "wadów",
-    "węgrzynowice",
-    "zesławice",
-    "branice",
-    "kombinat",
-    "kościelniki",
-    "kujawy",
-    "mogiła",
-    "pleszów",
-    "przylasek rusiecki",
-    "ruszcza",
-    "wolica",
-    "wyróżenice",
-    "wyciąże",
-    "przewóz"
-  ]
-
-uninterestingDistricts :: [Text]
-uninterestingDistricts =
-  [ "swoszowice"
-  ]
-
-offerFilter :: Bool -> OfferView -> Bool
-offerFilter _paranoid o =
-  ( case muniArea of
-      Just ma -> T.toLower ma `notElem` uninterestingMunicipalityAreas
-      Nothing -> True
-  )
-    && ( case district of
-           Just d -> T.toLower d `notElem` uninterestingDistricts
-           Nothing -> True
-       )
-  where
-    district = _offerDetails o >>= _offerDistrict
-    muniArea = _offerDetails o >>= _offerMunicipalityArea
-
 offerGroupper :: [OfferView] -> [(Text, [OfferView])]
 offerGroupper offers =
   let (olxOffers, otherOffers) =
@@ -131,7 +58,14 @@ offerGroupper offers =
           offers
       (matchingOffers, nonMatchingOffers) =
         foldr
-          (\o (m, n) -> if offerFilter True o then (o : m, n) else (m, o : n))
+          ( \o (m, n) ->
+              if ( offerFilter
+                     (offerDistrict o)
+                     (offerMunicipalityArea o)
+                 )
+                then (o : m, n)
+                else (m, o : n)
+          )
           ([], [])
           otherOffers
       (nonPrimaryMarketOffers, primaryMarketOffers) =
@@ -150,6 +84,9 @@ offerGroupper offers =
           ("Oferty z rynku pierwotnego", primaryMarketOffers),
           ("Oferty odrzucone", nonMatchingOffers)
         ]
+  where
+    offerDistrict = _offerDetails >=> _offerDistrict
+    offerMunicipalityArea = _offerDetails >=> _offerMunicipalityArea
 
 genTitle :: [(Text, [OfferView])] -> Text
 genTitle groups =

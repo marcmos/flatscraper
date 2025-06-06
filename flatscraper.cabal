@@ -23,6 +23,7 @@ library
       DataAccess.SQLite
       Domain.Offer
       Domain.PublicTransport
+      Prefs.Location
       Presenter.CLIFeedPresenter
       Presenter.HTMLFeedPresenter
       Presenter.RSSFeedPresenter
