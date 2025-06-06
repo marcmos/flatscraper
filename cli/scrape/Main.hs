@@ -9,6 +9,7 @@ import DataAccess.SQLite (SQLitePersistence (SQLitePersistence))
 import DataAccess.ScrapeLoader (ScrapeSource (WebSource), WebScrapers (WebScrapers))
 import Network.HTTP.Client (ManagerSettings (managerModifyRequest), Request, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
+import Prefs.Location (offerFilter)
 import qualified Scraper.MorizonScraper
 import qualified Scraper.NieruchOnlineScraper
 import qualified Scraper.OlxScraper
@@ -63,6 +64,12 @@ main = do
             Scraper.NieruchOnlineScraper.scraper
           ]
 
+  let determineLabels :: Maybe Text -> Maybe Text -> [Text] -- Updated signature
+      determineLabels district muniArea =
+        let isFar = not (offerFilter district muniArea)
+            labels = (["far_from_center" | isFar])
+         in labels
+
   forM_
     args
     ( \x ->
@@ -74,10 +81,12 @@ main = do
                   detailsScrapers
                   NoOpDetailsLoader
                   persistence
+                  determineLabels
               else
                 scrapeAndStore
                   offerSeed
                   detailsScrapers
                   persistence
                   persistence
+                  determineLabels
     )

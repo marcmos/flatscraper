@@ -20,7 +20,7 @@ module DataAccess.SQLite
   )
 where
 
-import Control.Monad (filterM, forM, forM_, (<=<))
+import Control.Monad (filterM, forM, forM_, void, (<=<))
 import Data.Functor ((<&>))
 import qualified Data.Functor
 import qualified Data.Map as Map
@@ -29,19 +29,7 @@ import Data.Text (Text)
 import qualified Data.Text as T (pack, unpack)
 import Data.Time (UTCTime, addUTCTime)
 import Data.Time.Clock (getCurrentTime)
-import Database.Persist
-  ( Entity (Entity),
-    SelectOpt (Asc, Desc, LimitTo),
-    insert,
-    insert_,
-    selectFirst,
-    selectList,
-    toPersistValue,
-    upsertBy,
-    (=.),
-    (==.),
-    (>.),
-  )
+import Database.Persist (Entity (Entity), SelectOpt (Asc, Desc, LimitTo), insert, insertUnique, insert_, selectFirst, selectList, toPersistValue, upsertBy, (=.), (==.), (>.))
 import Database.Persist.Sql (Single (Single), SqlPersistM, rawSql, runMigration)
 import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH
@@ -133,6 +121,13 @@ OfferFloatingAttribute
   value Double
   deriving Show
 
+OfferLabel
+  createdAt UTCTime
+  offerId OfferInstanceId
+  label Text
+  UniqueOfferLabel offerId label
+  deriving Show
+
 -- OfferPrice
 --   offerInstanceId OfferInstanceId
 --   created UTCTime
@@ -215,12 +210,12 @@ upsertFloatingAttr offerId attrName attrValue time =
       return ()
     Nothing -> return ()
 
-persistOffers :: [OfferView] -> IO ()
-persistOffers offers = do
+persistOffers :: [(OfferView, [Text])] -> IO ()
+persistOffers offersWithLabels = do
   time <- getCurrentTime
   runSqlite "flatscraper.sqlite" $ do
     runMigration migrateAll
-    forM_ offers $ \(OfferView url price area title details) -> do
+    forM_ offersWithLabels $ \(OfferView url price area title details, labels) -> do
       let street = details >>= _offerStreet
       let district = details >>= _offerDistrict
       let muniArea = details >>= _offerMunicipalityArea
@@ -276,6 +271,10 @@ persistOffers offers = do
 
       upsertFloatingAttr offerId "location_lat" (_latitude <$> (details >>= _offerCoordinates)) time
       upsertFloatingAttr offerId "location_lon" (_longitude <$> (details >>= _offerCoordinates)) time
+
+      -- Store the provided labels
+      forM_ labels $ \label ->
+        void $ insertUnique $ OfferLabel time offerId label
 
       return e
 

@@ -9,15 +9,16 @@ module UseCase.ScrapePersister
 where
 
 import Data.Maybe (isNothing)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Domain.Offer
-  ( OfferDetails (_offerBuiltYear),
+  ( OfferDetails (_offerBuiltYear, _offerDistrict, _offerMunicipalityArea),
     OfferView (_offerDetails, _offerURL),
   )
 import UseCase.Offer (OfferSeeder (seedOffers))
 
 class OfferStorer os where
-  storeOffers :: os -> [OfferView] -> IO ()
+  storeOffers :: os -> [(OfferView, [Text])] -> IO ()
 
 class OfferDetailsLoader odl where
   loadDetails :: odl -> OfferView -> IO OfferView
@@ -27,16 +28,25 @@ data NoOpDetailsLoader = NoOpDetailsLoader
 instance OfferDetailsLoader NoOpDetailsLoader where
   loadDetails _ = return
 
+-- Internal helper functions
+getOfferDistrict :: OfferView -> Maybe Text
+getOfferDistrict ov = _offerDetails ov >>= _offerDistrict
+
+getOfferMunicipalityArea :: OfferView -> Maybe Text
+getOfferMunicipalityArea ov = _offerDetails ov >>= _offerMunicipalityArea
+
 storeDetailedOffers ::
   (OfferSeeder oll, OfferDetailsLoader odl, OfferStorer os) =>
   oll ->
   odl ->
   os ->
+  (Maybe Text -> Maybe Text -> [Text]) -> -- Labeling function
   IO [OfferView]
-storeDetailedOffers listLoader detailLoader storer = do
+storeDetailedOffers listLoader detailLoader storer labeler = do
   offers <- seedOffers listLoader
   detailedOffers <- mapM (loadDetails detailLoader) offers
-  storeOffers storer detailedOffers
+  let offersWithLabels = map (\o -> (o, labeler (getOfferDistrict o) (getOfferMunicipalityArea o))) detailedOffers
+  storeOffers storer offersWithLabels
   return detailedOffers
 
 -- wczytac list loader scrapera
@@ -49,8 +59,9 @@ scrapeAndStore ::
   odl1 ->
   odl2 ->
   os ->
+  (Maybe Text -> Maybe Text -> [Text]) -> -- Labeling function
   IO [OfferView]
-scrapeAndStore scraper detailsScraper detailsLoader storer = do
+scrapeAndStore scraper detailsScraper detailsLoader storer labeler = do
   offers <- seedOffers scraper
   detailedOffers <- mapM (loadDetails detailsLoader) offers
   detailedOffers' <-
@@ -71,5 +82,7 @@ scrapeAndStore scraper detailsScraper detailsLoader storer = do
             _ -> loadDetails detailsScraper ov
       )
       detailedOffers
-  storeOffers storer detailedOffers'
+
+  let offersWithLabels = map (\o -> (o, labeler (getOfferDistrict o) (getOfferMunicipalityArea o))) detailedOffers'
+  storeOffers storer offersWithLabels
   return detailedOffers'
