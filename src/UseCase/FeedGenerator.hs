@@ -241,9 +241,8 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
   formatters <- defaultFormatters
 
   allOffers <- getOffersCreatedAfter queryAccess (fromMaybe visitTimeFallback lastVisit)
-  let sortedOffers = sortOn pricePerMeter allOffers
 
-  let grouppedOffers = offerGroupper sortedOffers
+  let grouppedOffers = offerGroupper allOffers
 
   if null grouppedOffers
     then hPutStrLn stderr "No offers to show"

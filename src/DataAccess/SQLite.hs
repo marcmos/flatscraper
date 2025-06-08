@@ -54,7 +54,7 @@ import Domain.Offer
         _offerStreet
       ),
     OfferMarket (MarketPrimary, MarketSecondary),
-    OfferView (OfferView, _offerLatestPrice, _offerURL),
+    OfferView (OfferView, _offerArea, _offerLatestPrice, _offerTitle, _offerURL),
     emptyDetails,
     _offerDetails,
   )
@@ -381,15 +381,52 @@ loadAttributes (Entity offerId offerInstance) = do
   let offer'' = loadIntegralAttrs offer' intAttrs
   return offer''
 
+loadAttributes' offerId offer = do
+  textAttrs <- selectList [OfferTextAttributeOfferId ==. offerId] []
+  let offer' = loadTextAttrs offer textAttrs
+  intAttrs <- selectList [OfferIntegralAttributeOfferId ==. offerId] []
+  let offer'' = loadIntegralAttrs offer' intAttrs
+  return offer''
+
+getCreatedAfter :: UTCTime -> Int -> IO [OfferView]
 getCreatedAfter timestamp limit =
   runSqlite "flatscraper.sqlite" $ do
     runMigration migrateAll
-    offers <-
-      selectList
-        [OfferInstanceCreatedAt >. timestamp]
-        [Desc OfferInstanceCreatedAt, LimitTo limit]
+    let rawQuery =
+          "SELECT offer_instance.id, url, title, area, price \
+          \FROM offer_instance \
+          \LEFT JOIN scoreboard_boosted \
+          \ON offer_instance.id = scoreboard_boosted.id \
+          \WHERE datetime(offer_instance.created_at) >= datetime(?) \
+          \ORDER BY score DESC, price / area ASC \
+          \LIMIT ?"
+    row <-
+      rawSql rawQuery [toPersistValue timestamp, toPersistValue limit] ::
+        SqlPersistM
+          [ ( Single OfferInstanceId,
+              Single Text,
+              Single Text,
+              Single Double,
+              Single Int
+            )
+          ]
 
-    mapM loadAttributes offers
+    let instances =
+          map
+            ( \(Single offerId, Single url, Single title, Single area, Single price) ->
+                ( offerId,
+                  OfferView
+                    { _offerURL = url,
+                      _offerLatestPrice = price,
+                      _offerArea = area,
+                      _offerTitle = title,
+                      _offerDetails = Nothing
+                    }
+                )
+            )
+            row
+
+    mapM (uncurry loadAttributes') instances
 
 instance OfferSeeder SQLitePersistence where
   seedOffers :: SQLitePersistence -> IO [OfferView]
