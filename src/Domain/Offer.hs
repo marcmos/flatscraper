@@ -5,6 +5,7 @@ module Domain.Offer where
 import Control.Lens (makeLenses)
 import Data.Int (Int64)
 import Data.Text (Text)
+import Data.Time (UTCTime)
 
 data OfferRef = OfferURLRef
   { _offerRefURL :: Text,
@@ -48,7 +49,8 @@ data OfferView = OfferView
     _offerLatestPrice :: Int,
     _offerArea :: Double,
     _offerTitle :: Text,
-    _offerDetails :: Maybe OfferDetails
+    _offerDetails :: Maybe OfferDetails,
+    _offerCreatedAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -88,9 +90,10 @@ newOfferView url price area title =
     area
     title
     Nothing
+    Nothing
 
 emptyOffer :: OfferView
-emptyOffer = OfferView Nothing "" 0 0.0 "" Nothing
+emptyOffer = OfferView Nothing "" 0 0.0 "" Nothing Nothing
 
 emptyDetails :: OfferDetails
 emptyDetails =

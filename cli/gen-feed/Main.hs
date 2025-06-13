@@ -11,7 +11,7 @@ import View.CLIView (CLIView (CLIView))
 
 query :: Text -> Text
 query profile =
-  "select id, score from scoreboard_"
+  "select id, score, created_at from scoreboard_"
     <> profile
     <> " order by score desc \
        \limit 6"

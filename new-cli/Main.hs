@@ -112,7 +112,7 @@ main = do
   let sqliteQuery =
         SQLiteOfferQuery
           SQLitePersistence
-          $ "select offer_id, score \
+          $ "select offer_id, score, created_at \
             \from published_offer \
             \where feed_id = '"
             <> feedId

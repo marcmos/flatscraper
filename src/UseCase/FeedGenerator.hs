@@ -36,6 +36,7 @@ import Domain.Offer
     OfferView
       ( OfferView,
         _offerArea,
+        _offerCreatedAt,
         _offerDetails,
         _offerLatestPrice,
         _offerTitle,
@@ -72,7 +73,8 @@ data OfferFeedItem = OfferFeedItem
     offerRooms :: Maybe Int,
     offerMunicipalityArea :: Maybe Text,
     offerTripSummaries :: [TripSummary],
-    offerMarket :: Maybe OfferMarket
+    offerMarket :: Maybe OfferMarket,
+    offerPublishTime :: Maybe UTCTime
   }
 
 data Formatters = Formatters
@@ -324,7 +326,8 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
             offerRooms = _offerDetails ov >>= _offerRooms,
             offerMunicipalityArea = municipalityArea,
             offerTripSummaries = tripSummaries, -- Populate TripSummary
-            offerMarket = _offerDetails ov >>= _offerMarket
+            offerMarket = _offerDetails ov >>= _offerMarket,
+            offerPublishTime = _offerCreatedAt ov
           }
       where
         description = genTitle formatters ov

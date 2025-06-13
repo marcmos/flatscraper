@@ -3,13 +3,14 @@
 module Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter)) where
 
 import Data.Maybe (listToMaybe)
-import qualified Data.Text as T (Text)
+import qualified Data.Text as T (Text, pack)
 import qualified Data.Text.Lazy as TL (Text, toStrict)
+import Data.Time (defaultTimeLocale, formatTime, rfc822DateFormat)
 import Text.RSS.Export (textRSS)
 import Text.RSS.Syntax
   ( RSS,
     RSSChannel (rssItems),
-    RSSItem (rssItemLink),
+    RSSItem (rssItemLink, rssItemPubDate),
     nullChannel,
     nullItem,
     nullRSS,
@@ -18,13 +19,16 @@ import Text.RSS.Syntax
 import UseCase.FeedGenerator
   ( FeedPresenter (present),
     OfferFeed (OfferFeed),
-    OfferFeedItem (offerDescription, offerURL),
+    OfferFeedItem (offerDescription, offerPublishTime, offerURL),
   )
 
 renderOffer :: OfferFeedItem -> RSSItem
 renderOffer offer =
   (nullItem title)
-    { rssItemLink = listToMaybe $ offerURL offer
+    { rssItemLink = listToMaybe $ offerURL offer,
+      rssItemPubDate =
+        T.pack . formatTime defaultTimeLocale rfc822DateFormat
+          <$> offerPublishTime offer
     }
   where
     title = offerDescription offer

@@ -62,8 +62,9 @@ import Domain.Offer
         _offerStreet
       ),
     OfferMarket (MarketPrimary, MarketSecondary),
-    OfferView (OfferView, _offerArea, _offerLatestPrice, _offerTitle, _offerURL),
+    OfferView (OfferView, _offerArea, _offerCreatedAt, _offerInstanceId, _offerLatestPrice, _offerTitle, _offerURL),
     emptyDetails,
+    newOfferView,
     _offerDetails,
   )
 import qualified Domain.Offer as DO
@@ -241,7 +242,7 @@ persistOffers offersWithLabels = do
   runSqlite "flatscraper.sqlite" $ do
     runMigration migrateAll
     forM_ offersWithLabels $
-      \( OfferView _ url price area title details,
+      \( OfferView _ url price area title details createdAt,
          labels
          ) -> do
           let street = details >>= _offerStreet
@@ -256,7 +257,7 @@ persistOffers offersWithLabels = do
             upsertBy
               (UniqueUrl url)
               ( OfferInstance
-                  time
+                  (fromMaybe time createdAt)
                   time
                   url
                   title
@@ -399,7 +400,9 @@ toOfferView
         offerInstanceTitle = title
       }
     ) =
-    OfferView (Just offerId) url price area title (Just emptyDetails)
+    (newOfferView url price area title)
+      { _offerInstanceId = Just offerId
+      }
 
 -- loadAttributes :: Entity OfferInstance -> OfferView
 loadAttributes (Entity offerId offerInstance) = do
@@ -593,14 +596,19 @@ instance QueryAccess SQLiteOfferQuery where
             runMigration migrateAll
             rawQuery <-
               rawSql query [] ::
-                SqlPersistM [(Single OfferInstanceId, Single Double)]
-            forM rawQuery $ \(Single offerId, Single _) -> do
+                SqlPersistM [(Single OfferInstanceId, Single Double, Single UTCTime)]
+            forM rawQuery $ \(Single offerId, Single _, Single createdAt) -> do
               offerEntity <- selectFirst [OfferInstanceId ==. offerId] []
               case offerEntity of
                 Nothing -> return Nothing
                 Just entity -> do
                   offer <- loadAttributes entity
-                  return $ Just offer
+                  return $
+                    Just
+                      ( offer
+                          { _offerCreatedAt = Just createdAt
+                          }
+                      )
         )
           <&> catMaybes
       )
