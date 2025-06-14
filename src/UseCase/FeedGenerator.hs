@@ -125,7 +125,9 @@ genTitle
     where
       street = details >>= _offerStreet
       district = details >>= _offerDistrict
-      locationText = case (street, district) of
+      muni = details >>= _offerMunicipalityArea
+      detailedArea = muni <|> district
+      locationText = case (street, detailedArea) of
         (Just s, Just d) -> " | " <> s <> " (" <> d <> ")"
         (Just s, Nothing) -> " | " <> s
         (Nothing, Just d) -> " | " <> d
