@@ -7,9 +7,12 @@ module Presenter.HTMLFeedPresenter
   ( BadgeColorMapper (BadgeColorMapper, cmArea, cmPrice, cmPricePerMeter),
     defaultColorMapper,
     HTMLFeedPresenter (HTMLFeedPresenter),
+    v1,
+    v2Presenter,
   )
 where
 
+import Control.Applicative ((<|>))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -38,7 +41,7 @@ import qualified Text.Blaze.Html5 as H
     toHtml,
     toValue,
   )
-import Text.Blaze.Html5.Attributes as A (class_, href, style, title)
+import Text.Blaze.Html5.Attributes as A (class_, form, href, style, title)
 import UseCase.FeedGenerator
 import UseCase.FeedGenerator (OfferMarket (MarketPrimary, MarketSecondary))
 import UseCase.GenerateTripSummary
@@ -199,19 +202,68 @@ data BadgeColorMapper = BadgeColorMapper
 defaultColorMapper :: BadgeColorMapper
 defaultColorMapper = BadgeColorMapper Nothing Nothing Nothing
 
-newtype HTMLFeedPresenter a = HTMLFeedPresenter (Maybe BadgeColorMapper)
+data HTMLFeedPresenter a
+  = HTMLFeedPresenter
+      (Maybe BadgeColorMapper)
+      (Maybe BadgeColorMapper -> OfferFeed -> IO a)
+
+v1Presenter :: Maybe BadgeColorMapper -> OfferFeed -> IO H.Html
+v1Presenter colorMapper (OfferFeed formatters itemGroups) = do
+  css <- T.readFile "bootstrap.css"
+  return $ H.html $ do
+    H.head $ H.style (H.toHtml css)
+    H.body $
+      H.div ! A.class_ "container" $
+        mapM_
+          ( \(groupTitle, offers) -> do
+              H.h4 . H.toHtml $ groupTitle <> " (" <> (T.pack . show . length $ offers) <> ")"
+              mapM_ (itemMarkup formatters colorMapper) offers
+          )
+          itemGroups
+
+v1 :: Maybe BadgeColorMapper -> HTMLFeedPresenter H.Html
+v1 colorMapper = HTMLFeedPresenter colorMapper v1Presenter
+
+itemMarkup2 :: Formatters -> Maybe BadgeColorMapper -> OfferFeedItem -> H.Html
+itemMarkup2
+  formatters
+  colorMapper
+  OfferFeedItem
+    { offerURL = url,
+      offerArea = area,
+      offerPrice = price,
+      offerPricePerMeter = ppm,
+      offerStreetText = street,
+      offerMunicipalityArea = municipalityArea,
+      offerDistrictText = district
+    } = do
+    H.div ! A.class_ "offer-item border p-2" $ do
+      H.div $ do
+        badge
+          (fromMaybe "" ((colorMapper >>= cmArea) <*> Just area))
+          (Just $ areaText' formatters area)
+        badge
+          (fromMaybe "" ((colorMapper >>= cmPrice) <*> Just price))
+          (Just $ priceText formatters price)
+        badge
+          (fromMaybe "" ((colorMapper >>= cmPricePerMeter) <*> Just ppm))
+          (Just $ ppmText' formatters ppm)
+        mapM_ (\u -> H.a ! A.href (H.toValue u) $ H.toHtml ("link" :: Text)) url
+      H.div $ do
+        badge "info" street
+        badge "info" $ municipalityArea <|> district
+    where
+
+v2Presenter :: Maybe BadgeColorMapper -> HTMLFeedPresenter H.Html
+v2Presenter colorMapper = HTMLFeedPresenter colorMapper $ \colorMapper' (OfferFeed formatters itemGroups) -> do
+  return $ do
+    H.div ! A.class_ "container" $
+      mapM_
+        ( \(groupTitle, offers) -> do
+            mapM_ (itemMarkup2 formatters colorMapper') offers
+        )
+        itemGroups
 
 instance FeedPresenter HTMLFeedPresenter H.Html where
   present :: HTMLFeedPresenter H.Html -> OfferFeed -> IO H.Html
-  present (HTMLFeedPresenter colorMapper) (OfferFeed formatters itemGroups) = do
-    css <- T.readFile "bootstrap.css"
-    return $ H.html $ do
-      H.head $ H.style (H.toHtml css)
-      H.body $
-        H.div ! A.class_ "container" $
-          mapM_
-            ( \(groupTitle, offers) -> do
-                H.h4 . H.toHtml $ groupTitle <> " (" <> (T.pack . show . length $ offers) <> ")"
-                mapM_ (itemMarkup formatters colorMapper) offers
-            )
-            itemGroups
+  present (HTMLFeedPresenter colorMapper render) = render colorMapper

@@ -1,35 +1,24 @@
 module Main where
 
 import Data.CaseInsensitive (mk)
-import Data.Maybe (fromMaybe, listToMaybe)
-import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import qualified Data.Text.Lazy as TL (Text, toStrict)
-import Data.Time (getCurrentTime)
-import DataAccess.Mobroute (MobrouteProvider (MobrouteProvider))
+import Data.Time (defaultTimeLocale, formatTime, getCurrentTime)
 import DataAccess.SQLite (SQLiteOfferQuery (SQLiteOfferQuery), SQLitePersistence (SQLitePersistence))
-import DataAccess.ScrapeLoader (ScrapeSource (FileSource, WebSource), WebScraper (WebScraper), WebScrapers (WebScrapers))
-import Database.Persist (PersistValue)
+import DataAccess.ScrapeLoader (ScrapeSource (FileSource), WebScraper (WebScraper), WebScrapers (WebScrapers))
 import Database.Persist.Sqlite (runSqlite)
 import Domain.Offer (OfferView (OfferView, _offerInstanceId))
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Presenter.CLIFeedPresenter (CLIPresenter (CLIPresenter))
-import Presenter.HTMLFeedPresenter (HTMLFeedPresenter (HTMLFeedPresenter))
-import Presenter.RSSFeedPresenter (RSSFeedPresenter (RSSFeedPresenter))
-import qualified Scraper.MorizonScraper
+import Prefs.Presenter (badgeColorMapper)
+import Presenter.HTMLFeedPresenter (v1, v2Presenter)
 import qualified Scraper.NieruchOnlineScraper
-import qualified Scraper.OlxScraper
-import qualified Scraper.OtodomScraper
 import System.Environment (getArgs)
 import System.IO (hPutStrLn, stderr)
-import qualified Text.Blaze.Html as H
-import qualified Text.Blaze.Html.Renderer.Text as H
+import qualified Text.Blaze.Html.Renderer.Pretty as H
 import Text.HTML.Scalpel (Config (Config), utf8Decoder)
 import UseCase.EmergingOffer (EmergingOfferSelector (markAsRssPublished), selectEmergingOfferForRss)
-import UseCase.FeedGenerator (FeedPresenter (present), Formatters, OfferFeed (OfferFeed), OfferFeedItem, showNewSinceLastVisit)
-import UseCase.Offer (QueryAccess (getOffersCreatedAfter))
+import UseCase.FeedGenerator (showNewSinceLastVisit)
 import UseCase.ScrapePersister (OfferStorer (storeOffers), loadDetails, seedOffers)
 import View.CLIView (CLIView (CLIView))
 
@@ -65,4 +54,33 @@ testOfflineListScraper = do
 
 main :: IO ()
 main = do
-  return ()
+  let presenter = v2Presenter (Just badgeColorMapper)
+  let cliViewer = CLIView (T.pack . H.renderHtml)
+
+  d <- getCurrentTime
+  args <- getArgs
+
+  let date =
+        T.pack $
+          if null args
+            then formatTime defaultTimeLocale "%Y-%m-%d" d
+            else head args
+
+  let sqliteQuery =
+        SQLiteOfferQuery
+          SQLitePersistence
+          $ "select offer_instance.id, score, created_at \
+            \from scoreboard_boosted \
+            \left join offer_instance on scoreboard_boosted.id = offer_instance.id \
+            \where date(created_at) = date('"
+            <> date
+            <> "') \
+               \order by score desc"
+
+  showNewSinceLastVisit
+    sqliteQuery
+    presenter
+    cliViewer
+    (return Nothing) -- No last visit time
+    (\offers -> [("Offers", offers)]) -- Group all offers under a single category
+    (const "Flatscraper RSS Feed") -- Title for the feed

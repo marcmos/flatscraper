@@ -19,11 +19,13 @@ import Domain.Offer
     _offerURL,
   )
 import Prefs.Location (offerFilter)
+import Prefs.Presenter (badgeColorMapper)
 import Presenter.HTMLFeedPresenter
   ( BadgeColorMapper (cmPricePerMeter),
     HTMLFeedPresenter (HTMLFeedPresenter),
     cmArea,
     defaultColorMapper,
+    v1,
   )
 import System.Environment (getArgs)
 import qualified Text.Blaze.Html.Renderer.Text as H
@@ -34,16 +36,6 @@ import View.SMTPView (SMTPView (SMTPView), loadCredentialsFromFile)
 
 htmlCliView :: CLIView H.Html
 htmlCliView = CLIView (TL.toStrict . H.renderHtml)
-
-badgeColorMapper :: BadgeColorMapper
-badgeColorMapper =
-  defaultColorMapper
-    { cmArea = Just $ \area -> if area >= 70 then "success" else "info",
-      cmPricePerMeter = Just $ \case
-        x | x < 10000 -> "danger"
-        x | x <= 12000 -> "success"
-        _ -> "info"
-    }
 
 offerGroupper :: [OfferView] -> [(Text, [OfferView])]
 offerGroupper offers =
@@ -136,4 +128,4 @@ main = do
         genTitle
   where
     sqlite = SQLitePersistence
-    presenter = HTMLFeedPresenter (Just badgeColorMapper)
+    presenter = v1 (Just badgeColorMapper)

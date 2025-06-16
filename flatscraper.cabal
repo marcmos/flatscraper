@@ -24,6 +24,7 @@ library
       Domain.Offer
       Domain.PublicTransport
       Prefs.Location
+      Prefs.Presenter
       Presenter.CLIFeedPresenter
       Presenter.HTMLFeedPresenter
       Presenter.RSSFeedPresenter
