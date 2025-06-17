@@ -43,7 +43,7 @@ import qualified Text.Blaze.Html5 as H
   )
 import Text.Blaze.Html5.Attributes as A (class_, form, href, style, title)
 import UseCase.FeedGenerator
-import UseCase.FeedGenerator (OfferMarket (MarketPrimary, MarketSecondary))
+import UseCase.FeedGenerator (OfferFeedItem (offerTripSummaries), OfferMarket (MarketPrimary, MarketSecondary))
 import UseCase.GenerateTripSummary
   ( TripSummary
       ( lineNumbers,
@@ -235,10 +235,11 @@ itemMarkup2
       offerPricePerMeter = ppm,
       offerStreetText = street,
       offerMunicipalityArea = municipalityArea,
-      offerDistrictText = district
+      offerDistrictText = district,
+      offerTripSummaries = tripSummaries
     } = do
     H.div ! A.class_ "offer-item border p-2" $ do
-      H.div $ do
+      H.div ! A.class_ "p-1" $ do
         badge
           (fromMaybe "" ((colorMapper >>= cmArea) <*> Just area))
           (Just $ areaText' formatters area)
@@ -249,10 +250,31 @@ itemMarkup2
           (fromMaybe "" ((colorMapper >>= cmPricePerMeter) <*> Just ppm))
           (Just $ ppmText' formatters ppm)
         mapM_ (\u -> H.a ! A.href (H.toValue u) $ H.toHtml ("link" :: Text)) url
-      H.div $ do
+      H.div ! A.class_ "p-1" $ do
         badge "info" street
         badge "info" $ municipalityArea <|> district
+      tripSummariesBadges
     where
+      tripSummariesBadges = case tripSummaries of
+        [] -> emptyNode
+        summaries ->
+          mapM_ renderTripSummaryBadge summaries
+        where
+          emptyNode = H.toHtml ("" :: Text)
+          renderTripSummaryBadge ts =
+            let badgeType = if totalTripTime ts < 30 * 60 then "success" else "info"
+                badgeText =
+                  toText (totalTripTime ts `div` 60)
+                    <> " min. ("
+                    <> toText (totalWalkingTime ts `div` 60)
+                    <> " min. pieszo) do "
+                    <> T.pack (closestHubName ts)
+                    <> " z "
+                    <> T.pack (tripStartStopName ts)
+                    <> " (linie: "
+                    <> T.intercalate ", " (map T.pack $ lineNumbers ts)
+                    <> ")"
+             in H.div ! A.class_ "p-1" $ badge badgeType (Just badgeText)
 
 v2Presenter :: Maybe BadgeColorMapper -> HTMLFeedPresenter H.Html
 v2Presenter colorMapper = HTMLFeedPresenter colorMapper $ \colorMapper' (OfferFeed formatters itemGroups) -> do
