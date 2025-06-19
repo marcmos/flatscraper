@@ -69,13 +69,13 @@ main = do
   let sqliteQuery =
         SQLiteOfferQuery
           SQLitePersistence
-          $ "select offer_instance.id, score, created_at \
-            \from scoreboard_boosted \
-            \left join offer_instance on scoreboard_boosted.id = offer_instance.id \
-            \where date(created_at) = date('"
+          $ "select oi.id, sb.score, oi.created_at \
+            \from scoreboard_boosted sb \
+            \left join offer_instance oi on sb.id = oi.id \
+            \where date(oi.created_at) = date('"
             <> date
             <> "') \
-               \order by score desc"
+               \order by sb.score desc"
 
   showNewSinceLastVisit
     sqliteQuery
