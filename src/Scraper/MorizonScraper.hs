@@ -131,7 +131,7 @@ listOfferScraper = do
   let parsedUrl = "https://www.morizon.pl" <> url
   rawPrice <-
     (^? element 2)
-      <$> texts ("div" @: ["data-cy" @= "cardPropertyTopRight"] // "div")
+      <$> texts ("div" @: ["data-cy" @= "cardPropertyOfferPrice"] // "div")
   let price = parsePrice <$> rawPrice
   -- title <- text "h4"
   detailsTexts <- text ("div" @: [hasClass "property-info"])
