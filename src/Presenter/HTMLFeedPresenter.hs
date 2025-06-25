@@ -41,7 +41,13 @@ import qualified Text.Blaze.Html5 as H
     toHtml,
     toValue,
   )
-import Text.Blaze.Html5.Attributes as A (class_, form, href, style, title)
+import Text.Blaze.Html5.Attributes as A
+  ( class_,
+    href,
+    style,
+    target,
+    title,
+  )
 import UseCase.FeedGenerator
 import UseCase.FeedGenerator (OfferFeedItem (offerTripSummaries), OfferMarket (MarketPrimary, MarketSecondary))
 import UseCase.GenerateTripSummary
@@ -249,7 +255,14 @@ itemMarkup2
         badge
           (fromMaybe "" ((colorMapper >>= cmPricePerMeter) <*> Just ppm))
           (Just $ ppmText' formatters ppm)
-        mapM_ (\u -> H.a ! A.href (H.toValue u) $ H.toHtml ("link" :: Text)) url
+        mapM_
+          ( \u ->
+              H.a
+                ! A.href (H.toValue u)
+                ! A.target "_blank"
+                $ H.toHtml ("link" :: Text)
+          )
+          url
       H.div ! A.class_ "p-1" $ do
         badge "info" street
         badge "info" $ municipalityArea <|> district
