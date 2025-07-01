@@ -48,7 +48,8 @@ import Database.Persist.TH
     sqlSettings,
   )
 import Domain.Offer
-  ( OfferCoordinates (OfferExactCoordinates, _latitude, _longitude),
+  ( BoolAttr (AirConditioning, Balcony),
+    OfferCoordinates (OfferExactCoordinates, _latitude, _longitude),
     OfferDetails
       ( _offerBuildingFloors,
         _offerBuiltYear,
@@ -64,7 +65,9 @@ import Domain.Offer
     OfferMarket (MarketPrimary, MarketSecondary),
     OfferView (OfferView, _offerArea, _offerCreatedAt, _offerInstanceId, _offerLatestPrice, _offerTitle, _offerURL),
     emptyDetails,
+    hasBoolAttr,
     newOfferView,
+    updateBoolAttr,
     _offerDetails,
   )
 import qualified Domain.Offer as DO
@@ -242,7 +245,7 @@ persistOffers offersWithLabels = do
   runSqlite "flatscraper.sqlite" $ do
     runMigration migrateAll
     forM_ offersWithLabels $
-      \( OfferView _ url price area title details createdAt,
+      \( ov@(OfferView _ url price area title details createdAt),
          labels
          ) -> do
           let street = details >>= _offerStreet
@@ -288,6 +291,25 @@ persistOffers offersWithLabels = do
                 _ -> Nothing
             )
             time
+          upsertIntAttr
+            offerId
+            "property_has_ac"
+            ( case hasBoolAttr AirConditioning ov of
+                Just True -> Just 1
+                Just False -> Just 0
+                _ -> Nothing
+            )
+            time
+          upsertIntAttr
+            offerId
+            "property_has_balcony"
+            ( case hasBoolAttr Balcony ov of
+                Just True -> Just 1
+                Just False -> Just 0
+                _ -> Nothing
+            )
+            time
+
           upsertIntAttr
             offerId
             "market"
@@ -374,6 +396,10 @@ loadIntegralAttrs =
                     { _offerDetails =
                         Just (details {_offerHasElevator = Just $ value > 0})
                     }
+                "property_has_ac" ->
+                  updateBoolAttr acc AirConditioning (value > 0)
+                "property_has_balcony" ->
+                  updateBoolAttr acc Balcony (value > 0)
                 "market" ->
                   acc
                     { _offerDetails =

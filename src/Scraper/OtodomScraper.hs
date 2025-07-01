@@ -40,7 +40,8 @@ import DataAccess.ScrapeLoader
     prefixWebScraper,
   )
 import Domain.Offer
-  ( OfferCoordinates (OfferExactCoordinates),
+  ( BoolAttr (AirConditioning, Balcony),
+    OfferCoordinates (OfferExactCoordinates),
     OfferMarket (MarketPrimary, MarketSecondary),
     OfferView
       ( OfferView,
@@ -66,6 +67,7 @@ import Domain.Offer
     offerRooms,
     offerStreet,
     offerTitle,
+    updateBoolAttr,
   )
 import Scraper.Common (parsePrice)
 import Text.HTML.Scalpel (Scraper, attr, chroots, text, texts, (//), (@:), (@=))
@@ -172,16 +174,24 @@ fromJSON input offer =
           long <- coordinates >>= (^? key "longitude" . _Double)
           return $ OfferExactCoordinates lat long
         _ -> Nothing
-   in -- equipment = (^.. values) <$> (properties >>= (^? key "equipment"))
-      -- hasAirConditioning = elem "air_conditioning" <$> equipment
-      -- ppm = ad >>= (^? key "target" . key "Price_per_m" . _Integer)
-
+      areasRaw = (^.. values) <$> (properties >>= (^? key "areas"))
+      equipmentRaw = (^.. values) <$> (properties >>= (^? key "equipment"))
+      toTextList mvals = traverse (^? _String) =<< mvals
+      areas = toTextList areasRaw
+      equipment = toTextList equipmentRaw
+      hasAttrIn mlist attribute =
+        if (elem attribute <$> mlist) == Just True
+          then Just True
+          else Nothing
+      hasBalcony = hasAttrIn areas "balcony"
+      hasAirConditioning = hasAttrIn equipment "air_conditioning"
+   in -- ppm = ad >>= (^? key "target" . key "Price_per_m" . _Integer)
       -- radius = (^? key "mapDetails" . key "radius") <$> coordinates
       do
         t <- title
         a <- parseNum area
         p <- fromInteger <$> price :: Maybe Int
-        let defaultOffer =
+        let defaultOffer' =
               fromMaybe
                 ( OfferView
                     { _offerURL = "",
@@ -192,6 +202,8 @@ fromJSON input offer =
                     }
                 )
                 offer
+        let defaultOfferWithAC = maybe defaultOffer' (updateBoolAttr defaultOffer' AirConditioning) hasAirConditioning
+        let defaultOffer = maybe defaultOfferWithAC (updateBoolAttr defaultOfferWithAC Balcony) hasBalcony
         let defaultDetails = fromMaybe emptyDetails (_offerDetails defaultOffer)
         let updateDetails d =
               d

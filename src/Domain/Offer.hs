@@ -1,11 +1,17 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Domain.Offer where
 
 import Control.Lens (makeLenses)
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HashMap (empty, insert, lookup)
+import Data.Hashable
 import Data.Int (Int64)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time (UTCTime)
+import GHC.Generics (Generic)
 
 data OfferRef = OfferURLRef
   { _offerRefURL :: Text,
@@ -63,6 +69,16 @@ data OfferCoordinates = OfferExactCoordinates
 data OfferMarket = MarketPrimary | MarketSecondary
   deriving (Eq, Show)
 
+data BoolAttr = AirConditioning | Balcony
+  deriving (Show, Eq, Generic)
+
+instance Hashable BoolAttr
+
+type OfferBoolAttrs = HashMap BoolAttr Bool
+
+emptyBoolAttrs :: OfferBoolAttrs
+emptyBoolAttrs = HashMap.empty
+
 data OfferDetails = OfferDetails
   { _offerDescription :: Maybe Text,
     _offerRooms :: Maybe Int,
@@ -74,7 +90,8 @@ data OfferDetails = OfferDetails
     _offerBuildingFloors :: Maybe Int,
     _offerBuiltYear :: Maybe Int,
     _offerCoordinates :: Maybe OfferCoordinates,
-    _offerMarket :: Maybe OfferMarket
+    _offerMarket :: Maybe OfferMarket,
+    _offerBoolAttrs :: OfferBoolAttrs
   }
   deriving (Eq, Show)
 
@@ -109,6 +126,7 @@ emptyDetails =
     Nothing
     Nothing
     Nothing
+    emptyBoolAttrs
 
 pricePerMeter :: OfferView -> Double
 pricePerMeter offer = fromIntegral (_offerLatestPrice offer) / _offerArea offer
@@ -145,3 +163,24 @@ hasElevator
     )
     | floors >= 5 && bY >= 2000 = Just $ HasElevator True (Just BuildingNewAndHasFloors)
 hasElevator _ = Nothing
+
+hasBoolAttr :: BoolAttr -> OfferView -> Maybe Bool
+hasBoolAttr attr offer =
+  let attrs = _offerBoolAttrs <$> _offerDetails offer
+   in attrs >>= hasBoolAttrInAttrs attr
+
+-- | Check if a BoolAttr is present in OfferBoolAttrs
+hasBoolAttrInAttrs :: BoolAttr -> OfferBoolAttrs -> Maybe Bool
+hasBoolAttrInAttrs = HashMap.lookup
+
+updateBoolAttr :: OfferView -> BoolAttr -> Bool -> OfferView
+updateBoolAttr ov attr v =
+  let details = fromMaybe emptyDetails (_offerDetails ov)
+   in ov
+        { _offerDetails =
+            Just
+              details
+                { _offerBoolAttrs =
+                    HashMap.insert attr v (_offerBoolAttrs details)
+                }
+        }

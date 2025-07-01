@@ -18,11 +18,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import Domain.Offer
-  ( ElevatorGuess (..),
+  ( BoolAttr (AirConditioning, Balcony),
+    ElevatorGuess (..),
     HasElevator
       ( HasElevator,
         _hasElevatorGuess
       ),
+    hasBoolAttrInAttrs,
   )
 import qualified Text.Blaze.Html as A
 import Text.Blaze.Html5 ((!))
@@ -187,6 +189,9 @@ itemMarkup
           )
           ft
         badge "info" (offerBuildYearText ov)
+        boolAttrBadge Balcony "Balkon" ov
+        boolAttrBadge AirConditioning "Klimatyzacja" ov
+
       H.div ! A.class_ rowClass $ do
         badge "info" street
         badge "info" district
@@ -234,7 +239,7 @@ itemMarkup2 :: Formatters -> Maybe BadgeColorMapper -> OfferFeedItem -> H.Html
 itemMarkup2
   formatters
   colorMapper
-  OfferFeedItem
+  ofi@OfferFeedItem
     { offerURL = url,
       offerArea = area,
       offerPrice = price,
@@ -266,6 +271,11 @@ itemMarkup2
       H.div ! A.class_ "p-1" $ do
         badge "info" street
         badge "info" $ municipalityArea <|> district
+
+      H.div ! A.class_ "p-1" $ do
+        boolAttrBadge AirConditioning "Klimatyzacja" ofi
+        boolAttrBadge Balcony "Balkon" ofi
+
       tripSummariesBadges
     where
       tripSummariesBadges = case tripSummaries of
@@ -302,3 +312,9 @@ v2Presenter colorMapper = HTMLFeedPresenter colorMapper $ \colorMapper' (OfferFe
 instance FeedPresenter HTMLFeedPresenter H.Html where
   present :: HTMLFeedPresenter H.Html -> OfferFeed -> IO H.Html
   present (HTMLFeedPresenter colorMapper render) = render colorMapper
+
+boolAttrBadge :: BoolAttr -> Text -> OfferFeedItem -> H.Html
+boolAttrBadge attr label ov =
+  badge "success" $ case hasBoolAttrInAttrs attr (offerBoolAttrs ov) of
+    Just True -> Just label
+    _ -> Nothing

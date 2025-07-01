@@ -30,8 +30,19 @@ import Data.Time (LocalTime (..), UTCTime, getCurrentTime, localDay, localTimeTo
 import Data.Time.Clock (addUTCTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Domain.Offer
-  ( HasElevator (HasElevator, _hasElevator),
-    OfferDetails (_offerBuildingFloors, _offerBuiltYear, _offerDistrict, _offerHasElevator, _offerMarket, _offerMunicipalityArea, _offerPropertyFloor, _offerRooms, _offerStreet),
+  ( HasElevator (HasElevator),
+    OfferBoolAttrs,
+    OfferDetails
+      ( _offerBoolAttrs,
+        _offerBuildingFloors,
+        _offerBuiltYear,
+        _offerDistrict,
+        _offerMarket,
+        _offerMunicipalityArea,
+        _offerPropertyFloor,
+        _offerRooms,
+        _offerStreet
+      ),
     OfferMarket (MarketPrimary, MarketSecondary),
     OfferView
       ( OfferView,
@@ -42,6 +53,7 @@ import Domain.Offer
         _offerTitle,
         _offerURL
       ),
+    emptyBoolAttrs,
     hasElevator,
     pricePerMeter,
   )
@@ -74,7 +86,8 @@ data OfferFeedItem = OfferFeedItem
     offerMunicipalityArea :: Maybe Text,
     offerTripSummaries :: [TripSummary],
     offerMarket :: Maybe OfferMarket,
-    offerPublishTime :: Maybe UTCTime
+    offerPublishTime :: Maybe UTCTime,
+    offerBoolAttrs :: OfferBoolAttrs
   }
 
 data Formatters = Formatters
@@ -329,7 +342,8 @@ showNewSinceLastVisit queryAccess presenter viewer fetchLastVisit offerGroupper 
             offerMunicipalityArea = municipalityArea,
             offerTripSummaries = tripSummaries, -- Populate TripSummary
             offerMarket = _offerDetails ov >>= _offerMarket,
-            offerPublishTime = _offerCreatedAt ov
+            offerPublishTime = _offerCreatedAt ov,
+            offerBoolAttrs = maybe emptyBoolAttrs _offerBoolAttrs (_offerDetails ov)
           }
       where
         description = genTitle formatters ov
