@@ -13,7 +13,7 @@ module Presenter.HTMLFeedPresenter
 where
 
 import Control.Applicative ((<|>))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -51,17 +51,14 @@ import Text.Blaze.Html5.Attributes as A
     title,
   )
 import UseCase.FeedGenerator
-import UseCase.FeedGenerator (OfferFeedItem (offerTripSummaries), OfferMarket (MarketPrimary, MarketSecondary))
 import UseCase.GenerateTripSummary
   ( TripSummary
       ( lineNumbers,
-        numberOfTransfers,
         totalTripTime,
         totalWalkingTime,
         tripStartStopName
       ),
     closestHubName,
-    profileName,
   )
 
 badge' :: (H.ToMarkup a) => Maybe a -> Maybe Text -> H.Html
@@ -121,6 +118,10 @@ floorMarkup :: OfferFeedItem -> H.Html
 floorMarkup ov =
   let ft = offerFloorText ov
       elevator = elevatorMarkup ov
+      ft' =
+        if isJust elevator
+          then (<> ", ") <$> ft
+          else ft
    in maybe
         (H.toHtml ("" :: Text))
         ( \tt ->
@@ -130,9 +131,9 @@ floorMarkup ov =
                   Nothing -> "info"
              in badge cls $ Just $ do
                   H.toHtml tt
-                  maybe (H.toHtml ("" :: Text)) (", " <>) elevator
+                  fromMaybe (H.toHtml ("" :: Text)) elevator
         )
-        ft
+        ft'
 
 data BadgeColorMapper = BadgeColorMapper
   { cmArea :: Maybe (Double -> Text),
@@ -201,8 +202,8 @@ itemMarkup2
         badge
           "info"
           ( case market of
-              Just MarketPrimary -> Just "Rynek: pierwotny" :: Maybe Text
-              Just MarketSecondary -> Just "Rynek: wtórny"
+              Just MarketPrimary -> Just "rynek: pierwotny" :: Maybe Text
+              Just MarketSecondary -> Just "rynek: wtórny"
               Nothing -> Nothing
           )
         formattedBadge formatters colorMapper cmArea area areaText'
