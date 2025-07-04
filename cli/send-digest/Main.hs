@@ -25,7 +25,8 @@ import Presenter.HTMLFeedPresenter
     HTMLFeedPresenter (HTMLFeedPresenter),
     cmArea,
     defaultColorMapper,
-    v1,
+    emailPresenter,
+    v2Presenter,
   )
 import System.Environment (getArgs)
 import qualified Text.Blaze.Html.Renderer.Text as H
@@ -128,4 +129,4 @@ main = do
         genTitle
   where
     sqlite = SQLitePersistence
-    presenter = v1 (Just badgeColorMapper)
+    presenter = emailPresenter (Just badgeColorMapper)

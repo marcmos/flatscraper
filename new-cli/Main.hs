@@ -11,7 +11,7 @@ import Domain.Offer (OfferView (OfferView, _offerInstanceId))
 import Network.HTTP.Client (Request, managerModifyRequest, newManager, requestHeaders)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Prefs.Presenter (badgeColorMapper)
-import Presenter.HTMLFeedPresenter (v1, v2Presenter)
+import Presenter.HTMLFeedPresenter (v2Presenter)
 import qualified Scraper.NieruchOnlineScraper
 import System.Environment (getArgs)
 import System.IO (hPutStrLn, stderr)
@@ -82,5 +82,5 @@ main = do
     presenter
     cliViewer
     (return Nothing) -- No last visit time
-    (\offers -> [("Offers", offers)]) -- Group all offers under a single category
+    (\offers -> [("Wszystkie oferty", offers)]) -- Group all offers under a single category
     (const "Flatscraper RSS Feed") -- Title for the feed

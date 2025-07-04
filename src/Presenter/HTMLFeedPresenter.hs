@@ -7,8 +7,8 @@ module Presenter.HTMLFeedPresenter
   ( BadgeColorMapper (BadgeColorMapper, cmArea, cmPrice, cmPricePerMeter),
     defaultColorMapper,
     HTMLFeedPresenter (HTMLFeedPresenter),
-    v1,
     v2Presenter,
+    emailPresenter,
   )
 where
 
@@ -99,110 +99,40 @@ roomsText 1 = "1 pokój"
 roomsText n | n < 5 = toText n <> " pokoje"
 roomsText n = toText n <> " pokoi"
 
-itemMarkup :: Formatters -> Maybe BadgeColorMapper -> OfferFeedItem -> H.Html
-itemMarkup
-  formatters
-  colorMapper
-  ov@OfferFeedItem
-    { offerHasElevator = elevator,
-      offerIsAccessible = isAccessible,
-      offerFloorText = ft,
-      offerStreetText = street,
-      offerDistrictText = district,
-      offerArea = area,
-      offerPrice = price,
-      offerPricePerMeter = ppm,
-      offerRooms = rooms,
-      offerMunicipalityArea = municipalityArea,
-      offerTripSummaries = tripSummaries,
-      offerMarket = market
-    } = do
-    let emptyNode = H.toHtml ("" :: Text)
-        elevatorText = case elevator >>= _hasElevatorGuess of
-          Just BuildingHasManyFloors -> Just "budynek ma 6+ pięter"
-          Just BuildingNewAndHasFloors -> Just "nowy budynek z 5+ pięter"
-          _ -> Nothing
-        elevatorMarkup =
-          elevator
-            >>= ( \case
-                    HasElevator True Nothing -> Just $ H.toHtml ("winda" :: Text)
-                    HasElevator True (Just _) -> do
-                      explanation <- elevatorText
-                      Just $
-                        H.abbr ! A.title explanation $
-                          H.toHtml ("winda" :: Text)
-                    HasElevator False _ -> Nothing
-                )
-        url = offerURL ov
-        rowClass = "p-2"
-        tripSummariesBadges = case tripSummaries of
-          [] -> emptyNode
-          summaries ->
-            H.div $ mapM_ renderTripSummaryBadge summaries
-          where
-            renderTripSummaryBadge ts =
-              let badgeType = if totalTripTime ts < 30 * 60 then "success" else "info"
-                  badgeText =
-                    toText (totalTripTime ts `div` 60)
-                      <> " min. ("
-                      <> toText (totalWalkingTime ts `div` 60)
-                      <> " min. pieszo) do "
-                      <> T.pack (closestHubName ts)
-                      <> " z "
-                      <> T.pack (tripStartStopName ts)
-                      <> " (linie: "
-                      <> T.intercalate ", " (map T.pack $ lineNumbers ts)
-                      <> ")"
-               in badge badgeType (Just badgeText)
-    H.div ! A.class_ "border" $ do
-      H.div ! A.class_ rowClass $ do
-        badge
-          "info"
-          ( case market of
-              Just MarketPrimary -> Just "Rynek: pierwotny" :: Maybe Text
-              Just MarketSecondary -> Just "Rynek: wtórny"
-              Nothing -> Nothing
-          )
-        badge
-          (fromMaybe "" ((colorMapper >>= cmArea) <*> Just area))
-          (Just $ areaText' formatters area)
-        badge
-          (fromMaybe "" ((colorMapper >>= cmPrice) <*> Just price))
-          (Just $ priceText formatters price)
-        badge
-          (fromMaybe "" ((colorMapper >>= cmPricePerMeter) <*> Just ppm))
-          (Just $ ppmText' formatters ppm)
-        badge "info" (roomsText <$> rooms)
+elevatorMarkup :: OfferFeedItem -> Maybe H.Html
+elevatorMarkup ov =
+  let elevator = offerHasElevator ov
+      elevatorText = case elevator >>= _hasElevatorGuess of
+        Just BuildingHasManyFloors -> Just "budynek ma 6+ pięter"
+        Just BuildingNewAndHasFloors -> Just "nowy budynek z 5+ pięter"
+        _ -> Nothing
+   in elevator
+        >>= ( \case
+                HasElevator True Nothing -> Just $ H.toHtml ("winda" :: Text)
+                HasElevator True (Just _) -> do
+                  explanation <- elevatorText
+                  Just $
+                    H.abbr ! A.title explanation $
+                      H.toHtml ("winda" :: Text)
+                HasElevator False _ -> Nothing
+            )
 
-      H.div ! A.class_ rowClass $ do
-        maybe
-          emptyNode
-          ( \tt ->
-              let cls = case isAccessible of
-                    Just True -> "success"
-                    Just False -> "danger"
-                    Nothing -> "info"
-               in ( badge cls $ Just $ do
-                      H.toHtml tt
-                      maybe emptyNode (", " <>) elevatorMarkup
-                  )
-          )
-          ft
-        badge "info" (offerBuildYearText ov)
-        boolAttrBadge Balcony "Balkon" ov
-        boolAttrBadge AirConditioning "Klimatyzacja" ov
-
-      H.div ! A.class_ rowClass $ do
-        badge "info" street
-        badge "info" district
-        badge "success" municipalityArea
-      H.div ! A.class_ rowClass $ do
-        mapM_
-          ( \u ->
-              H.div $ H.a ! A.href (H.toValue u) $ H.toHtml (offerTitle ov)
-          )
-          url
-      H.div ! A.class_ rowClass $ tripSummariesBadges
+floorMarkup :: OfferFeedItem -> H.Html
+floorMarkup ov =
+  let ft = offerFloorText ov
+      elevator = elevatorMarkup ov
+   in maybe
+        (H.toHtml ("" :: Text))
+        ( \tt ->
+            let cls = case offerIsAccessible ov of
+                  Just True -> "success"
+                  Just False -> "danger"
+                  Nothing -> "info"
+             in badge cls $ Just $ do
+                  H.toHtml tt
+                  maybe (H.toHtml ("" :: Text)) (", " <>) elevator
+        )
+        ft
 
 data BadgeColorMapper = BadgeColorMapper
   { cmArea :: Maybe (Double -> Text),
@@ -218,22 +148,38 @@ data HTMLFeedPresenter a
       (Maybe BadgeColorMapper)
       (Maybe BadgeColorMapper -> OfferFeed -> IO a)
 
-v1Presenter :: Maybe BadgeColorMapper -> OfferFeed -> IO H.Html
-v1Presenter colorMapper (OfferFeed formatters itemGroups) = do
-  css <- T.readFile "bootstrap.css"
-  return $ H.html $ do
-    H.head $ H.style (H.toHtml css)
-    H.body $
-      H.div ! A.class_ "container" $
-        mapM_
-          ( \(groupTitle, offers) -> do
-              H.h4 . H.toHtml $ groupTitle <> " (" <> (T.pack . show . length $ offers) <> ")"
-              mapM_ (itemMarkup formatters colorMapper) offers
-          )
-          itemGroups
+formattedBadge ::
+  Formatters ->
+  Maybe BadgeColorMapper ->
+  (BadgeColorMapper -> Maybe (a -> Text)) ->
+  a ->
+  (Formatters -> a -> Text) ->
+  H.Html
+formattedBadge formatters colorMappers colorMapper value showText =
+  badge
+    (fromMaybe "" ((colorMappers >>= colorMapper) <*> Just value))
+    (Just $ showText formatters value)
 
-v1 :: Maybe BadgeColorMapper -> HTMLFeedPresenter H.Html
-v1 colorMapper = HTMLFeedPresenter colorMapper v1Presenter
+tripSummariesMarkup :: [TripSummary] -> H.Html
+tripSummariesMarkup = \case
+  [] -> H.toHtml ("" :: Text)
+  summaries ->
+    mapM_ renderTripSummaryBadge summaries
+  where
+    renderTripSummaryBadge ts =
+      let badgeType = if totalTripTime ts < 30 * 60 then "success" else "info"
+          badgeText =
+            toText (totalTripTime ts `div` 60)
+              <> " min. ("
+              <> toText (totalWalkingTime ts `div` 60)
+              <> " min. pieszo) do "
+              <> T.pack (closestHubName ts)
+              <> " z "
+              <> T.pack (tripStartStopName ts)
+              <> " (linie: "
+              <> T.intercalate ", " (map T.pack $ lineNumbers ts)
+              <> ")"
+       in H.div ! A.class_ "p-1" $ badge badgeType (Just badgeText)
 
 itemMarkup2 :: Formatters -> Maybe BadgeColorMapper -> OfferFeedItem -> H.Html
 itemMarkup2
@@ -247,21 +193,24 @@ itemMarkup2
       offerStreetText = street,
       offerMunicipalityArea = municipalityArea,
       offerDistrictText = district,
-      offerTripSummaries = tripSummaries
+      offerTripSummaries = tripSummaries,
+      offerMarket = market
     } = do
     H.div ! A.class_ "offer-item border p-2" $ do
       H.div ! A.class_ "p-1" $ do
         badge
-          (fromMaybe "" ((colorMapper >>= cmArea) <*> Just area))
-          (Just $ areaText' formatters area)
-        badge
-          (fromMaybe "" ((colorMapper >>= cmPrice) <*> Just price))
-          (Just $ priceText formatters price)
-        badge
-          (fromMaybe "" ((colorMapper >>= cmPricePerMeter) <*> Just ppm))
-          (Just $ ppmText' formatters ppm)
+          "info"
+          ( case market of
+              Just MarketPrimary -> Just "Rynek: pierwotny" :: Maybe Text
+              Just MarketSecondary -> Just "Rynek: wtórny"
+              Nothing -> Nothing
+          )
+        formattedBadge formatters colorMapper cmArea area areaText'
+        formattedBadge formatters colorMapper cmPrice price priceText
+        formattedBadge formatters colorMapper cmPricePerMeter ppm ppmText'
         mapM_
-          ( \u ->
+          ( \u -> do
+              H.toHtml (" " :: Text)
               H.a
                 ! A.href (H.toValue u)
                 ! A.target "_blank"
@@ -273,31 +222,13 @@ itemMarkup2
         badge "info" $ municipalityArea <|> district
 
       H.div ! A.class_ "p-1" $ do
-        boolAttrBadge AirConditioning "Klimatyzacja" ofi
-        boolAttrBadge Balcony "Balkon" ofi
+        badge "info" (roomsText <$> offerRooms ofi)
+        badge "info" (offerBuildYearText ofi)
+        floorMarkup ofi
+        boolAttrBadge AirConditioning "klimatyzacja" ofi
+        boolAttrBadge Balcony "balkon" ofi
 
-      tripSummariesBadges
-    where
-      tripSummariesBadges = case tripSummaries of
-        [] -> emptyNode
-        summaries ->
-          mapM_ renderTripSummaryBadge summaries
-        where
-          emptyNode = H.toHtml ("" :: Text)
-          renderTripSummaryBadge ts =
-            let badgeType = if totalTripTime ts < 30 * 60 then "success" else "info"
-                badgeText =
-                  toText (totalTripTime ts `div` 60)
-                    <> " min. ("
-                    <> toText (totalWalkingTime ts `div` 60)
-                    <> " min. pieszo) do "
-                    <> T.pack (closestHubName ts)
-                    <> " z "
-                    <> T.pack (tripStartStopName ts)
-                    <> " (linie: "
-                    <> T.intercalate ", " (map T.pack $ lineNumbers ts)
-                    <> ")"
-             in H.div ! A.class_ "p-1" $ badge badgeType (Just badgeText)
+      tripSummariesMarkup tripSummaries
 
 v2Presenter :: Maybe BadgeColorMapper -> HTMLFeedPresenter H.Html
 v2Presenter colorMapper = HTMLFeedPresenter colorMapper $ \colorMapper' (OfferFeed formatters itemGroups) -> do
@@ -305,9 +236,24 @@ v2Presenter colorMapper = HTMLFeedPresenter colorMapper $ \colorMapper' (OfferFe
     H.div ! A.class_ "container" $
       mapM_
         ( \(groupTitle, offers) -> do
+            H.h4 . H.toHtml $ groupTitle <> " (" <> (T.pack . show . length $ offers) <> ")"
             mapM_ (itemMarkup2 formatters colorMapper') offers
         )
         itemGroups
+
+wrapPresenter :: HTMLFeedPresenter H.Html -> HTMLFeedPresenter H.Html
+wrapPresenter (HTMLFeedPresenter colorMapper render) =
+  HTMLFeedPresenter colorMapper $ \_ (OfferFeed formatters itemGroups) -> do
+    css <- T.readFile "bootstrap.css"
+    innerHtml <- render colorMapper (OfferFeed formatters itemGroups)
+    return $ H.html $ do
+      H.head $ H.style (H.toHtml css)
+      H.body $
+        H.div ! A.class_ "container" $
+          innerHtml
+
+emailPresenter :: Maybe BadgeColorMapper -> HTMLFeedPresenter H.Html
+emailPresenter colorMapperM = wrapPresenter $ v2Presenter colorMapperM
 
 instance FeedPresenter HTMLFeedPresenter H.Html where
   present :: HTMLFeedPresenter H.Html -> OfferFeed -> IO H.Html

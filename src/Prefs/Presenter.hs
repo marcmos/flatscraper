@@ -7,7 +7,6 @@ import Presenter.HTMLFeedPresenter
     HTMLFeedPresenter (HTMLFeedPresenter),
     cmArea,
     defaultColorMapper,
-    v1,
   )
 
 badgeColorMapper :: BadgeColorMapper
