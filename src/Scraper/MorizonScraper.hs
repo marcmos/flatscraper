@@ -5,23 +5,27 @@ module Scraper.MorizonScraper (scraper) where
 import Control.Lens (element, (^?))
 import Control.Monad (when)
 import Data.IntMap.CharMap2 (update)
-import Data.List (find)
-import Data.Maybe (catMaybes, fromMaybe, isJust)
+import Data.List (find, isSuffixOf)
+import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import DataAccess.ScrapeLoader
-  ( ScraperPack (ScraperPack),
+  ( FollowUpRule (FollowUpRule),
+    ScrapeAction (ScrapeAndFollow, ScrapeDetails),
+    ScraperPack (ScraperPack),
     WebScraper,
     prefixWebScraper,
   )
 import Domain.Offer
-  ( OfferDetails (_offerBuiltYear, _offerDistrict, _offerHasElevator, _offerMarket, _offerMunicipalityArea, _offerPropertyFloor),
+  ( OfferCoordinates (OfferExactCoordinates),
+    OfferDetails (_offerBuiltYear, _offerCoordinates, _offerDistrict, _offerHasElevator, _offerMarket, _offerMunicipalityArea, _offerPropertyFloor),
     OfferMarket (MarketPrimary, MarketSecondary),
-    OfferView (_offerDetails, _offerTitle),
+    OfferView (_offerDetails, _offerTitle, _offerURL),
     emptyDetails,
     emptyOffer,
     newOfferView,
     _offerBuildingFloors,
+    _offerCoordinates,
     _offerPropertyFloor,
     _offerRooms,
     _offerStreet,
@@ -30,6 +34,7 @@ import Scraper.Common (findMap, parseDecimal, parseDouble, parsePrice)
 import Scraper.Dictionary (parseLocationText)
 import Text.HTML.Scalpel
   ( Scraper,
+    URL,
     attr,
     chroots,
     hasClass,
@@ -41,7 +46,7 @@ import Text.HTML.Scalpel
   )
 import Text.Regex.TDFA (getAllTextSubmatches, (=~))
 
-detailsScraper :: Maybe OfferView -> Scraper Text OfferView
+detailsScraper :: OfferView -> Scraper Text (OfferView, [URL])
 detailsScraper offer = do
   title <- text $ "section" // "h1"
   locationText <- text $ "div" @: [hasClass "location-row__second_column"]
@@ -74,7 +79,7 @@ detailsScraper offer = do
           )
           params
 
-  let newOffer = fromMaybe emptyOffer offer
+  let newOffer = offer
   let updatedDetails =
         (fromMaybe emptyDetails (_offerDetails newOffer))
           { _offerStreet = street,
@@ -88,11 +93,12 @@ detailsScraper offer = do
             _offerMarket = market
           }
 
-  return $
-    newOffer
-      { _offerTitle = title,
-        _offerDetails = Just updatedDetails
-      }
+  let result =
+        newOffer
+          { _offerTitle = title,
+            _offerDetails = Just updatedDetails
+          }
+  return (result, [T.unpack (_offerURL result) <> "/analiza"])
 
 parseFloors :: Text -> Maybe (Int, Maybe Int)
 parseFloors t =
@@ -160,11 +166,43 @@ offersScraper :: Scraper Text [OfferView]
 offersScraper = do
   chroots ("div" @: ["data-cy" @= "card"]) listOfferScraper
 
+locationPageScraper :: Maybe OfferView -> Scraper Text OfferView
+locationPageScraper ov = do
+  scriptContents <- texts "script"
+  let stateScript = find ("window.__INITIAL_STATE__" `T.isInfixOf`) scriptContents
+  let coordsText = do
+        script <- stateScript
+        let jsonRegex = "JSON\\.stringify\\((.*)\\);" :: Text
+        let submatches = getAllTextSubmatches (script =~ jsonRegex) :: [Text]
+        jsonContent <- submatches ^? element 1
+        let coordsRegex = "\"coords\": \"([^\"]*)\"" :: Text
+        rawCoords <- (getAllTextSubmatches (jsonContent =~ coordsRegex) :: [Text]) ^? element 1
+        return $ T.splitOn "," rawCoords
+  let coords = do
+        [latText, lonText] <- coordsText
+        lat <- parseDouble latText
+        lon <- parseDouble lonText
+        return $ OfferExactCoordinates lat lon
+
+  let updatedOffer = do
+        offer <- ov
+        let updatedDetails =
+              (fromMaybe emptyDetails (_offerDetails offer))
+                { _offerCoordinates = coords
+                }
+        return offer {_offerDetails = Just updatedDetails}
+
+  return $ fromMaybe (fromJust ov) updatedOffer
+
 scraper :: WebScraper
 scraper =
   prefixWebScraper
     "https://www.morizon.pl"
     ( ScraperPack
         offersScraper
-        (Just detailsScraper)
+        (Just $ ScrapeAndFollow detailsScraper [locationScraperRule])
     )
+  where
+    locationScraperRule =
+      FollowUpRule ("/analiza" `isSuffixOf`) $
+        ScrapeDetails locationPageScraper

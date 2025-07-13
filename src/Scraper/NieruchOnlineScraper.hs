@@ -12,7 +12,12 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T (isPrefixOf, isSuffixOf, unpack)
 import qualified Data.Text.Encoding as T (encodeUtf8)
-import DataAccess.ScrapeLoader (ScraperPack (..), WebScraper, prefixWebScraper)
+import DataAccess.ScrapeLoader
+  ( ScrapeAction (ScrapeDetails),
+    ScraperPack (..),
+    WebScraper,
+    prefixWebScraper,
+  )
 import Domain.Offer
   ( OfferCoordinates (..),
     OfferDetails
@@ -57,7 +62,7 @@ scraper =
     (T.unpack citySubpageURL)
     ( ScraperPack
         offerListScraper
-        (Just offerDetailsScraper)
+        (Just . ScrapeDetails $ offerDetailsScraper)
     )
 
 citySubpageURL :: Text

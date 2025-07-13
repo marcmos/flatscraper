@@ -35,7 +35,8 @@ import Data.Text.Lens ()
 import qualified Data.Text.Read as T (decimal, double)
 import Data.Vector (toList)
 import DataAccess.ScrapeLoader
-  ( ScraperPack (ScraperPack),
+  ( ScrapeAction (ScrapeDetails),
+    ScraperPack (ScraperPack),
     WebScraper,
     prefixWebScraper,
   )
@@ -257,5 +258,5 @@ scraper =
     "https://www.otodom.pl"
     ( ScraperPack
         offersScraper
-        (Just detailsScraper)
+        (Just . ScrapeDetails $ detailsScraper)
     )

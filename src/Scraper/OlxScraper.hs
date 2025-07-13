@@ -10,7 +10,8 @@ import Data.Text (Text)
 import qualified Data.Text as T (isPrefixOf, replace, stripSuffix, takeWhile)
 import qualified Data.Text.Read as T (double)
 import DataAccess.ScrapeLoader
-  ( ScraperPack (ScraperPack),
+  ( ScrapeAction (ScrapeDetails),
+    ScraperPack (ScraperPack),
     WebScraper,
     prefixWebScraper,
   )
@@ -98,5 +99,5 @@ scraper =
     "https://www.olx.pl"
     ( ScraperPack
         offersScraper
-        (Just detailsScraper)
+        (Just . ScrapeDetails $ detailsScraper)
     )
