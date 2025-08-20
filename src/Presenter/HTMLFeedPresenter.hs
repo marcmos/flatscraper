@@ -197,7 +197,11 @@ itemMarkup2
       offerTripSummaries = tripSummaries,
       offerMarket = market
     } = do
-    H.div ! A.class_ "offer-item border p-2" $ do
+    let marketText = \case
+          MarketPrimary -> "primary"
+          MarketSecondary -> "secondary"
+    let wrapper = maybe H.div (\m -> H.div ! A.dataAttribute "market" (A.textValue . marketText $ m)) market
+    wrapper ! A.class_ "offer-item border p-2" $ do
       H.div ! A.class_ "p-1" $ do
         badge
           "info"

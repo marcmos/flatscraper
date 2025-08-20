@@ -1,0 +1,150 @@
+<html>
+
+<head>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+        crossorigin="anonymous">
+    <style>
+        a:visited {
+            color: #37404e !important;
+        }
+
+        .day-container {
+            margin-bottom: 20px;
+        }
+
+        .badge {
+            text-align: left;
+            white-space: inherit;
+        }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const radioButtons = document.querySelectorAll('input[name="options"]');
+            const marketFilter = document.querySelectorAll('input[name="market"]');
+            const offersContainer = document.querySelector('.offers');
+            const topLimit = 5;
+
+            // Function to fetch and load offers for multiple dates
+            const loadOffersForDates = async () => {
+                const today = new Date();
+                const numDays = 7;
+                const dates = [];
+                for (let i = 0; i < numDays; i++) {
+                    const d = new Date();
+                    d.setDate(today.getDate() - i);
+                    dates.push(d.toISOString().split('T')[0]);
+                }
+
+                offersContainer.innerHTML = '';
+
+                for (const dateString of dates) {
+                    const filename = `${dateString}.html`;
+                    try {
+                        const response = await fetch(filename);
+                        if (response.ok) {
+                            const htmlContent = await response.text();
+                            const dayContainer = document.createElement('div');
+                            dayContainer.classList.add('day-container');
+                            const header = document.createElement('h4');
+                            header.textContent = `Offers for ${dateString}`;
+                            dayContainer.appendChild(header);
+
+                            // Create a container for the HTML content
+                            const offersContent = document.createElement('div');
+                            offersContent.innerHTML = htmlContent;
+                            dayContainer.appendChild(offersContent);
+
+                            offersContainer.appendChild(dayContainer);
+                        } else {
+                            offersContainer.innerHTML += `<div class="alert alert-warning">No offers found for ${dateString}</div>`;
+                        }
+                    } catch (error) {
+                        console.error('Error loading offers:', error);
+                        offersContainer.innerHTML += `<div class="alert alert-danger">Error loading offers for ${dateString}</div>`;
+                    }
+                }
+                setupRadioHandlers();
+                setupMarketHandlers();
+                applyAllFilters();
+            };
+
+            const applyAllFilters = () => {
+                const selectedOption = document.querySelector('input[name="options"]:checked').id;
+                const selectedMarket = document.querySelector('input[name="market"]:checked').value;
+                const dayContainers = document.querySelectorAll('.day-container');
+                dayContainers.forEach(dayContainer => {
+                    const offerItems = Array.from(dayContainer.querySelectorAll('.offer-item'));
+                    // Filter by market first
+                    const filtered = offerItems.filter(item => selectedMarket === 'all' || item.dataset.market === selectedMarket);
+                    // Apply TOP5 filter
+                    filtered.forEach((item, index) => {
+                        if (selectedOption === 'option2') {
+                            item.style.display = index < topLimit ? 'block' : 'none';
+                        } else {
+                            item.style.display = 'block';
+                        }
+                    });
+                    // Hide items not in filtered list
+                    offerItems.forEach(item => {
+                        if (!filtered.includes(item)) {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            };
+
+            // Function to setup radio button handlers (TOP5/All)
+            const setupRadioHandlers = () => {
+                const handleRadioChange = () => {
+                    applyAllFilters();
+                };
+                radioButtons.forEach(radio => {
+                    radio.removeEventListener('change', handleRadioChange);
+                    radio.addEventListener('change', handleRadioChange);
+                });
+            };
+
+            // Function to setup market filter handlers
+            const setupMarketHandlers = () => {
+                const handleMarketChange = () => {
+                    applyAllFilters();
+                };
+                marketFilter.forEach(radio => {
+                    radio.removeEventListener('change', handleMarketChange);
+                    radio.addEventListener('change', handleMarketChange);
+                });
+            };
+
+            loadOffersForDates();
+        });
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="btn-group btn-group-toggle p-2" data-toggle="buttons">
+            <label class="btn btn-secondary active">
+                <input type="radio" name="options" id="option2" checked>TOP5
+            </label>
+            <label class="btn btn-secondary">
+                <input type="radio" name="options" id="option3"> Show All
+            </label>
+        </div>
+        <div class="btn-group btn-group-toggle p-2" data-toggle="buttons">
+            <label class="btn btn-info active">
+                <input type="radio" name="market" value="all" checked>All
+            </label>
+            <label class="btn btn-info">
+                <input type="radio" name="market" value="primary">Primary
+            </label>
+            <label class="btn btn-info">
+                <input type="radio" name="market" value="secondary">Secondary
+            </label>
+        </div>
+        <div class="offers"></div>
+    </div>
+</body>
+
+</html>
