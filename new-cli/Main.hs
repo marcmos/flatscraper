@@ -69,7 +69,7 @@ main = do
   let sqliteQuery =
         SQLiteOfferQuery
           SQLitePersistence
-          $ "select oi.id, sb.score, oi.created_at \
+          $ "select oi.id, oi.created_at \
             \from scoreboard_boosted sb \
             \left join offer_instance oi on sb.id = oi.id \
             \where date(oi.created_at) = date('"

@@ -622,8 +622,8 @@ instance QueryAccess SQLiteOfferQuery where
             runMigration migrateAll
             rawQuery <-
               rawSql query [] ::
-                SqlPersistM [(Single OfferInstanceId, Single Double, Single UTCTime)]
-            forM rawQuery $ \(Single offerId, Single _, Single createdAt) -> do
+                SqlPersistM [(Single OfferInstanceId, Single UTCTime)]
+            forM rawQuery $ \(Single offerId, Single createdAt) -> do
               offerEntity <- selectFirst [OfferInstanceId ==. offerId] []
               case offerEntity of
                 Nothing -> return Nothing

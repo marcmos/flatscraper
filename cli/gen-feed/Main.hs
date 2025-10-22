@@ -17,7 +17,7 @@ import View.CLIView (CLIView (CLIView))
 
 query :: Text -> Text
 query profile =
-  "select id, score, created_at from scoreboard_"
+  "select id, created_at from scoreboard_"
     <> profile
     <> " order by score desc \
        \limit 6"
@@ -87,7 +87,7 @@ v2 args = do
   let sqliteQuery =
         SQLiteOfferQuery
           SQLitePersistence
-          $ "select offer_id, score, created_at \
+          $ "select offer_id, created_at \
             \from published_offer \
             \where feed_id = '"
             <> feedId
